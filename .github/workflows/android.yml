@@ -14,7 +14,8 @@ jobs:
         with: { node-version: 22, cache: npm }
       - uses: actions/setup-java@v4
         with: { distribution: temurin, java-version: 17 }
-      - uses: android-actions/setup-android@v3
+      - name: Accept Android licenses (SDK is preinstalled on ubuntu-latest)
+        run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null || true
       - name: Install & build web bundle
         run: |
           npm ci
