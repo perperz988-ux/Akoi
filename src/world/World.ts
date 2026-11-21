@@ -28,6 +28,7 @@ export class World {
   wallMat!: THREE.MeshStandardMaterial;
   flatMat!: THREE.MeshStandardMaterial;
   glowMat!: THREE.MeshBasicMaterial;
+  poolMat!: THREE.MeshBasicMaterial;
   private queue: { ci: number; cj: number; lod: 0 | 1; d: number }[] = [];
   private occIdx = 0;
   stats = { cells: 0, tris: 0, built: 0, occluded: 0, colliders: 0 };
@@ -63,6 +64,7 @@ export class World {
     };
     this.flatMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.92, metalness: 0.0, side: THREE.DoubleSide });
     this.glowMat = new THREE.MeshBasicMaterial({ vertexColors: true, color: 0x222222 });
+    this.poolMat = new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false });
   }
 
   /** 0..1 how lit emissive things are (night). */
@@ -70,6 +72,7 @@ export class World {
     this.wallMat.emissiveIntensity = n * 1.4;
     const c = 0.25 + n * 0.75;
     this.glowMat.color.setRGB(c, c, c);
+    this.poolMat.opacity = n * 0.9; this.poolMat.visible = n > 0.04;
   }
 
   cellKey(ci: number, cj: number) { return ci * 64 + cj; }
@@ -197,6 +200,7 @@ export class World {
     mk(geo.w.build(), this.wallMat, true);
     mk(geo.f.build(), this.flatMat, true);
     mk(geo.g.build(), this.glowMat, false);
+    if (lod === 0) mk(geo.p.build(), this.poolMat, false);
     this.group.add(group);
     for (const b of colliders) this.collision.add(b);
     const cell: Cell = { ci, cj, lod, group, colliders, maxH: ctx.maxH, occluded: false };
@@ -400,6 +404,7 @@ export class World {
   private lamp(ctx: Ctx, x: number, z: number, dx: number, dz: number) {
     const g = ctx.geo;
     g.cyl(x, 0, z, 0.14, 0.1, 7.5, 0x45484d, 5);
+    g.pool(x + dx * 1.0 - 4.2, z + dz * 1.0 - 4.2, x + dx * 1.0 + 4.2, z + dz * 1.0 + 4.2, 0.17, 0x6a5428); // soft light pool (additive, night only)
     g.glow(x + dx * 0.5 - 0.4, 7.4, z + dz * 0.5 - 0.4, x + dx * 1.5 + 0.4, 7.6, z + dz * 1.5 + 0.4, 0xffe3a0);
     g.box(x - 0.1 + Math.min(0, dx * 1.5), 7.3, z - 0.1 + Math.min(0, dz * 1.5), x + 0.1 + Math.max(0, dx * 1.5), 7.4, z + 0.1 + Math.max(0, dz * 1.5), 0x45484d);
     ctx.colliders.push({ x0: x - 0.2, z0: z - 0.2, x1: x + 0.2, z1: z + 0.2, y0: 0, y1: 7.5, kind: 'prop' });

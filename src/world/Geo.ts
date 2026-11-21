@@ -25,7 +25,7 @@ export function hex(c: number | string, shade = 1): [number, number, number] {
 }
 
 export class Geo {
-  w = new Buf(); f = new Buf(); g = new Buf();
+  w = new Buf(); f = new Buf(); g = new Buf(); p = new Buf();
   private seed = 0;
   setSeed(s: number) { this.seed = s; }
 
@@ -80,6 +80,11 @@ export class Geo {
   /** Emissive (night-lit) box: lamps, signs, neon. */
   glow(x0: number, y0: number, z0: number, x1: number, y1: number, z1: number, color: number | string) {
     const f = this.f; this.f = this.g; this.box(x0, y0, z0, x1, y1, z1, color, false); this.f = f;
+  }
+
+  /** Night-only additive light pool (flat quad). */
+  pool(x0: number, z0: number, x1: number, z1: number, y: number, color: number | string) {
+    const f = this.f; this.f = this.p; this.rect(x0, z0, x1, z1, y, color); this.f = f;
   }
 
   /** Box without bottom/top uv concerns, for thin props; same as box() flat. */

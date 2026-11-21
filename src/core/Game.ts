@@ -129,7 +129,7 @@ export class Game {
     this.player.group.visible = false;
     this.player.mode = 'cutscene';
     this.player.teleport(250, -150, 0);
-    this.env.setHour(18.4); this.env.frozen = true;
+    this.env.setHour(16.8); this.env.frozen = true;
     await this.loadAround(250, -150, (f) => hud0.bootProgress(0.2 + f * 0.75, 'Streaming the city…'));
     this.state = 'title';
     hud0.bootProgress(1, 'Ready');
@@ -370,13 +370,13 @@ export class Game {
 
   private updateTitle(dt: number) {
     this.titleT += dt;
-    const a = this.titleT * 0.06 + 0.6, R = 150;
+    const a = this.titleT * 0.035 + 0.35, R = 430;
     const cx = 260, cz = -140;
-    const pos = new THREE.Vector3(cx + Math.cos(a) * R, 55 + Math.sin(this.titleT * 0.13) * 14, cz + Math.sin(a) * R);
-    this.cam.camera.position.copy(pos); this.cam.camera.lookAt(cx, 28, cz); this.cam.camera.fov = 52; this.cam.camera.updateProjectionMatrix();
+    const pos = new THREE.Vector3(cx + Math.cos(a) * R, 150 + Math.sin(this.titleT * 0.13) * 20, cz + Math.sin(a) * R);
+    this.cam.camera.position.copy(pos); this.cam.camera.lookAt(cx, 35, cz); this.cam.camera.fov = 52; this.cam.camera.updateProjectionMatrix();
     this.env.update(dt, this.cam.camera, new THREE.Vector3(cx, 0, cz));
     this.world.setNight(this.env.night);
-    this.world.update(cx, cz, pos.x, pos.y, pos.z, 4);
+    this.world.update(cx, cz, pos.x, pos.y, pos.z, 5);
     this.vehicles.update(dt); this.traffic.update(dt); this.peds.update(dt); this.fx.update(dt);
     this.hud.update(dt);
     this.audio.listener.x = pos.x; this.audio.listener.z = pos.z;

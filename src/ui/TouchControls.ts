@@ -47,22 +47,22 @@ export class TouchControls {
     { id: 'cover', label: 'Cover', action: 'cover', x: 28, y: 12, size: 50, modes: ['foot'], icon: ICON.cover },
     { id: 'reload', label: 'Reload', action: 'reload', x: 36, y: 40, size: 46, modes: ['foot'], icon: ICON.reload },
     { id: 'weapon', label: 'Weapon', action: 'weaponNext', x: 36, y: 20, size: 46, modes: ['foot'], icon: ICON.swap },
-    { id: 'phone', label: 'Phone', action: 'phone', x: 40, y: 86, size: 44, modes: ['foot', 'veh', 'boat', 'heli'], icon: ICON.phone },
+    { id: 'phone', label: 'Phone', action: 'phone', x: 36, y: 9, size: 44, modes: ['foot', 'veh', 'boat', 'heli'], icon: ICON.phone },
     // vehicle
     { id: 'gas', label: 'GAS', action: 'accelerate', x: 3, y: 12, size: 92, modes: ['veh', 'boat'], big: true },
     { id: 'brake', label: 'BRAKE', action: 'brake', x: 20, y: 5, size: 74, modes: ['veh', 'boat'] },
-    { id: 'hand', label: 'Hand', action: 'handbrake', x: 10, y: 40, size: 56, modes: ['veh'] },
+    { id: 'hand', label: 'Hand', action: 'handbrake', x: 12, y: 36, size: 56, modes: ['veh'] },
     { id: 'nitro', label: 'NOS', action: 'nitro', x: 3, y: 50, size: 56, modes: ['veh', 'boat'] },
-    { id: 'horn', label: 'Horn', action: 'horn', x: 22, y: 38, size: 46, modes: ['veh', 'boat', 'heli'], icon: ICON.horn },
-    { id: 'vcam', label: 'View', action: 'camera', x: 31, y: 24, size: 44, modes: ['veh', 'boat', 'heli'], icon: ICON.cam },
-    { id: 'radio', label: 'Radio', action: 'radio', x: 31, y: 44, size: 44, modes: ['veh', 'boat'], icon: ICON.radio },
-    { id: 'lights', label: 'Lights', action: 'interact', x: 31, y: 64, size: 44, modes: ['veh', 'boat', 'heli'], icon: ICON.light },
+    { id: 'horn', label: 'Horn', action: 'horn', x: 21, y: 36, size: 46, modes: ['veh', 'boat', 'heli'], icon: ICON.horn },
+    { id: 'vcam', label: 'View', action: 'camera', x: 56, y: 9, size: 44, modes: ['veh', 'boat', 'heli'], icon: ICON.cam },
+    { id: 'radio', label: 'Radio', action: 'radio', x: 48, y: 9, size: 44, modes: ['veh', 'boat'], icon: ICON.radio },
+    { id: 'lights', label: 'Lights', action: 'interact', x: 42, y: 9, size: 44, modes: ['veh', 'boat', 'heli'], icon: ICON.light },
     { id: 'hup', label: 'Up', action: 'ascend', x: 3, y: 38, size: 72, modes: ['heli'], icon: ICON.up, big: true },
     { id: 'hdown', label: 'Down', action: 'descend', x: 3, y: 14, size: 72, modes: ['heli'], icon: ICON.down },
   ];
 
   constructor(private g: Game, ui: HTMLElement) {
-    this.root = document.createElement('div'); this.root.style.cssText = 'position:absolute;inset:0;';
+    this.root = document.createElement('div'); this.root.style.cssText = 'position:absolute;inset:0;display:none;';
     ui.appendChild(this.root);
     const sz = document.createElement('div'); sz.className = 'stick-zone'; this.root.appendChild(sz);
     const lz = document.createElement('div'); lz.className = 'look-zone'; this.root.appendChild(lz);

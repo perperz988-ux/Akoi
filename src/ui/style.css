@@ -30,8 +30,8 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--txt);overflow:hi
 @keyframes blink{50%{opacity:.25}}
 #weaponBox{font-size:13px;text-align:right}
 #weaponBox .w{font-size:15px;font-weight:700}
-.hud-bottom-center{position:absolute;bottom:calc(var(--sab) + 12px);left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:6px;width:min(60vw,560px)}
-#objective{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:8px;padding:6px 12px;font-size:14px;min-width:200px;display:none}
+.hud-bottom-center{position:absolute;bottom:calc(var(--sab) + 70px);left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:6px;width:min(60vw,560px)}
+#objective{position:fixed;left:calc(var(--sal) + 12px);top:calc(var(--sat) + 152px);max-width:240px;background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:8px;padding:6px 12px;font-size:14px;min-width:200px;display:none}
 #objective small{display:block;color:var(--accent);font-size:11px;letter-spacing:1px;text-transform:uppercase}
 #subtitle{font-size:16px;text-align:center;text-shadow:0 2px 6px #000,0 0 3px #000;min-height:22px;padding:0 10px}
 #subtitle b{color:var(--accent)}
@@ -50,7 +50,7 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--txt);overflow:hi
 @keyframes hm{from{opacity:1;transform:rotate(45deg) scale(.7)}to{opacity:0;transform:rotate(45deg) scale(1.3)}}
 #damage{position:absolute;inset:0;background:radial-gradient(ellipse at center,transparent 45%,rgba(255,0,40,.55));opacity:0;transition:opacity .25s}
 #vignette{position:absolute;inset:0;background:radial-gradient(ellipse at center,transparent 55%,rgba(0,0,0,.35));pointer-events:none}
-#speedo{position:absolute;right:calc(var(--sar) + 14px);bottom:calc(var(--sab) + 150px);text-align:right;display:none;text-shadow:0 2px 6px #000}
+#speedo{position:absolute;right:calc(var(--sar) + 14px);top:calc(var(--sat) + 118px);text-align:right;display:none;text-shadow:0 2px 6px #000}
 #speedo .kmh{font-size:34px;font-weight:800;line-height:1} #speedo .u{font-size:12px;color:var(--dim)}
 #speedo .gear{font-size:16px;font-weight:700;color:var(--accent)}
 #rpmbar{width:130px;height:6px;background:rgba(255,255,255,.15);border-radius:4px;overflow:hidden;margin-top:4px;margin-left:auto}#rpmbar>i{display:block;height:100%;width:0;background:linear-gradient(90deg,#4ade80,#facc15,#ff4d6d)}
@@ -123,3 +123,6 @@ body.editlayout .tbtn{outline:2px dashed var(--accent);pointer-events:auto}
 .pbtn:active{background:rgba(255,209,102,.25)} .pbtn b{font-size:20px}
 .pbtn.on{background:var(--accent);color:#111}
 @media (max-height:420px){#minimap{width:104px;height:104px}.hud-info .chip{font-size:11px}.panel{padding:10px}#bigmsg h1{font-size:44px}}
+
+#ui.titlemode .hud-top-left,#ui.titlemode .hud-top-right,#ui.titlemode .hud-bottom-center,#ui.titlemode #speedo,#ui.titlemode #vignette,#ui.titlemode #toasts{display:none}
+body.letterbox .hud-top-left,body.letterbox .hud-top-right,body.letterbox #speedo,body.letterbox #objective,body.letterbox #toasts{opacity:0;transition:opacity .4s}

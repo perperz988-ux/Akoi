@@ -238,11 +238,11 @@ export class Environment {
     const sunI = (day * 3.2 + dusk * 0.4) * (1 - over * 0.75);
     this.sun.color.copy(col(0xfff1dc).lerp(col(0xffa060), dusk));
     this.sun.intensity = sunI;
-    const hemiI = 0.18 + day * 0.75 * (1 - over * 0.4) + this.flash * 1.2;
+    const hemiI = 0.34 + day * 1.45 * (1 - over * 0.35) + dusk * 0.25 + this.flash * 1.4;
     this.hemi.intensity = hemiI;
     this.hemi.color.copy(col(0xbcd4ff).lerp(col(0x31406a), this.night).lerp(col(0xffc59a), dusk * 0.5));
     this.hemi.groundColor.copy(col(0x5a5446).lerp(col(0x1a1c24), this.night));
-    this.moon.intensity = this.night * 0.35 * (1 - over * 0.5);
+    this.moon.intensity = this.night * 0.8 * (1 - over * 0.5);
     // shadow rig: follow focus, snap to texels
     const follow = focus;
     const lightDir = elev > -0.02 ? sunDir : sunDir.clone().multiplyScalar(-1);

@@ -42,7 +42,8 @@ export class Hud {
     <div id="crosshair"></div><div id="hitmark"></div>
     <div id="timer"></div><div id="detect"><i></i></div><div id="raceinfo"></div><div id="countdown"></div>
     <div id="toasts"></div><div id="bubbles"></div>
-    <div class="hud-bottom-center"><div id="subtitle"></div><div id="progress"><i></i></div><div id="prompt"></div><div id="objective"><small id="objT"></small><span id="objX"></span></div></div>
+    <div class="hud-bottom-center"><div id="subtitle"></div><div id="progress"><i></i></div><div id="prompt"></div></div>
+    <div id="objective"><small id="objT"></small><span id="objX"></span></div>
     <div id="bustbar"><i></i></div>
     <div id="dialogue"><div class="n"></div><div class="r"></div><div class="t"></div><button class="btn" id="dlgOk">OK</button></div>
     <div id="letterTop"></div><div id="letterBot"></div>
@@ -291,7 +292,7 @@ export class Hud {
 
   // ---------------------------------------------------------------- title screen
   showTitle(on: boolean) {
-    const t = this.el.title; t.classList.toggle('on', on); if (!on) return;
+    const t = this.el.title; t.classList.toggle('on', on); this.root.classList.toggle('titlemode', on); if (!on) return;
     t.innerHTML = `<h1>PORT<br><span>SOLANO</span></h1><p>An open-world crime saga on the Florida-style coast. Original story, original city — drive, fight, build your empire.</p><div class="menu"></div><div class="sub" style="margin-top:14px;font-size:11px;color:var(--dim)" id="tipline"></div>`;
     const m = t.querySelector('.menu') as HTMLElement;
     const add = (label: string, cls: string, fn: () => void) => { const b = h(`<span class="btn ${cls}">${label}</span>`); b.addEventListener('click', () => { this.g.audio.init(); this.g.audio.uiClick(); fn(); }); m.appendChild(b); return b; };
@@ -317,7 +318,7 @@ export class Hud {
   update(dt: number) {
     const g = this.g, p = g.player, e = this.el;
     this.frames++; this.fpsT += dt; if (this.fpsT >= 0.5) { if (g.settings.showFps && this.fpsEl) this.fpsEl.textContent = `${Math.round(this.frames / this.fpsT)} fps · ${g.quality.name} · ${Math.round(g.dynRes.scale * 100)}% · tris ${(g.renderer.info.render.triangles / 1000) | 0}k · calls ${g.renderer.info.render.calls} · veh ${g.vehicles.list.length} npc ${g.peds.npcs.length}`; this.frames = 0; this.fpsT = 0; }
-    if (g.state !== 'playing') { if (g.state === 'title') this.root.classList.add('titlemode'); return; }
+    if (g.state !== 'playing') return;
     // damage flash
     this.hitT -= dt; if (this.hitT <= 0 && e.damage.style.opacity !== '0') e.damage.style.opacity = String(p.health < 30 ? 0.35 + Math.sin(g.time * 6) * 0.15 : 0);
     // bars

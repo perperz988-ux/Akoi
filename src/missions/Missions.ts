@@ -44,7 +44,10 @@ function cine(shots: { from: [number, number, number]; to: [number, number, numb
     end(r) { r.g.cam.stopCine(); r.g.hud?.setLetterbox(false); r.g.hud?.subtitle('', ''); r.g.player.mode = r.g.player.mode === 'cutscene' ? 'foot' : r.g.player.mode; },
     next(r: Run) {
       const s = shots[r.e.shot]; const c = r.g.cam;
-      c.playCine(new THREE.Vector3(...s.from), new THREE.Vector3(...s.to), new THREE.Vector3(...s.look), s.dur, s.lookTo ? new THREE.Vector3(...s.lookTo) : undefined, 48);
+      const look = new THREE.Vector3(...s.look);
+      // keep the virtual camera out of buildings: pull it toward the subject until the line of sight is clear
+      const safe = (p: [number, number, number]) => { const v = new THREE.Vector3(...p); const d = v.clone().sub(look); const len = d.length(); d.normalize(); const hit = r.g.col.raycast(look.x, look.y, look.z, d.x, d.y, d.z, len, true); const k = Math.min(len, hit - 0.8); const out = look.clone().addScaledVector(d, Math.max(2.5, k)); out.y = Math.max(out.y, 1.2); return out; };
+      c.playCine(safe(s.from), safe(s.to), look, s.dur, s.lookTo ? new THREE.Vector3(...s.lookTo) : undefined, 48);
       let delay = 0; for (const [who, line] of s.lines) { const d = delay; setTimeout(() => { if (r.m && r.g.missions.active?.mission === r.m) r.g.hud?.subtitle(who, line, Math.max(1.8, line.length * 0.055)); }, d * 1000); delay += Math.max(1.8, line.length * 0.055) + 0.2; }
       r.g.audio.missionStart();
     },
