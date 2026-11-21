@@ -126,3 +126,9 @@ body.editlayout .tbtn{outline:2px dashed var(--accent);pointer-events:auto}
 
 #ui.titlemode .hud-top-left,#ui.titlemode .hud-top-right,#ui.titlemode .hud-bottom-center,#ui.titlemode #speedo,#ui.titlemode #vignette,#ui.titlemode #toasts{display:none}
 body.letterbox .hud-top-left,body.letterbox .hud-top-right,body.letterbox #speedo,body.letterbox #objective,body.letterbox #toasts{opacity:0;transition:opacity .4s}
+/* panels must sit above the title screen; hide the title while one is open */
+.overlay{z-index:30}
+#title{z-index:1}
+#ui:has(.overlay.on) #title{visibility:hidden}
+#ui:has(.overlay.on) .overlay.on{background:rgba(3,5,9,.86)}
+#ui.panelopen #title{visibility:hidden}

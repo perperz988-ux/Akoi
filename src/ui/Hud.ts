@@ -127,10 +127,10 @@ export class Hud {
 
   // ---------------------------------------------------------------- menus
   openMenu(def: MenuDef) {
-    this.menuDef = def; this.menuOpen = true; this.el.menuOv.classList.add('on'); this.g.paused = true; this.renderMenu(); this.g.audio.uiOpen(); this.g.input.touchMoveX = this.g.input.touchMoveY = 0;
+    this.menuDef = def; this.menuOpen = true; this.root.classList.add('panelopen'); this.el.menuOv.classList.add('on'); this.g.paused = true; this.renderMenu(); this.g.audio.uiOpen(); this.g.input.touchMoveX = this.g.input.touchMoveY = 0;
   }
   refreshMenu() { if (this.menuDef && this.menuOpen) this.renderMenu(); }
-  closeMenu() { if (!this.menuOpen) return; this.menuOpen = false; this.el.menuOv.classList.remove('on'); this.menuDef?.onClose?.(); this.menuDef = null; if (!this.pauseOpen && !this.phoneOpen && !this.mapOpen) this.g.paused = false; }
+  closeMenu() { if (!this.menuOpen) return; this.menuOpen = false; this.root.classList.remove('panelopen'); this.el.menuOv.classList.remove('on'); this.menuDef?.onClose?.(); this.menuDef = null; if (!this.pauseOpen && !this.phoneOpen && !this.mapOpen) this.g.paused = false; }
   private renderMenu() {
     const def = this.menuDef!; this.el.menuTitle.textContent = def.title; this.el.menuSub.innerHTML = `${def.subtitle ?? ''} · <b style="color:#c9f7d0">${formatMoney(this.g.economy.money)}</b>`;
     const body = this.el.menuBody; const st = body.scrollTop; body.innerHTML = '';
