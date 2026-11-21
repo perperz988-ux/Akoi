@@ -132,3 +132,4 @@ body.letterbox .hud-top-left,body.letterbox .hud-top-right,body.letterbox #speed
 #ui:has(.overlay.on) #title{visibility:hidden}
 #ui:has(.overlay.on) .overlay.on{background:rgba(3,5,9,.86)}
 #ui.panelopen #title{visibility:hidden}
+.hud-top-left{z-index:15}

@@ -33,6 +33,7 @@ import { POIS, Poi, poiById, cellOf } from '../world/CityLayout';
 import { clamp } from './MathUtil';
 import { defaultLoadout, WEAPON_ORDER, WEAPONS } from '../combat/Weapons';
 import { Cheats } from '../cheats/Cheats';
+import { Pickups } from '../world/Pickups';
 
 export type GameState = 'boot' | 'title' | 'playing';
 
@@ -53,6 +54,7 @@ export class Game {
   dynRes = new DynamicResolution();
   cheats = new Cheats(this);
   freeRoam = false;
+  pickups!: Pickups;
   state: GameState = 'boot';
   paused = false;
   time = 0;
@@ -116,6 +118,7 @@ export class Game {
     this.interiors = new Interiors(this);
     this.missions = new MissionSystem(this);
     this.events = new RandomEvents(this);
+    this.pickups = new Pickups(this);
     this.touch = new TouchControls(this, ui);
     this.dynRes.enabled = this.settings.dynamicRes;
     this.setupComposer();
@@ -225,7 +228,7 @@ export class Game {
     await this.hud.fade(true, 0.3);
     this.hud.showTitle(false);
     // reset state
-    this.freeRoam = freeRoam; this.economy = new Economy(this); this.missions = new MissionSystem(this); this.missions.disabled = freeRoam; this.vehicles.owned = [];
+    this.pickups.fromSave([]); this.freeRoam = freeRoam; this.economy = new Economy(this); this.missions = new MissionSystem(this); this.missions.disabled = freeRoam; this.vehicles.owned = [];
     this.player.loadout = defaultLoadout(); this.player.health = 100; this.player.armor = 0; this.player.mode = 'foot'; this.player.group.visible = true;
     const home = this.poi(freeRoam ? 'safe_beach' : 'safe_midtown');
     this.player.teleport(home.x, home.z + 3, Math.PI);
@@ -264,7 +267,7 @@ export class Game {
   /** Called by SaveSystem.load */
   async applySave(d: any) {
     this.economy = new Economy(this); this.missions = new MissionSystem(this); this.vehicles.owned = [];
-    this.freeRoam = !!d.world?.freeRoam; this.missions.disabled = this.freeRoam;
+    this.pickups.fromSave(d.world?.pickups); this.freeRoam = !!d.world?.freeRoam; this.missions.disabled = this.freeRoam;
     this.economy.fromSave(d.economy); this.missions.fromSave(d.missions);
     this.player.mode = 'foot'; this.player.group.visible = true; this.player.fromSave(d.player);
     const w = d.world ?? {};
@@ -409,6 +412,7 @@ export class Game {
     if (inp.lookX || inp.lookY) { this.cam.addLook(inp.lookX, inp.lookY, sens, this.settings.invertY); }
     // simulate
     this.cheats.update();
+    this.pickups.update(dt);
     p.update(dt);
     this.interiors.update(dt);
     const inInterior = !!this.interiors.active;

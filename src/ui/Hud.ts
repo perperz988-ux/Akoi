@@ -37,7 +37,7 @@ export class Hud {
     <div class="hud-top-left"><canvas id="minimap" class="interactive" width="264" height="264"></canvas>
       <div class="hud-info"><div class="chip" id="place"><b>—</b></div><div class="chip" id="clock">09:30</div>
         <div class="bar hp"><i id="hpbar"></i></div><div class="bar ar"><i id="arbar"></i></div><div class="bar st"><i id="stbar"></i></div></div></div>
-    <div id="cheatBtn" class="btn hit" style="position:absolute;top:calc(var(--sat) + 150px);right:calc(var(--sar) + 12px);padding:5px 10px;font-size:12px;display:none;pointer-events:auto">⚡ CHEATS</div>
+    <div id="cheatBtn" class="btn hit" style="position:absolute;z-index:25;top:calc(var(--sat) + 10px);left:calc(var(--sal) + 300px);padding:7px 12px;font-size:13px;display:none;pointer-events:auto">⚡ CHEATS</div>
     <div class="hud-top-right"><div id="money">$0</div><div id="moneyDelta"></div><div id="stars"><i>★</i><i>★</i><i>★</i><i>★</i><i>★</i></div><div id="weaponBox"><div class="w" id="wname"></div><div id="wammo"></div></div></div>
     <div id="speedo"><div class="kmh" id="kmh">0</div><div class="u">km/h · <span class="gear" id="gear">N</span></div><div id="rpmbar"><i></i></div><div id="nitrobar"><i></i></div><div id="vehHealth"><i></i></div><div id="radioTag"></div></div>
     <div id="crosshair"></div><div id="hitmark"></div>
@@ -80,7 +80,11 @@ export class Hud {
   hideBoot() { this.boot.style.display = 'none'; }
 
   // ---------------------------------------------------------------- simple feedback
+  private toastSeen = new Map<string, number>();
   toast(text: string, secs = 2.6) {
+    const now = performance.now(), last = this.toastSeen.get(text) ?? -1e9;
+    if (now - last < 4500) return;   // never spam the same message
+    this.toastSeen.set(text, now);
     const d = h(`<div class="toast">${text}</div>`); this.el.toasts.appendChild(d);
     while (this.el.toasts.children.length > 4) this.el.toasts.firstChild!.remove();
     setTimeout(() => d.remove(), secs * 1000);

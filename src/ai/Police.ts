@@ -35,6 +35,7 @@ export class Police {
   copCountOverride = -1;
   disabled = false;
   hartFavor = false;
+  lastCallToast = -99;
 
   constructor(private g: Game) {}
 
@@ -59,17 +60,20 @@ export class Police {
     const base = (CRIME_BASE[kind] ?? 0.5) * (severity > 0 ? severity : 1) * 0.9;
     this.lastCrimeKind = kind;
     // mark the crime in witnesses' memory
+    const vehTheft = kind === 'grandtheft' || kind === 'carjack' || kind === 'breakin';   // stealing cars is not reported by civilians
     const ws = g.peds.findWitnesses(x, z, kind === 'gunfire' || kind === 'explosive' ? 55 : 32);
     let copSaw = false, civSaw = 0;
     for (const w of ws) {
       if (w === opts.victim) continue;
       if (w.faction === 'cop' || w.faction === 'swat') { copSaw = true; continue; }
+      if (vehTheft) continue;
       w.remember('crime', x, z, g.time, 'player', severity);
       civSaw++;
       if (w.faction === 'civ' && w.userData.reporter !== false && !w.userData.called && w.state !== 'phone' && !w.dead && (kind !== 'vehicleshot')) {
         if (this.rng.chance(0.55 + severity * 0.12)) { w.userData.called = true; w.state = 'phone'; w.stateT = this.rng.range(3, 6); w.userData.callWhy = kind; w.userData.phoneNormal = false; w.userData.fleeFrom = { x, z }; w.fear = Math.max(w.fear, 0.7); }
       }
     }
+    if (vehTheft && !copSaw) return;
     if (opts.direct || copSaw || (opts.witnessSource && !opts.witnessSource.dead && civSaw > 0)) {
       this.addHeat(base, true, kind);
     } else if (civSaw === 0 && !opts.direct) {
@@ -83,7 +87,7 @@ export class Police {
   callIn(n: Npc, why: string) {
     if (n.dead) return;
     const sev = CRIME_BASE[why] ?? 0.5;
-    this.g.hud?.toast('A witness called the police');
+    if (this.g.time - this.lastCallToast > 10) { this.g.hud?.toast('A witness called the police'); this.lastCallToast = this.g.time; }
     this.dispatchPos.set(n.x, 0, n.z);
     this.addHeat(sev * 0.9, false, why);
   }

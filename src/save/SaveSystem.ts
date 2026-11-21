@@ -47,7 +47,7 @@ export class SaveSystem {
       economy: g.economy.toSave(),
       missions: g.missions.toSave(),
       world: {
-        freeRoam: g.freeRoam, hour: g.env.hour, day: g.env.day, weather: g.env.weather, wanted: g.police.wantedLevel, heat: g.police.heat,
+        freeRoam: g.freeRoam, pickups: g.pickups.toSave(), hour: g.env.hour, day: g.env.day, weather: g.env.weather, wanted: g.police.wantedLevel, heat: g.police.heat,
         vehicles: g.vehicles.owned.map((o) => { const live = g.vehicles.list.find((v) => v.ownerId === o.uid); if (live) { o.x = live.x; o.z = live.z; o.yaw = live.yaw; o.health = live.health; o.mods = { ...live.mods }; o.color = live.color; o.premium = live.premium; } return { ...o }; }),
         currentVehicle: p.vehicle?.ownerId ?? null,
         waypoint: g.markers.waypoint,
