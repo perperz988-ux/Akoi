@@ -38,7 +38,8 @@ class Buf {
     this.col = g(this.col, v * 3); this.lig = g(this.lig, v * 2); this.idx = g(this.idx, this.ni + 6);
   }
   vert(x: number, y: number, z: number, nx: number, ny: number, nz: number, u: number, v: number, c: number, sl: number, bl: number) {
-    if ((this.nv + 1) * 3 > this.pos.length || (this.ni + 6) > this.idx.length) this.grow();
+    const nv1 = this.nv + 1;
+    if (nv1 * 3 > this.pos.length || nv1 * 3 > this.nor.length || nv1 * 3 > this.col.length || nv1 * 2 > this.uv.length || nv1 * 2 > this.lig.length || this.ni + 6 > this.idx.length) this.grow();
     const n = this.nv;
     this.pos[n * 3] = x; this.pos[n * 3 + 1] = y; this.pos[n * 3 + 2] = z;
     this.nor[n * 3] = nx * 127; this.nor[n * 3 + 1] = ny * 127; this.nor[n * 3 + 2] = nz * 127;

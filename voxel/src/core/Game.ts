@@ -1019,14 +1019,14 @@ export class Game {
     }
     const d = item(id);
     if (d.block !== undefined && BLOCKS[d.block].shape === SHAPE_CUBE) {
-      const m = new THREE.Mesh(blockGeometry(d.block, 0.32), mk(new THREE.MeshBasicMaterial({ map: this.atlas.texture, alphaTest: 0.5 })));
+      const m = new THREE.Mesh(blockGeometry(d.block, 0.24), mk(new THREE.MeshBasicMaterial({ map: this.atlas.texture, alphaTest: 0.5 })));
       m.rotation.set(0.15, 0.7, 0);
       m.position.set(0, 0.02, -0.05);
       g.add(m);
     } else {
       const tex = new THREE.CanvasTexture(itemCanvas(id));
       tex.magFilter = THREE.NearestFilter; tex.minFilter = THREE.NearestFilter; tex.colorSpace = THREE.SRGBColorSpace;
-      const m = new THREE.Mesh(new THREE.PlaneGeometry(0.5, 0.5), mk(new THREE.MeshBasicMaterial({ map: tex, alphaTest: 0.4, side: THREE.DoubleSide })));
+      const m = new THREE.Mesh(new THREE.PlaneGeometry(0.36, 0.36), mk(new THREE.MeshBasicMaterial({ map: tex, alphaTest: 0.4, side: THREE.DoubleSide })));
       m.rotation.set(0, -1.2, 0.35);
       m.position.set(0, 0.12, -0.05);
       g.add(m);

@@ -4,6 +4,7 @@ export type Preset = 'LOW' | 'MEDIUM' | 'HIGH' | 'ULTRA';
 export interface ButtonLayout { x: number; y: number; s: number }
 
 export interface Settings {
+  language: 'en' | 'es';
   preset: Preset;
   renderDistance: number;
   lodDistance: number;
@@ -71,6 +72,7 @@ function detectPreset(): Preset {
 export function defaults(): Settings {
   const preset = detectPreset();
   return {
+    language: (navigator.language || 'en').toLowerCase().startsWith('es') ? 'es' : 'en',
     preset,
     renderDistance: 6, lodDistance: 4, shadows: false, shadowSize: 1024, fancyLeaves: true, clouds: true, particles: 0.7,
     resolution: 1, antialias: false,

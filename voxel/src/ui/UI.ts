@@ -11,6 +11,7 @@ import * as Store from '../save/Storage';
 import type { WorldMeta } from '../save/Storage';
 import { ICON } from './Icons';
 import { Touch } from './Touch';
+import { t, getLang } from './i18n';
 
 function h<K extends keyof HTMLElementTagNameMap>(tag: K, cls = '', html = ''): HTMLElementTagNameMap[K] {
   const e = document.createElement(tag);
@@ -154,6 +155,7 @@ export class UI implements UIHooks {
       <button class="mbtn" data-a="create"><span class="gem"></span>CREATE WORLD</button>
       <button class="mbtn" data-a="settings"><span class="gem"></span>SETTINGS</button>
       <button class="mbtn" data-a="credits"><span class="gem"></span>CREDITS</button>
+      <button class="mbtn" data-a="lang" style="padding:9px 18px;font-size:12px"><span class="gem"></span>${getLang() === 'es' ? 'IDIOMA: ESPAÑOL' : 'LANGUAGE: ENGLISH'}</button>
     </div><div class="ver">ZperCraft v0.1 · original voxel sandbox</div>`;
     m.querySelectorAll('.mbtn').forEach((b) => b.addEventListener('click', () => {
       const a = (b as HTMLElement).dataset.a!;
@@ -162,6 +164,7 @@ export class UI implements UIHooks {
       else if (a === 'create') this.openCreate();
       else if (a === 'settings') this.openSettings('menu');
       else if (a === 'credits') this.openCredits();
+      else if (a === 'lang') this.setLanguage(getLang() === 'es' ? 'en' : 'es');
     }));
     this.root.appendChild(m);
     this.screens.menu = m;
@@ -315,6 +318,7 @@ export class UI implements UIHooks {
       toggle('Anti-aliasing (applies after restart)', 'antialias');
       body.appendChild(h('div', 'small', `Presets: ${Object.keys(PRESETS).join(' / ')}. LOW targets older phones; ULTRA is for flagship devices.`));
     } else if (this.settingsTab === 'controls') {
+      choice('Language', [['es', 'Español'], ['en', 'English']], () => st.language, (v) => { this.setLanguage(v as 'en' | 'es'); });
       slider('Look sensitivity', 'sensitivity', 0.2, 3, 0.05, (v) => v.toFixed(2));
       toggle('Invert vertical look', 'invertY');
       toggle('Auto-jump (touch)', 'autoJump');
@@ -347,6 +351,14 @@ export class UI implements UIHooks {
       slider('Music', 'musicVolume', 0, 1, 0.05, (v) => Math.round(v * 100) + '%');
     }
     if (ret === 'menu') this.nav('settings'); else s.classList.add('on');
+  }
+
+  async setLanguage(l: 'en' | 'es') {
+    const g = this.game;
+    g.settings.language = l;
+    g.applySettings();
+    await g.save();
+    location.reload();
   }
 
   // ------------------------------------------------------------ pause & creative
@@ -520,7 +532,7 @@ export class UI implements UIHooks {
       const w = g.world?.stats();
       info += `${g.fps} FPS`;
       if (w) info += ` · ${w.chunks} chunks · ${w.visible}/${w.meshes} meshes · ${(w.tris / 1000).toFixed(0)}k tris`;
-      info += `<br>XYZ ${p.x.toFixed(1)} ${p.y.toFixed(1)} ${p.z.toFixed(1)} · ${g.biome}`;
+      info += `<br>XYZ ${p.x.toFixed(1)} ${p.y.toFixed(1)} ${p.z.toFixed(1)} · ${t(g.biome)}`;
     }
     const tod = g.timeOfDay, hrs = (tod * 24 + 6) % 24;
     info += `${info ? '<br>' : ''}Day ${g.dayNumber} · ${String(Math.floor(hrs)).padStart(2, '0')}:${String(Math.floor((hrs % 1) * 60)).padStart(2, '0')}`;

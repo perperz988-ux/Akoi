@@ -2,6 +2,7 @@
 import type { Game } from '../core/Game';
 import { DEFAULT_LAYOUT } from '../core/Settings';
 import { ICON } from './Icons';
+import { t } from './i18n';
 
 interface BtnDef { id: string; icon: string; label?: string }
 const BUTTONS: BtnDef[] = [
@@ -109,7 +110,8 @@ export class Touch {
     const ctx = g.contextAction();
     const ib = this.btns.get('interact')!;
     ib.classList.toggle('hidden', !ctx);
-    if (ctx && ib.textContent !== ctx.toUpperCase()) ib.textContent = ctx.toUpperCase();
+    const label = ctx ? t(ctx).toUpperCase() : '';
+    if (ctx && ib.textContent !== label) ib.textContent = label;
     this.btns.get('fly')!.classList.toggle('hidden', !g.player.creative);
     this.btns.get('fly')!.classList.toggle('on', g.player.flying);
     this.btns.get('sneak')!.classList.toggle('on', g.input.touchSneak);
