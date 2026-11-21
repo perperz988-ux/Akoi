@@ -216,6 +216,9 @@ export class VehicleManager {
     return out;
   }
 
+  /** Rebuild visuals after repair (clears dents). */
+  refreshVisual(v: Vehicle) { v.dentGeoOwned = false; v.setColor(v.color); }
+
   explode(v: Vehicle) {
     if (v.exploded) return;
     const g = this.g;

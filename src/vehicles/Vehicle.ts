@@ -54,7 +54,7 @@ export class Vehicle {
   userData: any = {};
   missionId: string | null = null;
   lastDriverTime = 0;
-  sleeping = false;
+  sleeping = false; keepOwned = false;
   syncIfNeeded() { if (this.group.visible && (this.group.position.x !== this.x || this.group.position.z !== this.z)) this.syncTransform(); }
 
   constructor(def: VehicleDef, color: number, premium = false) {

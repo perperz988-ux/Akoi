@@ -213,7 +213,11 @@ export const POIS: Poi[] = [
   P('realestate', 'Bayline Realty', 'realestate', 450, -550, 9, 18, '#5eead4'),
   P('airport', 'Solano International', 'airport', -1050, -1250, 0, 24, '#cbd5e1'),
   P('helipad', 'Skyport Helipad', 'helipad', -950, -1450, 0, 24, '#cbd5e1'),
-  P('metro', 'Old Metro Line', 'metro', 50, -50, 0, 24, '#d6d3d1'),
+  P('metro', 'Old Metro: Central', 'metro', 50, -50, 0, 24, '#d6d3d1'),
+  P('metro_w', 'Old Metro: Ironside', 'metro', -850, 850, 0, 24, '#d6d3d1'),
+  P('metro_e', 'Old Metro: Ocean Mile', 'metro', 950, 350, 0, 24, '#d6d3d1'),
+  P('metro_s', 'Old Metro: Saltworks', 'metro', 50, 1250, 0, 24, '#d6d3d1'),
+  P('metro_n', 'Old Metro: Bellavista', 'metro', 850, -850, 0, 24, '#d6d3d1'),
 ];
 export function poiById(id: string) { return POIS.find((p) => p.id === id)!; }
 export function poiAtCell(ci: number, cj: number) { return POIS.find((p) => p.ci === ci && p.cj === cj); }

@@ -410,7 +410,6 @@ export class Player {
     this.updateCombat(dt, wl > 0.1 ? [wx, wz] : [Math.sin(this.yaw), Math.cos(this.yaw)]);
 
     // ---- interact / enter vehicle / phone / map
-    if (inp.consume('enter')) this.tryEnterVehicle();
 
     // visibility
     let vis = 1; if (this.crouch) vis *= 0.55; if (this.inCover) vis *= 0.6; vis *= 1 - g.env.night * 0.35 * (g.env.rainLevel > 0.2 ? 1 : 1); this.visibility = vis * (1 - this.skills.stealth * 0.15);
