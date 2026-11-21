@@ -1,0 +1,10 @@
+{
+  "appId": "com.portsolano.game",
+  "appName": "Port Solano",
+  "webDir": "dist",
+  "android": {
+    "allowMixedContent": false,
+    "backgroundColor": "#000000",
+    "webContentsDebuggingEnabled": false
+  }
+}
