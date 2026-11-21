@@ -1,4 +1,4 @@
-package com.akoi.voxel;
+package com.zpercraft.game;
 
 import android.os.Build;
 import android.os.Bundle;

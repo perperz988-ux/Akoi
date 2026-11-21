@@ -1,6 +1,6 @@
 # PORT SOLANO
 
-> This repository also contains **AKOI**, an original voxel sandbox survival game for Android — see [`voxel/README.md`](voxel/README.md).
+> This repository also contains **ZperCraft**, an original voxel sandbox survival game for Android — see [`voxel/README.md`](voxel/README.md).
 
 An original open-world crime-action game for Android phones (landscape, touch + gamepad).
 Everything — the city, story, characters, vehicles, weapons, audio — is original; there is no

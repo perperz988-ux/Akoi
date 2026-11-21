@@ -1,4 +1,4 @@
-# AKOI — an original voxel sandbox for Android
+# ZperCraft — an original voxel sandbox for Android
 
 Explore an endless procedurally generated block world, mine and gather, craft tools and buildings,
 survive the night against original creatures — or switch to Creative and build freely.
@@ -15,17 +15,17 @@ cd voxel
 npm install
 npm run dev          # desktop browser (WASD + mouse; touch controls appear automatically on touch devices)
 npm run build        # type-check + production bundle in dist/
-npm run build:html   # single standalone file: dist/akoi.html (a copy is kept in release/akoi.html)
+npm run build:html   # single standalone file: dist/zpercraft.html (a copy is kept in release/zpercraft.html)
 ```
 
 ### Android APK
 
 * **CI (recommended):** pushing changes under `voxel/` runs `.github/workflows/voxel-android.yml`, which builds
-  `app-debug.apk` and uploads it as the `akoi-voxel-debug-apk` artifact.
+  `app-debug.apk` and uploads it as the `zpercraft-debug-apk` artifact.
 * **Locally:** Android Studio (SDK 34, JDK 17), then `npm run android:sync && npm run android:open` and press *Run*
   (or `cd android && ./gradlew assembleDebug`).
 
-The native project (`android/`, package `com.akoi.voxel`) is landscape-only, immersive full-screen,
+The native project (`android/`, package `com.zpercraft.game`) is landscape-only, immersive full-screen,
 keeps the screen on, hardware accelerated, requires OpenGL ES 3, and maps the Android Back button to pause/close.
 
 ## Gameplay

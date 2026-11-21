@@ -1,8 +1,8 @@
 {
-  "name": "akoi-voxel",
+  "name": "zpercraft",
   "private": true,
   "version": "0.1.0",
-  "description": "AKOI - an original voxel sandbox survival game for Android",
+  "description": "ZperCraft - an original voxel sandbox survival game for Android",
   "type": "module",
   "scripts": {
     "dev": "vite --host",

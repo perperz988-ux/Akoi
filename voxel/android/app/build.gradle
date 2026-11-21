@@ -1,10 +1,10 @@
 apply plugin: 'com.android.application'
 
 android {
-    namespace "com.akoi.voxel"
+    namespace "com.zpercraft.game"
     compileSdk rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "com.akoi.voxel"
+        applicationId "com.zpercraft.game"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

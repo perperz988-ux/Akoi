@@ -1,6 +1,6 @@
 {
-  "appId": "com.akoi.voxel",
-  "appName": "Akoi",
+  "appId": "com.zpercraft.game",
+  "appName": "ZperCraft",
   "webDir": "dist",
   "android": {
     "allowMixedContent": false,

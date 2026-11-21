@@ -69,7 +69,7 @@ export class UI implements UIHooks {
     this.screens.inventory = this.overlay('inventory');
     this.screens.dialog = this.overlay('dialog');
     this.screens.dialog.style.zIndex = '20';
-    this.screens.loading = h('div', 'screen loading', `<div class="logo" style="font-size:54px">AKOI</div><div class="pb"><b></b></div><div class="small" id="lmsg"></div><div class="small" id="ltip" style="max-width:60vw;text-align:center"></div>`);
+    this.screens.loading = h('div', 'screen loading', `<div class="logo" style="font-size:48px">Zper<span class="c2">Craft</span></div><div class="pb"><b></b></div><div class="small" id="lmsg"></div><div class="small" id="ltip" style="max-width:60vw;text-align:center"></div>`);
     root.appendChild(this.screens.loading);
     this.screens.dead = h('div', 'screen death', `<h1>FALLEN</h1><div id="dmsg"></div><div class="row"><button class="btn amber" id="respawn">Rise again</button><button class="btn" id="dquit">Save &amp; quit</button></div>`);
     root.appendChild(this.screens.dead);
@@ -149,12 +149,12 @@ export class UI implements UIHooks {
   private buildMenu() {
     const m = h('div', 'screen menu');
     m.innerHTML = `<div class="col">
-      <div><div class="logo">AKOI<span class="dot">.</span></div><div class="tagline">Shape the wild lands</div></div>
+      <div><div class="logo">Zper<span class="c2">Craft</span></div><div class="tagline">Shape the wild lands</div></div>
       <button class="mbtn primary" data-a="play"><span class="gem"></span>PLAY</button>
       <button class="mbtn" data-a="create"><span class="gem"></span>CREATE WORLD</button>
       <button class="mbtn" data-a="settings"><span class="gem"></span>SETTINGS</button>
       <button class="mbtn" data-a="credits"><span class="gem"></span>CREDITS</button>
-    </div><div class="ver">AKOI v0.1 · original voxel sandbox</div>`;
+    </div><div class="ver">ZperCraft v0.1 · original voxel sandbox</div>`;
     m.querySelectorAll('.mbtn').forEach((b) => b.addEventListener('click', () => {
       const a = (b as HTMLElement).dataset.a!;
       this.game.audio.unlock();
@@ -239,7 +239,7 @@ export class UI implements UIHooks {
     const s = this.screens.credits;
     s.innerHTML = '';
     const p = h('div', 'panel credits', `<div class="head"><h2>Credits</h2><button class="x" id="cl">✕</button></div><div class="body">
-      <p><b>AKOI</b> — an original voxel sandbox about shaping the wild lands.</p>
+      <p><b>ZperCraft</b> — an original voxel sandbox about shaping the wild lands.</p>
       <p>Design, code, world generation, creatures, textures, sounds and music were all created procedurally for this game. No external art or audio assets are used: every texture is painted by code at start-up and every sound is synthesized live.</p>
       <p>Creatures: Mossback, Hopkin, Glimmerwing, Gloomling, Crag Crawler and Stingwisp.</p>
       <p>Built with <b>three.js</b> (MIT licence) for WebGL rendering and <b>Capacitor</b> (MIT licence) for the Android shell.</p>
