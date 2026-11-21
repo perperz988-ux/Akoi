@@ -19,6 +19,7 @@ export class Settings {
   firstRun = true;
   aimAssist = true;
   forceTouch = false;
+  cheatsButton = false;
 
   toJSON() { return { ...this }; }
   load(j: any) { if (j) Object.assign(this, j); }

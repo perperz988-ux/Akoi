@@ -29,6 +29,7 @@ export class PedManager {
   private tmpV: Vehicle[] = [];
   private updateIdx = 0;
   wildlife: Wildlife;
+  enabled = true;
 
 
   constructor(private g: Game) {
@@ -272,7 +273,7 @@ export class PedManager {
     this.spawnT -= dt;
     const cap = g.quality.pedCap;
     let civCount = 0; for (const n of this.npcs) if (n.faction === 'civ' && !n.vehicle) civCount++;
-    if (this.spawnT <= 0 && civCount < cap) { this.spawnT = 0.15; for (let k = 0; k < 3; k++) this.ringSpawn(); }
+    if (this.spawnT <= 0 && civCount < cap && this.enabled) { this.spawnT = 0.15; for (let k = 0; k < 3; k++) this.ringSpawn(); }
     const R = g.quality.simRadius + 40;
     const t = g.time;
     for (let i = this.npcs.length - 1; i >= 0; i--) {

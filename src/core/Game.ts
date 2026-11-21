@@ -31,7 +31,8 @@ import { Hud } from '../ui/Hud';
 import { TouchControls } from '../ui/TouchControls';
 import { POIS, Poi, poiById, cellOf } from '../world/CityLayout';
 import { clamp } from './MathUtil';
-import { defaultLoadout } from '../combat/Weapons';
+import { defaultLoadout, WEAPON_ORDER, WEAPONS } from '../combat/Weapons';
+import { Cheats } from '../cheats/Cheats';
 
 export type GameState = 'boot' | 'title' | 'playing';
 
@@ -50,6 +51,8 @@ export class Game {
   vehicles!: VehicleManager; traffic!: Traffic; peds!: PedManager; police!: Police; emergency!: Emergency; combat!: Combat; props!: DynProps;
   markers!: Markers; interiors!: Interiors; economy!: Economy; missions!: MissionSystem; events!: RandomEvents; saves!: SaveSystem; hud!: Hud; touch!: TouchControls;
   dynRes = new DynamicResolution();
+  cheats = new Cheats(this);
+  freeRoam = false;
   state: GameState = 'boot';
   paused = false;
   time = 0;
@@ -216,28 +219,36 @@ export class Game {
   saveSettings() { this.saves.saveSettings(this.settings.toJSON()); }
 
   // ------------------------------------------------------------------------------------ lifecycle
-  async newGame(slot: number) {
+  async newGame(slot: number, freeRoam = false) {
     this.hud.closeMenu();
     this.saves.currentSlot = slot;
     await this.hud.fade(true, 0.3);
     this.hud.showTitle(false);
     // reset state
-    this.economy = new Economy(this); this.missions = new MissionSystem(this); this.vehicles.owned = [];
+    this.freeRoam = freeRoam; this.economy = new Economy(this); this.missions = new MissionSystem(this); this.missions.disabled = freeRoam; this.vehicles.owned = [];
     this.player.loadout = defaultLoadout(); this.player.health = 100; this.player.armor = 0; this.player.mode = 'foot'; this.player.group.visible = true;
-    const home = this.poi('safe_midtown');
+    const home = this.poi(freeRoam ? 'safe_beach' : 'safe_midtown');
     this.player.teleport(home.x, home.z + 3, Math.PI);
-    this.env.frozen = false; this.env.setHour(9.2); this.env.setWeather('clear');
+    this.env.frozen = false; this.env.setHour(freeRoam ? 12 : 9.2); this.env.setWeather('clear');
+    if (freeRoam) this.setupFreeRoam();
     this.police.clearWanted();
     await this.loadAround(home.x, home.z);
     this.cam.snapBehind(Math.PI);
     this.state = 'playing'; this.paused = false;
-    const g = this.poi('garage_vance');
-    this.markers.setWaypoint(g.x, g.z + 6);
-    this.hud.toast('Welcome to Port Solano. Head to Vance Motorworks — the yellow marker.', 5);
-    this.hud.subtitle('Kit', 'Eight years. Time to see who still remembers my name.', 5);
+    if (freeRoam) { this.hud.toast('FREE ROAM — no missions. Open the CHEATS button (top) for anything you want.', 6); }
+    else { const g = this.poi('garage_vance'); this.markers.setWaypoint(g.x, g.z + 6); this.hud.toast('Welcome to Port Solano. Head to Vance Motorworks — the yellow marker.', 5); this.hud.subtitle('Kit', 'Eight years. Time to see who still remembers my name.', 5); }
     await this.hud.fade(false, 0.5);
     this.audio.init();
     this.saves.save(slot);
+  }
+
+  /** Sandbox start: money, weapons, properties and contacts unlocked; missions disabled. */
+  private setupFreeRoam() {
+    const e = this.economy, p = this.player;
+    e.money = 1000000; for (const id of ['safe_midtown', 'safe_beach', 'safe_island']) e.properties.add(id);
+    for (const id of ['odessa', 'teo', 'hart', 'juno']) { this.missions.friendsUnlocked.add(id); e.friends[id] = 60; }
+    for (const id of WEAPON_ORDER) if (id !== 'fists') p.giveWeapon(id, WEAPONS[id].mag * 6);
+    p.armor = 100;
   }
 
   async loadSlot(slot: number) {
@@ -253,6 +264,7 @@ export class Game {
   /** Called by SaveSystem.load */
   async applySave(d: any) {
     this.economy = new Economy(this); this.missions = new MissionSystem(this); this.vehicles.owned = [];
+    this.freeRoam = !!d.world?.freeRoam; this.missions.disabled = this.freeRoam;
     this.economy.fromSave(d.economy); this.missions.fromSave(d.missions);
     this.player.mode = 'foot'; this.player.group.visible = true; this.player.fromSave(d.player);
     const w = d.world ?? {};
@@ -340,6 +352,7 @@ export class Game {
   // ------------------------------------------------------------------------------------ input shortcuts
   private onKey(e: KeyboardEvent) {
     if (this.state !== 'playing') return;
+    if (e.code === 'F1') { e.preventDefault(); if (!this.paused) this.cheats.open(); return; }
     if (e.code === 'Escape') { if (this.hud.menuOpen) this.hud.closeMenu(); else if (this.hud.phoneOpen) this.hud.togglePhone(false); else if (this.hud.mapOpen) this.hud.openMap(false); else this.hud.togglePause(); }
   }
 
@@ -359,6 +372,7 @@ export class Game {
     requestAnimationFrame((t) => this.loop(t));
     let dt = (now - this.last) / 1000; this.last = now;
     dt = clamp(dt, 0.001, 0.05);
+    if (this.cheats.slowmo && this.state === 'playing') dt *= 0.3;
     this.input.poll();
     try {
       if (this.state === 'title') this.updateTitle(dt);
@@ -394,6 +408,7 @@ export class Game {
     const sens = (p.aiming ? 0.6 : 1) * (inp.lastDevice === 'touch' ? 1 : 1);
     if (inp.lookX || inp.lookY) { this.cam.addLook(inp.lookX, inp.lookY, sens, this.settings.invertY); }
     // simulate
+    this.cheats.update();
     p.update(dt);
     this.interiors.update(dt);
     const inInterior = !!this.interiors.active;

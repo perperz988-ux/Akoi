@@ -11,6 +11,7 @@ interface Ev { id: string; kind: string; x: number; z: number; t: number; npcs: 
 export class RandomEvents {
   events: Ev[] = [];
   private timer = 45;
+  enabled = true;
   private rng = new Rng(9001);
   constructor(private g: Game) {}
 
@@ -36,7 +37,7 @@ export class RandomEvents {
     const g = this.g;
     if (g.interiors.active || g.missions.active || g.police.wantedLevel > 0 || g.player.mode === 'dead') { return this.tick(dt); }
     this.timer -= dt;
-    if (this.timer <= 0 && this.events.filter((e) => !e.done).length < 2) { this.timer = this.rng.range(70, 140); this.spawnRandom(); }
+    if (this.enabled && this.timer <= 0 && this.events.filter((e) => !e.done).length < 2) { this.timer = this.rng.range(70, 140); this.spawnRandom(); }
     this.tick(dt);
   }
 

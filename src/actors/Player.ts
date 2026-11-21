@@ -81,7 +81,7 @@ export class Player {
 
   /** Player takes damage. */
   hurt(amount: number, kind: string, source?: any, dx = 0, dz = 0) {
-    if (this.mode === 'dead' || this.invuln > 0) return;
+    if (this.mode === 'dead' || this.invuln > 0 || this.game.cheats.god) return;
     const g = this.game;
     if (this.armor > 0) { const a = Math.min(this.armor, amount * 0.65); this.armor -= a; amount -= a; }
     this.health -= amount; this.hitFlash = 1; this.lastCombatT = g.time;
@@ -199,7 +199,7 @@ export class Player {
       case 'entering': this.updateEntering(dt); break;
       case 'climb': this.updateClimb(dt); break;
       case 'cutscene': this.hum.animate(dt, 0, 'idle'); break;
-      default: this.updateFoot(dt);
+      default: if (this.game.cheats.noclip) this.updateNoclip(dt); else this.updateFoot(dt);
     }
     this.syncMesh();
   }
@@ -296,6 +296,7 @@ export class Player {
     else if (this.sprinting) speed = 7.4 + this.skills.stamina * 1.0;
     else speed = mag < 0.4 ? 1.7 : 4.3;
     if (this.stunned > 0) speed = 0;
+    if (g.cheats.superSpeed) speed *= 2.6;
     if (swimDepth > 0.3 && swimDepth <= 1.05) speed *= 0.65;
     const tx = wx * speed * (this.mode === 'swim' ? Math.min(1, mag) : Math.min(1, mag * 1.15)), tz = wz * speed * (this.mode === 'swim' ? Math.min(1, mag) : Math.min(1, mag * 1.15));
     const accel = this.onGround || this.mode === 'swim' ? 11 : 2.2;
@@ -337,7 +338,7 @@ export class Player {
     this.coyote = this.onGround ? 0.12 : Math.max(0, this.coyote - dt);
     if (inp.consume('jump') && this.mode !== 'roll' && !this.inCover) {
       if (this.mode === 'swim') { this.vy = 0; }
-      else if (this.coyote > 0 && !this.crouch) { this.vy = 7.4; this.onGround = false; this.coyote = 0; this.fallStartY = this.y; g.audio.jump(); this.noise = Math.max(this.noise, 16); }
+      else if (this.coyote > 0 && !this.crouch) { this.vy = g.cheats.superJump ? 17 : 7.4; this.onGround = false; this.coyote = 0; this.fallStartY = this.y; g.audio.jump(); this.noise = Math.max(this.noise, 16); }
       else if (this.crouch) this.crouch = false;
     }
     if (this.mode === 'swim') { this.vy = 0; this.y = lerp(this.y, WATER_Y - 0.95, 1 - Math.exp(-8 * dt)); }
@@ -425,6 +426,18 @@ export class Player {
     this.hum.animate(dt, sp, pose, { crouch: this.crouch, aimPitch: 0, sprint: this.sprinting });
   }
   meleeAnim = 0; autoClimb = true;
+
+  private updateNoclip(dt: number) {
+    const g = this.game, inp = g.input;
+    const cy = g.cam.forwardYaw, sp = inp.isHeld('sprint') ? 70 : 22;
+    const fx = Math.sin(cy), fz = Math.cos(cy), rx = -Math.cos(cy), rz = Math.sin(cy);
+    const wx = fx * inp.moveY + rx * inp.moveX, wz = fz * inp.moveY + rz * inp.moveX;
+    const up = (inp.isHeld('jump') ? 1 : 0) - (inp.isHeld('crouch') ? 1 : 0);
+    this.x += wx * sp * dt; this.z += wz * sp * dt; this.y += up * sp * 0.6 * dt; this.vy = 0; this.vx = this.vz = 0; this.onGround = false; this.fallStartY = this.y;
+    if (Math.hypot(wx, wz) > 0.1) this.yaw = dampAngle(this.yaw, Math.atan2(wx, wz), 10, dt);
+    inp.consume('jump'); inp.consume('crouch');
+    this.hum.animate(dt, 0, 'idle');
+  }
 
   private tryCover() {
     const col = this.game.col;

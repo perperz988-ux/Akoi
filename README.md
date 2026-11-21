@@ -52,6 +52,15 @@ helicopter, roadblocks, search phase, arrests); ambulances and fire crews; wildl
 dealer, garage tuning/paint, properties, passive-income businesses, relationships with 4 contacts);
 phone, GPS route, full map; 3 save slots + autosave.
 
+## Free Roam & Cheats
+
+* Title screen → **Free Roam (sandbox, no missions)**: starts at the beach condo with $1,000,000, all weapons, all
+  safehouses and contacts unlocked; missions/jobs are disabled (random street events can be switched off).
+* **⚡ CHEATS** button (always shown in Free Roam; in the story enable it in *Pause → Cheats*; `F1` on keyboard):
+  god mode, infinite stamina/ammo, super jump/speed, fly/noclip, slow motion, money & unlock-all, wanted level
+  control (never wanted / set 1–5 ★), spawn any of the 30 vehicles, time/weather/traffic/pedestrian controls,
+  explosions, spawn gang or police, indestructible vehicle, infinite nitro, teleport to any location or waypoint.
+
 ## Controls
 
 Touch: floating joystick (left), drag the right side to look, context button (enter vehicles/shops, talk,

@@ -323,6 +323,7 @@ export class MissionSystem {
   tipsGiven = 0;
   private rng = new Rng(31337);
   sideRuns = 0;
+  disabled = false;
 
   constructor(private g: Game) { this.missions = buildStory(g); }
 
@@ -331,6 +332,7 @@ export class MissionSystem {
   chapterName() { const c = [...this.completed].filter((id) => !id.startsWith('side_')).length; return c === 0 ? 'Prologue' : c >= 12 ? 'Epilogue' : `Chapter ${Math.ceil(c / 3)}: ${CHAPTER_NAMES[Math.min(3, Math.floor((c - 1) / 3))]}`; }
 
   available(): Mission[] {
+    if (this.disabled) return [];
     return this.missions.filter((m) => !this.completed.has(m.id) || m.repeatable).filter((m) => m.requires.every((r) => this.completed.has(r)));
   }
   startBlips(): Blip[] {
@@ -346,7 +348,7 @@ export class MissionSystem {
   // ------------------------------------------------------------ starting & running
   start(id: string) {
     const g = this.g, m = this.missions.find((x) => x.id === id);
-    if (!m || this.active) return;
+    if (!m || this.active || this.disabled) return;
     if (g.police.wantedLevel > 0 && !m.failOnWanted) { g.hud?.toast('Lose the cops first'); return; }
     const steps = m.build(g);
     const run: Run = {

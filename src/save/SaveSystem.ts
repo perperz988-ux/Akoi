@@ -47,7 +47,7 @@ export class SaveSystem {
       economy: g.economy.toSave(),
       missions: g.missions.toSave(),
       world: {
-        hour: g.env.hour, day: g.env.day, weather: g.env.weather, wanted: g.police.wantedLevel, heat: g.police.heat,
+        freeRoam: g.freeRoam, hour: g.env.hour, day: g.env.day, weather: g.env.weather, wanted: g.police.wantedLevel, heat: g.police.heat,
         vehicles: g.vehicles.owned.map((o) => { const live = g.vehicles.list.find((v) => v.ownerId === o.uid); if (live) { o.x = live.x; o.z = live.z; o.yaw = live.yaw; o.health = live.health; o.mods = { ...live.mods }; o.color = live.color; o.premium = live.premium; } return { ...o }; }),
         currentVehicle: p.vehicle?.ownerId ?? null,
         waypoint: g.markers.waypoint,
@@ -62,7 +62,7 @@ export class SaveSystem {
     this.currentSlot = slot;
     const snap = this.snapshot();
     await this.writeRaw(KEY(slot), JSON.stringify(snap));
-    const info: SlotInfo = { slot, used: true, time: snap.time, money: snap.economy.money, chapter: this.g.missions.chapterName(), playTime: snap.player.stats.timePlayed, day: snap.world.day, name: 'Kit Calder' };
+    const info: SlotInfo = { slot, used: true, time: snap.time, money: snap.economy.money, chapter: this.g.freeRoam ? 'Free Roam' : this.g.missions.chapterName(), playTime: snap.player.stats.timePlayed, day: snap.world.day, name: 'Kit Calder' };
     await this.writeRaw(KEY(slot) + '.meta', JSON.stringify(info));
     this.lastSaveAt = this.g.time;
     return true;

@@ -37,6 +37,7 @@ export class Hud {
     <div class="hud-top-left"><canvas id="minimap" class="interactive" width="264" height="264"></canvas>
       <div class="hud-info"><div class="chip" id="place"><b>—</b></div><div class="chip" id="clock">09:30</div>
         <div class="bar hp"><i id="hpbar"></i></div><div class="bar ar"><i id="arbar"></i></div><div class="bar st"><i id="stbar"></i></div></div></div>
+    <div id="cheatBtn" class="btn hit" style="position:absolute;top:calc(var(--sat) + 150px);right:calc(var(--sar) + 12px);padding:5px 10px;font-size:12px;display:none;pointer-events:auto">⚡ CHEATS</div>
     <div class="hud-top-right"><div id="money">$0</div><div id="moneyDelta"></div><div id="stars"><i>★</i><i>★</i><i>★</i><i>★</i><i>★</i></div><div id="weaponBox"><div class="w" id="wname"></div><div id="wammo"></div></div></div>
     <div id="speedo"><div class="kmh" id="kmh">0</div><div class="u">km/h · <span class="gear" id="gear">N</span></div><div id="rpmbar"><i></i></div><div id="nitrobar"><i></i></div><div id="vehHealth"><i></i></div><div id="radioTag"></div></div>
     <div id="crosshair"></div><div id="hitmark"></div>
@@ -61,6 +62,7 @@ export class Hud {
     this.boot = this.el.boot; this.fpsEl = this.el.fps;
     this.mini = (this.el.place.parentElement!.parentElement!.querySelector('#minimap') as HTMLCanvasElement).getContext('2d')!;
     $('#minimap', ui).addEventListener('click', () => this.openMap());
+    $('#cheatBtn', ui).addEventListener('click', () => { g.audio.uiClick(); g.cheats.open(); });
     $('#menuClose', ui).addEventListener('click', () => this.closeMenu());
     $('#phoneClose', ui).addEventListener('click', () => this.togglePhone(false));
     $('#mapClose', ui).addEventListener('click', () => this.openMap(false));
@@ -235,7 +237,7 @@ export class Hud {
   private pauseTab = 'save';
   private renderPause() {
     const g = this.g, tabs = this.el.pauseTabs, body = this.el.pauseBody;
-    const list: [string, string][] = [['save', 'Save / Load'], ['graphics', 'Graphics'], ['controls', 'Controls'], ['audio', 'Audio'], ['help', 'Help']];
+    const list: [string, string][] = [['save', 'Save / Load'], ['graphics', 'Graphics'], ['controls', 'Controls'], ['audio', 'Audio'], ['cheats', 'Cheats'], ['help', 'Help']];
     tabs.innerHTML = ''; for (const [id, t] of list) { const b = h(`<div class="tab ${this.pauseTab === id ? 'on' : ''}">${t}</div>`); b.addEventListener('click', () => { this.pauseTab = id; this.renderPause(); g.audio.uiClick(); }); tabs.appendChild(b); }
     body.innerHTML = '';
     const S = g.settings;
@@ -268,6 +270,10 @@ export class Hud {
       btn('Edit touch layout (drag buttons)', () => { this.togglePause(false); g.touch.setEditing(true); this.showLayoutBar(); }, 'primary');
       btn('Reset touch layout', () => { g.touch.resetLayout(); this.toast('Layout reset'); });
       body.appendChild(h(`<div class="sub">Controller: ${g.input.gamepadConnected ? 'connected ✓' : 'press any button on your gamepad to connect'} — Left stick move, right stick camera, RT/LT accelerate/brake or fire/aim, A jump, B dodge, X attack, Y enter/exit, LB weapon, RB cover/horn, D-pad ↑ phone, Start pause, Select map.</div>`));
+    } else if (this.pauseTab === 'cheats') {
+      body.appendChild(h(`<div class="sub">Cheats are for sandbox fun. In the story they can make missions trivial — saves still work.</div>`));
+      chk('Show ⚡ CHEATS button on screen', S.cheatsButton, (v) => { S.cheatsButton = v; });
+      btn('Open cheat menu', () => { this.togglePause(false); setTimeout(() => g.cheats.open(), 50); }, 'primary');
     } else if (this.pauseTab === 'audio') {
       rng('Master', 0, 1, 0.05, S.volMaster, (v) => { S.volMaster = v; g.audio.setVolumes({ master: v }); });
       rng('Effects & engines', 0, 1, 0.05, S.volSfx, (v) => { S.volSfx = v; g.audio.setVolumes({ sfx: v }); });
@@ -299,16 +305,17 @@ export class Hud {
     this.g.saves.listSlots().then((slots) => {
       const last = slots.filter((s) => s.used).sort((a, b) => b.time - a.time)[0];
       if (last) add(`Continue — Slot ${last.slot}`, 'primary', () => this.g.loadSlot(last.slot));
-      add('New Game', last ? '' : 'primary', () => this.slotPicker());
+      add('New Game (Story)', last ? '' : 'primary', () => this.slotPicker());
+      add('Free Roam (sandbox, no missions)', '', () => this.slotPicker(false, true));
       if (last) add('Load Game', '', () => this.slotPicker(true));
       add('Settings', '', () => this.titleSettings());
     });
     $('#tipline', t).textContent = `Detected: ${this.g.recommended.reason} → ${this.g.recommended.preset} · v1.0`;
   }
-  private slotPicker(load = false) {
-    this.openMenu({ title: load ? 'Load Game' : 'New Game — choose a slot', subtitle: load ? 'Pick a save' : 'Existing saves in a slot are overwritten when you save', build: () => [{ label: 'Loading…', disabled: true }], onClose: () => {} });
+  private slotPicker(load = false, free = false) {
+    this.openMenu({ title: load ? 'Load Game' : free ? 'Free Roam — choose a slot' : 'New Game — choose a slot', subtitle: load ? 'Pick a save' : 'Existing saves in a slot are overwritten when you save', build: () => [{ label: 'Loading…', disabled: true }], onClose: () => {} });
     this.g.saves.listSlots().then((slots) => {
-      this.menuDef = { title: load ? 'Load Game' : 'New Game — choose a slot', subtitle: '', build: () => slots.filter((s) => !load || s.used).map((s) => ({ label: `Slot ${s.slot}`, sub: s.used ? `${s.chapter} · ${formatMoney(s.money)} · ${Math.floor(s.playTime / 60)} min` : 'Empty', action: () => { if (load) this.g.loadSlot(s.slot); else this.g.newGame(s.slot); } })) };
+      this.menuDef = { title: load ? 'Load Game' : 'New Game — choose a slot', subtitle: '', build: () => slots.filter((s) => !load || s.used).map((s) => ({ label: `Slot ${s.slot}`, sub: s.used ? `${s.chapter} · ${formatMoney(s.money)} · ${Math.floor(s.playTime / 60)} min` : 'Empty', action: () => { if (load) this.g.loadSlot(s.slot); else this.g.newGame(s.slot, free); } })) };
       this.renderMenu();
     });
   }
@@ -319,6 +326,7 @@ export class Hud {
     const g = this.g, p = g.player, e = this.el;
     this.frames++; this.fpsT += dt; if (this.fpsT >= 0.5) { if (g.settings.showFps && this.fpsEl) this.fpsEl.textContent = `${Math.round(this.frames / this.fpsT)} fps · ${g.quality.name} · ${Math.round(g.dynRes.scale * 100)}% · tris ${(g.renderer.info.render.triangles / 1000) | 0}k · calls ${g.renderer.info.render.calls} · veh ${g.vehicles.list.length} npc ${g.peds.npcs.length}`; this.frames = 0; this.fpsT = 0; }
     if (g.state !== 'playing') return;
+    const cb = document.getElementById('cheatBtn')!; cb.style.display = (g.freeRoam || g.settings.cheatsButton) && !g.paused && !g.interiors.active ? 'inline-flex' : 'none';
     // damage flash
     this.hitT -= dt; if (this.hitT <= 0 && e.damage.style.opacity !== '0') e.damage.style.opacity = String(p.health < 30 ? 0.35 + Math.sin(g.time * 6) * 0.15 : 0);
     // bars
