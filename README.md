@@ -42,7 +42,7 @@ subtitles, checkpoints, fail conditions, retry-from-checkpoint and rewards. Plus
 gang shootouts, vehicle fires, stranded motorists, thieves on the run).
 
 **Systems.** Player (walk/jog/sprint/jump/crouch/swim/climb/dodge-roll/cover/stealth takedowns),
-8 fictional weapons (fists, bat, taser, pistol, SMG, shotgun, rifle, grenade), 24 original vehicles
+8 fictional weapons (fists, bat, taser, pistol, SMG, shotgun, rifle, grenade), 30 original vehicles
 (sports, super, muscle, sedans, SUVs, pickups, bikes, boats, jet-ski, helicopter, service vehicles) with
 tyre-slip driving model, suspension, gearbox, nitro, damage + dents + fire + explosions, working
 headlights/brake lights/sirens, interiors and drivers; traffic with lights/yielding; pedestrians with
