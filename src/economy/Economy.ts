@@ -172,7 +172,7 @@ export class Economy {
         { label: 'Rent a Kite H3 (1 use)', sub: 'Spawns on the pad', price: 1500, action: () => { if (this.spend(1500, 'Heli rental')) { g.interiors.exit(); g.vehicles.spawn('kite_h3', p.x + 6, p.z - 10, 0, 'owned', 0xe8e8e8); g.hud?.toast('Helicopter is ready on the pad'); } else g.hud?.toast('Not enough money'); } },
       ]);
       case 'dealer': return mk('Solano Motorhaus', () => this.dealerRows(p, ['sports', 'super', 'muscle', 'sedan', 'compact', 'suv', 'pickup', 'bike']));
-      case 'marina': return mk('Vela Marina', () => this.dealerRows(p, ['boat', 'jetski'], { x: p.x + 12, z: p.z - 70, yaw: Math.PI / 2 }));
+      case 'marina': return mk('Vela Marina', () => this.dealerRows(p, ['boat', 'jetski'], { x: 1218, z: p.z - 60, yaw: Math.PI / 2 }));
       case 'garage': return mk(p.name, () => this.garageRows(p));
       case 'safehouse': return mk(p.name, () => this.safehouseRows(p));
       case 'realestate': return mk('Bayline Realty', () => this.realtyRows());

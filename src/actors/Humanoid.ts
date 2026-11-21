@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 
 export interface Outfit { skin: number; shirt: number; pants: number; hair: number; shoes?: number; hat?: number; vest?: number }
 export const SKINS = [0xf1c9a5, 0xd9a577, 0xb97c50, 0x8a5a3a, 0x5e3b27, 0xe8b894];
@@ -12,6 +13,17 @@ const limbGeo = (w: number, h: number, d: number) => {
   if (!geoCache[k]) { const g = new THREE.BoxGeometry(w, h, d); g.translate(0, -h / 2, 0); geoCache[k] = g; }
   return geoCache[k];
 };
+const boxCache = new Map<string, THREE.BufferGeometry>();
+const sharedBox = (w: number, h: number, d: number) => { const k = `${w}_${h}_${d}`; let g = boxCache.get(k); if (!g) { g = new THREE.BoxGeometry(w, h, d); boxCache.set(k, g); } return g; };
+const lowMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.85 });
+const lowCache = new Map<string, THREE.BufferGeometry>();
+function lowGeo(o: Outfit) {
+  const key = `${o.skin}_${o.shirt}_${o.pants}_${o.hair}`; let g = lowCache.get(key); if (g) return g;
+  const parts: THREE.BufferGeometry[] = [];
+  const add = (w: number, h: number, d: number, x: number, y: number, z: number, c: number) => { const b = new THREE.BoxGeometry(w, h, d).toNonIndexed(); b.translate(x, y, z); b.deleteAttribute('uv'); const col = new THREE.Color(c), n = b.getAttribute('position').count, a = new Float32Array(n * 3); for (let i = 0; i < n; i++) { a[i * 3] = col.r; a[i * 3 + 1] = col.g; a[i * 3 + 2] = col.b; } b.setAttribute('color', new THREE.BufferAttribute(a, 3)); parts.push(b); };
+  add(0.5, 0.58, 0.28, 0, 1.25, 0, o.shirt); add(0.22, 0.25, 0.23, 0, 1.69, 0, o.skin); add(0.24, 0.1, 0.25, 0, 1.8, 0, o.hat ?? o.hair); add(0.17, 0.9, 0.17, -0.12, 0.45, 0, o.pants); add(0.17, 0.9, 0.17, 0.12, 0.45, 0, o.pants); add(0.12, 0.55, 0.12, -0.31, 1.2, 0, o.shirt); add(0.12, 0.55, 0.12, 0.31, 1.2, 0, o.shirt);
+  g = mergeGeometries(parts)!; lowCache.set(key, g); return g;
+}
 const matCache = new Map<number, THREE.MeshStandardMaterial>();
 export function cMat(c: number, rough = 0.8) {
   const key = c * 10 + Math.round(rough * 9);
@@ -37,6 +49,7 @@ export class Humanoid {
   phase = Math.random() * 6; blend = { walk: 0, aim: 0, sit: 0, fall: 0, swim: 0, climb: 0, hands: 0, punch: 0, phone: 0, cover: 0 };
   punchT = 0; punchHand = 0;
   scale = 1;
+  lowMesh: THREE.Mesh; far = false;
 
   constructor(public outfit: Outfit, scale = 1) {
     this.scale = scale;
@@ -44,15 +57,15 @@ export class Humanoid {
     this.root.add(this.body);
     this.body.add(this.hips);
     this.hips.position.y = 0.95;
-    this.torso = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.58, 0.26), cMat(o.shirt));
+    this.torso = new THREE.Mesh(sharedBox(0.46, 0.58, 0.26), cMat(o.shirt));
     this.torso.position.y = 0.3; this.torso.castShadow = true;
     this.hips.add(this.torso);
-    if (o.vest) { const v = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.4, 0.28), cMat(o.vest)); v.position.y = 0.34; this.hips.add(v); }
-    this.head = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.25, 0.23), cMat(o.skin));
+    if (o.vest) { const v = new THREE.Mesh(sharedBox(0.48, 0.4, 0.28), cMat(o.vest)); v.position.y = 0.34; this.hips.add(v); }
+    this.head = new THREE.Mesh(sharedBox(0.22, 0.25, 0.23), cMat(o.skin));
     this.head.position.y = 0.74; this.head.castShadow = true;
-    const hair = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.1, 0.25), cMat(o.hat ?? o.hair));
+    const hair = new THREE.Mesh(sharedBox(0.24, 0.1, 0.25), cMat(o.hat ?? o.hair));
     hair.position.y = 0.1; this.head.add(hair);
-    if (o.hat) { const brim = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.02, 0.3), cMat(o.hat)); brim.position.y = 0.05; this.head.add(brim); }
+    if (o.hat) { const brim = new THREE.Mesh(sharedBox(0.28, 0.02, 0.3), cMat(o.hat)); brim.position.y = 0.05; this.head.add(brim); }
     this.hips.add(this.head);
     const mkArm = (g: THREE.Group, fore: THREE.Group, x: number) => {
       g.position.set(x, 0.55, 0);
@@ -70,11 +83,18 @@ export class Humanoid {
       g.add(up);
       shin.position.y = -0.46; g.add(shin);
       const lo = new THREE.Mesh(limbGeo(0.15, 0.46, 0.15), cMat(o.pants)); shin.add(lo);
-      const shoe = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.08, 0.26), cMat(o.shoes ?? 0x222222)); shoe.position.set(0, -0.46, 0.04); shin.add(shoe);
+      const shoe = new THREE.Mesh(sharedBox(0.16, 0.08, 0.26), cMat(o.shoes ?? 0x222222)); shoe.position.set(0, -0.46, 0.04); shin.add(shoe);
       this.hips.add(g);
     };
     mkLeg(this.legL, this.shinL, -0.12); mkLeg(this.legR, this.shinR, 0.12);
+    this.lowMesh = new THREE.Mesh(lowGeo(o), lowMat); this.lowMesh.visible = false; this.root.add(this.lowMesh);
     this.root.scale.setScalar(scale);
+  }
+
+  /** Switch between the animated rig and a single-draw-call silhouette for distant NPCs. */
+  setFar(far: boolean) {
+    if (far === this.far) return; this.far = far;
+    this.body.visible = !far; this.lowMesh.visible = far;
   }
 
   setOutfit(o: Outfit) {
@@ -84,6 +104,7 @@ export class Humanoid {
 
   /** Drive the animation.  speed = m/s horizontal, flags drive the pose blend targets. */
   animate(dt: number, speed: number, pose: Pose, extra: { crouch?: boolean; aimPitch?: number; sprint?: boolean } = {}) {
+    if (this.far) { this.lowMesh.rotation.x = pose === 'fallen' ? -Math.PI / 2 : 0; this.lowMesh.position.y = pose === 'fallen' ? 0.2 : 0; return; }
     const b = this.blend;
     const k = (v: number, t: number, r = 10) => v + (t - v) * (1 - Math.exp(-r * dt));
     const walking = pose === 'walk' || pose === 'idle' || pose === 'aim' || pose === 'punch' || pose === 'dodge';

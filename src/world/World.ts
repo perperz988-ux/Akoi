@@ -627,38 +627,37 @@ export class World {
     }
   }
 
+  private plane(ctx: Ctx, x: number, z: number, color: number) {
+    const g = ctx.geo;
+    g.box(x - 14, 0.8, z - 1.6, x + 14, 4.4, z + 1.6, 0xf2f4f6); g.box(x + 14, 1.6, z - 1.2, x + 17, 3.8, z + 1.2, 0xf2f4f6);
+    g.box(x - 3, 1.6, z - 15, x + 4, 2.1, z + 15, 0xd9dde2); g.box(x - 13, 2.0, z - 5, x - 10, 2.4, z + 5, 0xd9dde2); g.box(x - 13, 2.4, z - 0.3, x - 10.5, 7.2, z + 0.3, color);
+    g.box(x - 2, 0, z - 8, x + 2, 0.8, z - 6, 0x333333); g.box(x - 2, 0, z + 6, x + 2, 0.8, z + 8, 0x333333); g.box(x + 11, 0, z - 0.4, x + 13, 0.8, z + 0.4, 0x333333);
+    ctx.colliders.push({ x0: x - 14, z0: z - 15, x1: x + 17, z1: z + 15, y0: 0, y1: 4.4, kind: 'building' });
+  }
+
   private buildAirport(ctx: Ctx, lot: Lot) {
-    const { geo, ci, cj } = ctx;
+    const { geo, ci, cj, rng } = ctx;
     const x0 = L.lineCoord(ci), z0 = L.lineCoord(cj);
     geo.rect(x0, z0, x0 + L.CELL, z0 + L.CELL, 0.03, 0x6f9a52);
-    // runway runs east-west along z = -1450 .. -1410 (rows cj 1)
+    // runway (east-west, z -1500..-1460) and taxiway / apron
     const runwayZ0 = -1500, runwayZ1 = -1460;
     if (z0 + L.CELL > runwayZ0 && z0 < runwayZ1) {
       const a = Math.max(z0, runwayZ0), b = Math.min(z0 + L.CELL, runwayZ1);
       geo.rect(x0, a, x0 + L.CELL, b, 0.05, 0x3b3d42);
       if (ctx.lod === 0) for (let x = x0 + 5; x < x0 + L.CELL - 6; x += 18) geo.rect(x, (runwayZ0 + runwayZ1) / 2 - 0.4, x + 8, (runwayZ0 + runwayZ1) / 2 + 0.4, 0.06, 0xf0f0f0);
     }
-    // taxiway / apron
-    if (z0 + L.CELL > -1400 && z0 < -1350) geo.rect(x0, Math.max(z0, -1400), x0 + L.CELL, Math.min(z0 + L.CELL, -1350), 0.05, 0x4a4c52);
-    // terminal complex near x -1050, z -1250
-    if (ci === 15 && cj === 3) {
-      this.addBuilding(ctx, x0 + 6, z0 + 20, x0 + 96, z0 + 60, 14, 0xdfe6ea);
-      geo.glow(x0 + 10, 9, z0 + 60.1, x0 + 92, 11, z0 + 60.3, 0x7ad0ff);
+    if (z0 + L.CELL > -1440 && z0 < -1340) geo.rect(x0, Math.max(z0, -1440), x0 + L.CELL, Math.min(z0 + L.CELL, -1340), 0.05, 0x4a4c52);
+    if (ctx.lod === 1) { if (ci === 3 && cj === 2) { this.addBuilding(ctx, x0 + 30, z0 + 30, x0 + 70, z0 + 70, 12, 0x9aa0a6); } return; }
+    // hangars on the western cells, control tower, parked aircraft along the apron
+    if (cj === 2 && ci >= 1 && ci <= 3) { this.addBuilding(ctx, x0 + 10, z0 + 10, x0 + 90, z0 + 58, 13, 0x9aa0a6, true); }
+    if (cj === 2 && ci === 4) {
+      this.addBuilding(ctx, x0 + 40, z0 + 20, x0 + 48, z0 + 28, 34, 0xcfd3d8);
+      geo.glow(x0 + 38, 34, z0 + 18, x0 + 50, 38, z0 + 30, 0x9fe0ff); ctx.maxH = 38;
     }
-    if (ci === 15 && cj === 2) {
-      this.addBuilding(ctx, x0 + 40, z0 + 70, x0 + 48, z0 + 78, 36, 0xcfd3d8);
-      geo.glow(x0 + 38, 36, z0 + 68, x0 + 50, 40, z0 + 80, 0x9fe0ff);
-      ctx.maxH = 40;
-    }
-    if (ci === 14 && cj === 3) for (let i = 0; i < 2; i++) this.addBuilding(ctx, x0 + 10, z0 + 10 + i * 40, x0 + 50, z0 + 40 + i * 40, 12, 0x9aa0a6);
-    if (ci === 14 && cj === 1 && ctx.lod === 0) { // helipad
-      geo.rect(x0 + 40, z0 + 40, x0 + 60, z0 + 60, 0.07, 0x333640);
-      geo.rect(x0 + 44, z0 + 48, x0 + 46, z0 + 52, 0.08, 0xffd400); geo.rect(x0 + 54, z0 + 48, x0 + 56, z0 + 52, 0.08, 0xffd400); geo.rect(x0 + 46, z0 + 49, x0 + 54, z0 + 51, 0.08, 0xffd400);
-    }
-    if (ctx.lod === 0) {
-      // fence along edge of airport
-      if (ci === 15 && cj >= 2 && cj <= 5) this.addSolid(ctx, x0 + L.CELL - 0.3, 0, z0, x0 + L.CELL, 2.2, z0 + L.CELL, 0x777b80, 'wall');
-    }
+    if (cj === 1 && ci >= 1 && ci <= 5 && (ci + cj) % 2 === 0) this.plane(ctx, x0 + 50, z0 + 80, rng.pick([0x2e6db0, 0xc0392b, 0x3f8f5a, 0x111111]));
+    if (cj === 1 && ci === 6) { geo.rect(x0 + 30, z0 + 30, x0 + 70, z0 + 70, 0.07, 0x333640); geo.rect(x0 + 44, z0 + 44, x0 + 46, z0 + 56, 0.08, 0xffd400); geo.rect(x0 + 54, z0 + 44, x0 + 56, z0 + 56, 0.08, 0xffd400); geo.rect(x0 + 46, z0 + 49, x0 + 54, z0 + 51, 0.08, 0xffd400); }
+    if (ci === 7 && cj >= 0 && cj <= 5) this.addSolid(ctx, x0 + L.CELL - 0.3, 0, z0, x0 + L.CELL, 2.2, z0 + L.CELL, 0x777b80, 'wall');
+    void lot;
   }
 
   private buildRural(ctx: Ctx, lot: Lot) {

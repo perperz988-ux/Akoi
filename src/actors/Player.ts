@@ -55,7 +55,7 @@ export class Player {
   get alive() { return this.mode !== 'dead'; }
 
   teleport(x: number, z: number, yaw?: number, y?: number) {
-    this.x = x; this.z = z; this.y = y ?? Math.max(this.game.col.supportY(x, z, 0.3, 50), groundY(x, z));
+    this.x = x; this.z = z; this.y = y ?? Math.max(this.game.col.supportY(x, z, 0.3, 1.2), groundY(x, z));
     this.vx = this.vz = this.vy = 0; if (yaw !== undefined) this.yaw = yaw;
     this.syncMesh();
   }

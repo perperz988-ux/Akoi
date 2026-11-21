@@ -282,13 +282,14 @@ export class PedManager {
       if (d > R + 20 && !n.tag && !n.userData.keep && (n.faction === 'civ' || n.faction === 'gang') && !n.vehicle) { this.release(n); continue; }
       if (n.vehicle) { this.syncDriver(n); continue; }
       n.simLevel = d < 60 ? 0 : d < R ? 1 : 2;
+      n.hum.setFar(d > 32 && n.faction !== 'friend' && !n.tag);
       // reduced simulation for distant NPCs: update at lower rate
       const ud = n.userData; ud.acc = (ud.acc ?? 0) + dt;
       const interval = n.simLevel === 0 ? 0 : n.simLevel === 1 ? 0.25 : 1.0;
-      if (ud.acc < interval) { n.group.visible = n.simLevel === 0 || (n.simLevel === 1 && d < 130); this.tickAnim(n, dt); continue; }
+      if (ud.acc < interval) { n.group.visible = n.simLevel === 0 || (n.simLevel === 1 && d < this.g.quality.simRadius * 0.62); this.tickAnim(n, dt); continue; }
       const sdt = ud.acc; ud.acc = 0;
       this.think(n, sdt, d);
-      n.group.visible = d < 130 && n.state !== 'inside';
+      n.group.visible = d < this.g.quality.simRadius * 0.62 && n.state !== 'inside';
       n.syncMesh(sdt, t);
     }
     // bubbles
