@@ -1,0 +1,38 @@
+name: Build AKOI voxel APK
+
+on:
+  push:
+    paths: [ 'voxel/**', '.github/workflows/voxel-android.yml' ]
+  workflow_dispatch:
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: voxel
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: voxel/package-lock.json
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: 17 }
+      - name: Accept Android licenses (SDK is preinstalled on ubuntu-latest)
+        run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null || true
+      - name: Install & build web bundle
+        run: |
+          npm ci
+          npm run build
+      - name: Sync Capacitor
+        run: npx cap sync android
+      - name: Build debug APK
+        working-directory: voxel/android
+        run: chmod +x gradlew && ./gradlew assembleDebug --no-daemon
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: akoi-voxel-debug-apk
+          path: voxel/android/app/build/outputs/apk/debug/app-debug.apk

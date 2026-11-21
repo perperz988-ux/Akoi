@@ -1,0 +1,10 @@
+{
+  "appId": "com.akoi.voxel",
+  "appName": "Akoi",
+  "webDir": "dist",
+  "android": {
+    "allowMixedContent": false,
+    "backgroundColor": "#0b1320",
+    "webContentsDebuggingEnabled": false
+  }
+}
