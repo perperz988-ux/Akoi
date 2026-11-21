@@ -6,6 +6,7 @@ import {
 import { FEATURE, Generator, placeFeature } from './Generator';
 import * as Store from '../save/Storage';
 import type { GeomData, MeshOutput } from './Mesher';
+import WorldWorker from './worker?worker&inline';
 
 export interface Stack { id: number; count: number; dur?: number }
 
@@ -57,7 +58,7 @@ function workers(): Worker[] {
   if (sharedWorkers) return sharedWorkers;
   const n = Math.max(1, Math.min(4, (navigator.hardwareConcurrency || 4) - 1));
   sharedWorkers = [];
-  for (let i = 0; i < n; i++) sharedWorkers.push(new Worker(new URL('./worker.ts', import.meta.url), { type: 'module' }));
+  for (let i = 0; i < n; i++) sharedWorkers.push(new WorldWorker());
   return sharedWorkers;
 }
 

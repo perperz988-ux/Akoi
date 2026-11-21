@@ -7,7 +7,8 @@ export default defineConfig({
     outDir: 'dist',
     chunkSizeWarningLimit: 2000,
     assetsInlineLimit: 0,
+    rollupOptions: { output: { inlineDynamicImports: true } },
   },
-  worker: { format: 'es' },
+  worker: { format: 'iife' },
   server: { host: true },
 });

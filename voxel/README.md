@@ -15,6 +15,7 @@ cd voxel
 npm install
 npm run dev          # desktop browser (WASD + mouse; touch controls appear automatically on touch devices)
 npm run build        # type-check + production bundle in dist/
+npm run build:html   # single standalone file: dist/akoi.html (a copy is kept in release/akoi.html)
 ```
 
 ### Android APK
