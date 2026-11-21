@@ -7,6 +7,7 @@ export default defineConfig({
     outDir: 'dist',
     chunkSizeWarningLimit: 2000,
     assetsInlineLimit: 0,
+    rollupOptions: { output: { inlineDynamicImports: true } },
   },
   server: { host: true },
 });
