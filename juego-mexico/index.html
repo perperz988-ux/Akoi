@@ -185,6 +185,14 @@
   @media (prefers-reduced-motion:reduce){ .picado,.logo-stars i,.ticker-move,.menu-left{animation:none} }
   @media (max-width:700px){ .menu-shade{background:linear-gradient(0deg,rgba(18,6,22,.95) 0%,rgba(18,6,22,.75) 55%,rgba(18,6,22,.25) 100%)} .menu-wrap{align-items:flex-end;padding-top:70px} .pitch{font-size:14px} }
   @media (max-height:500px){ .eyebrow{display:none} .picado{height:40px} .menu-wrap{padding-top:52px;padding-bottom:40px} .logo-main{font-size:clamp(40px,8vw,64px)} .logo-top{font-size:20px} .logo-stars{margin:6px 0 2px;font-size:18px} .pitch{display:none} .mode{padding:9px 14px} .mode-txt b{font-size:17px} .mode-txt small{font-size:11px} .mode-ico{font-size:24px} .menu-mini{margin-top:10px} .ticker{height:30px;font-size:12px} }
+  #touch .cbtn{display:none}
+  body.driving #touch .cbtn{display:flex}
+  body.driving #touch #tFire, body.driving #touch #tA, body.driving #touch #tW{display:none}
+  #touch #tCL{left:calc(16px + env(safe-area-inset-left,0px));bottom:22px;width:80px;height:80px;font-size:30px;right:auto}
+  #touch #tCR{left:calc(108px + env(safe-area-inset-left,0px));bottom:22px;width:80px;height:80px;font-size:30px;right:auto}
+  #touch #tCG{right:calc(18px + env(safe-area-inset-right,0px));bottom:24px;width:86px;height:86px;font-size:32px;left:auto}
+  #touch #tCB{right:calc(116px + env(safe-area-inset-right,0px));bottom:18px;width:66px;height:66px;font-size:26px;left:auto}
+  @media (max-height:500px){ #touch #tCL,#touch #tCR{width:68px;height:68px;bottom:14px} #touch #tCR{left:calc(94px + env(safe-area-inset-left,0px))} #touch #tCG{width:72px;height:72px;bottom:14px} #touch #tCB{width:56px;height:56px;right:98px;bottom:12px} }
 </style>
 </head>
 <body>
@@ -220,7 +228,8 @@
 <div id="touch">
   <div id="tpad"></div><div id="joy"><i></i></div>
   <div class="tbtn" id="tFire">🔫</div><div class="tbtn" id="tA">🎯</div><div class="tbtn" id="tF">🚗</div>
-  <div class="tbtn" id="tJ">⤒</div><div class="tbtn" id="tE">E</div><div class="tbtn" id="tW">🔄</div><div class="tbtn" id="tC">📷</div>
+  <div class="tbtn" id="tJ">⤒</div>
+  <div class="tbtn cbtn" id="tCL">◀</div><div class="tbtn cbtn" id="tCR">▶</div><div class="tbtn cbtn" id="tCG">▲</div><div class="tbtn cbtn" id="tCB">▼</div><div class="tbtn" id="tE">E</div><div class="tbtn" id="tW">🔄</div><div class="tbtn" id="tC">📷</div>
 </div>
 
 <div id="start">
@@ -250,6 +259,7 @@
         <li><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> moverte hacia donde ves · <b>mouse</b> mueve la cámara · <kbd>Shift</kbd> correr · <kbd>Espacio</kbd> saltar / freno de mano</li>
         <li><b>Clic</b> disparar o golpear · <b>clic derecho</b> apuntar · <kbd>Q</kbd>/rueda o <kbd>1</kbd>-<kbd>4</kbd> cambiar arma · <kbd>R</kbd> recargar</li>
         <li><kbd>F</kbd> subirte o bajarte de un carro (también robarlo) · <kbd>E</kbd> platicar, vender carros, seguir diálogos</li>
+        <li><b>Carro:</b> <kbd>W</kbd> acelerar · <kbd>S</kbd> frenar/reversa · <kbd>A</kbd><kbd>D</kbd> girar · <kbd>Espacio</kbd> freno de mano. En celular: ◀ ▶ girar, ▲ acelerar, ▼ frenar/reversa, ⤒ freno de mano.</li>
         <li><kbd>C</kbd> cámara · <kbd>H</kbd> claxon · <kbd>V</kbd> voces · <kbd>Esc</kbd> pausa · <kbd>M</kbd> trucos (mundo abierto)</li>
         <li><b>Celular:</b> joystick a la izquierda, arrastra a la derecha para mirar, 🔫 dispara con auto-apuntado, 🎯 apunta, 🚗 sube o baja del carro.</li>
         <li>Para quitarte las estrellas, sal de la vista de la policía hasta que se cansen de buscarte.</li>
@@ -1372,6 +1382,8 @@ function playerPos(){ return state.inCar? state.inCar : P; }
 const keys={};
 const joy={x:0,y:0,active:false,id:null,ox:0,oy:0};
 const look={id:null,lx:0,ly:0};
+let carMode='classic';
+const carTouch={L:false,R:false,G:false,B:false};
 let camYaw=0, camPitch=.3, camUserT=0, aiming=false, touchAim=false, firing=false, pointerLocked=false;
 function rotateCam(dx,dy,k){ camYaw-=dx*k; camPitch=clamp(camPitch+dy*k*.8,-.3,1.15); camUserT=2.2; }
 addEventListener('keydown',e=>{
@@ -1427,6 +1439,11 @@ if(isTouch){
   const tap=(id,fn)=>$(id).addEventListener('touchstart',e=>{ e.preventDefault(); e.stopPropagation(); initAudio(); fn(); },{passive:false});
   tap('tE',()=>action()); tap('tC',()=>{ state.camMode=(state.camMode+1)%3; }); tap('tF',()=>enterExit()); tap('tW',()=>cycleWeapon(1));
   tap('tJ',()=>{ if(state.inCar){ state.inCar.hand=true; setTimeout(()=>{ if(state.inCar) state.inCar.hand=false; },500); } else jump(); });
+  const hold=(id,k)=>{ const el=$(id);
+    el.addEventListener('touchstart',e=>{ e.preventDefault(); e.stopPropagation(); initAudio(); carTouch[k]=true; el.classList.add('on'); },{passive:false});
+    const up=e=>{ e.preventDefault(); e.stopPropagation(); carTouch[k]=false; el.classList.remove('on'); };
+    el.addEventListener('touchend',up,{passive:false}); el.addEventListener('touchcancel',up,{passive:false}); };
+  hold('tCL','L'); hold('tCR','R'); hold('tCG','G'); hold('tCB','B');
   tap('tA',()=>{ touchAim=!touchAim; $('tA').classList.toggle('on',touchAim); });
   const fb=$('tFire');
   fb.addEventListener('touchstart',e=>{ e.preventDefault(); e.stopPropagation(); initAudio(); fb.classList.add('on'); startFire(); },{passive:false});
@@ -1812,13 +1829,33 @@ function updatePlayer(dt){
   if(state.punchT>0) state.punchT-=dt;
   if(state.inCar){
     const v=state.inCar;
-    const up=ctl&&(kUp||joy.y>.3), down=ctl&&(kDn||joy.y<-.3);
-    v.thr = up?1:(down?-1:0); v.brake=0;
-    if(down && v.v>0.5){ v.thr=0; v.brake=1; }
+    let up=false, st=0;
+    v.brake=0;
+    if(carMode==='dir'){
+      // como a pie: empujas hacia donde quieres ir (relativo a la cámara)
+      let ix=0, iy=0; if(ctl){ ix=(kR?1:0)-(kL?1:0)+(joy.active?joy.x:0); iy=(kUp?1:0)-(kDn?1:0)+(joy.active?joy.y:0); }
+      const mag=Math.min(1,Math.hypot(ix,iy));
+      v.thr=0;
+      if(mag>.12){
+        const Fx=Math.sin(camYaw), Fz=Math.cos(camYaw), Rx=-Math.cos(camYaw), Rz=Math.sin(camYaw);
+        const want=Math.atan2(Fx*iy+Rx*ix, Fz*iy+Rz*ix), diff=wrapA(want-v.h);
+        if(Math.abs(diff)>2.1 && v.v<4){ // atrás: reversa
+          const back=wrapA(want-(v.h+Math.PI)); st=-clamp(back*2.2,-1,1); v.thr=-1;
+        } else {
+          st=clamp(diff*2.2,-1,1); v.thr=mag*(Math.abs(diff)>1.3?.35:1); up=true;
+          if(Math.abs(diff)>1.2 && v.v>13){ v.thr=0; v.brake=.6; }
+        }
+      } else if(Math.abs(v.v)>.3) v.brake=.35;
+    } else {
+      up=ctl&&(kUp||carTouch.G); const down=ctl&&(kDn||carTouch.B);
+      v.thr = up?1:(down?-1:0);
+      if(down && v.v>0.5){ v.thr=0; v.brake=1; }
+      st=((kL||carTouch.L)?1:0)-((kR||carTouch.R)?1:0);
+    }
     v.hand=(ctl&&keys.Space) || (v.hand&&isTouch);
     if(dlg.open||state.dead){ v.thr=0; v.brake=1; }
-    let st=((kL?1:0)-(kR?1:0)) - (joy.active?clamp(joy.x*1.3,-1,1):0); if(!ctl) st=0;
-    v.steer += (st-v.steer)*Math.min(1,dt*6);
+    if(!ctl) st=0;
+    v.steer += (st-v.steer)*Math.min(1,dt*7);
     player.visible=false; P.x=v.x; P.z=v.z;
     if(v.burnT>0 && Math.floor(state.t*2)%2) toast('¡Bájate, se va a explotar! (F)','#ff6b6b');
     if(engGain){ const r=Math.abs(v.v)/v.sp.max; engOsc.frequency.value=48+r*120+(up?12:0); engOsc2.frequency.value=24+r*60; engGain.gain.value=.05+r*.05; }
@@ -2195,7 +2232,7 @@ function updateCamera(dt,snap){
   let tp, tl, fov=62;
   if(state.inCar){
     const v=state.inCar, L=v.sp.L;
-    if(camUserT<=0||snap){ camYaw=snap?v.h:lerpA(camYaw,v.h,dt*2.5); camPitch+=(.32-camPitch)*Math.min(1,dt*2); }
+    if(camUserT<=0||snap){ camYaw=snap?v.h:lerpA(camYaw,v.h,dt*(carMode==='dir'?1.3:2.5)); camPitch+=(.32-camPitch)*Math.min(1,dt*2); }
     if(state.camMode===1){ const fx=Math.sin(v.h), fz=Math.cos(v.h); tp=new THREE.Vector3(v.x+fx*(L*.25), v.y+1.9+(v.type==='micro'?1.2:0), v.z+fz*(L*.25)); tl=new THREE.Vector3(v.x+fx*25,1.6,v.z+fz*25); }
     else { const d=(7.5+L)*(state.camMode===2?1.9:1); tl=new THREE.Vector3(v.x,v.y+1.5+(v.type==='micro'?1:0),v.z);
       tp=new THREE.Vector3(tl.x-Math.sin(camYaw)*Math.cos(camPitch)*d, tl.y+Math.sin(camPitch)*d+1, tl.z-Math.cos(camYaw)*Math.cos(camPitch)*d); }
@@ -2292,6 +2329,8 @@ function updateHUD(dt){
   const o=$('obj'), ot=state.running?objectiveText():null;
   if(ot){ o.style.display='block'; $('objTitle').textContent=ot[0]; $('objText').textContent=ot[1]; } else o.style.display='none';
   drawStars();
+  document.body.classList.toggle('driving',!!state.inCar&&state.running);
+  if(state.inCar && joy.id!==null){ joy.id=null; joy.active=false; joy.x=joy.y=0; $('joy').style.display='none'; }
   const w=state.weapon||'fists', it=inv[w];
   $('wpnName').textContent=WEAPONS[w].icon+' '+WEAPONS[w].name;
   $('wpnAmmo').textContent= w==='fists'?'':(state.reloadT>0?'recargando…':(cheats.infAmmo?it.clip+' / ∞':it.clip+' / '+it.ammo));
