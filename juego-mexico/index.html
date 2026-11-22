@@ -196,6 +196,20 @@
   #touch #tCG{right:calc(18px + env(safe-area-inset-right,0px));bottom:24px;width:86px;height:86px;font-size:32px;left:auto}
   #touch #tCB{right:calc(116px + env(safe-area-inset-right,0px));bottom:18px;width:66px;height:66px;font-size:26px;left:auto}
   @media (max-height:500px){ #touch #tCL,#touch #tCR{width:68px;height:68px;bottom:14px} #touch #tCR{left:calc(94px + env(safe-area-inset-left,0px))} #touch #tCG{width:72px;height:72px;bottom:14px} #touch #tCB{width:56px;height:56px;right:98px;bottom:12px} }
+  .mode[hidden]{display:none}
+  .mode.cont{background:linear-gradient(100deg,#7fffb0,#2fb35a);color:#052a14;box-shadow:0 6px 0 #146b33,0 12px 24px rgba(0,0,0,.45)}
+  #fade{position:fixed;inset:0;background:#000;opacity:0;pointer-events:none;z-index:9}
+  #tvOverlay{background:rgba(5,3,8,.86);z-index:12;flex-direction:column}
+  .tvwrap{display:flex;flex-direction:column;align-items:center;gap:12px;width:100%}
+  .tvframe{position:relative;background:#111;border-radius:18px;padding:14px 14px 26px;box-shadow:0 0 0 3px #2a2a2a,0 20px 50px rgba(0,0,0,.6);width:min(92vw,calc((100vh - 170px) * 1.78));max-width:900px}
+  #tvCanvas{display:block;width:100%;aspect-ratio:16/9;border-radius:8px;image-rendering:pixelated;background:#000}
+  .tvbrand{position:absolute;bottom:6px;left:0;right:0;text-align:center;font:700 10px Arial;color:#777;letter-spacing:2px}
+  .tvbtns{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+  .tvb{pointer-events:auto;cursor:pointer;font:700 15px "Rubik",system-ui,sans-serif;color:#f1e6dc;background:#252a32;border:1px solid rgba(255,255,255,.2);border-radius:10px;padding:10px 14px}
+  .tvb.on{background:#3a2a12;border-color:#ff8a1f;color:#ffcf8a}
+  .tvb.pad{min-width:70px;font-size:20px;padding:12px 18px}
+  .tvb.go{background:#ff8a1f;color:#1a0f00;border:0}
+  @media (max-height:500px){ .tvframe{padding:8px 8px 18px;width:min(70vw,calc((100vh - 120px) * 1.78))} .tvwrap{gap:6px} .tvb{padding:7px 10px;font-size:13px} .tvb.pad{padding:8px 14px} }
 </style>
 </head>
 <body>
@@ -245,6 +259,7 @@
       <div class="logo-stars" aria-hidden="true"><i>★</i><i>★</i><i>★</i><i>★</i><i>★</i></div>
       <p class="pitch">Acabas de llegar a la colonia. Róbate cualquier carro, platica con la banda, juégale al vivo con la tira y conviértete en leyenda del barrio.</p>
       <div class="mode-list">
+        <button class="mode cont" id="contBtn" hidden><span class="mode-ico">💾</span><span class="mode-txt"><b>Continuar</b><small id="contInfo"></small></span><span class="mode-go">▶</span></button>
         <button class="mode" id="storyBtn"><span class="mode-ico">📖</span><span class="mode-txt"><b>Modo Historia</b><small>5 misiones · el primo Toño, Don Chuy y el comandante Ramírez</small></span><span class="mode-go">▶</span></button>
         <button class="mode alt" id="openBtn"><span class="mode-ico">🌎</span><span class="mode-txt"><b>Mundo Abierto</b><small>Sin reglas · policías, armas y menú de trucos</small></span><span class="mode-go">▶</span></button>
       </div>
@@ -272,11 +287,26 @@
   </div>
 </div>
 
+<div id="fade"></div>
+<div class="screen" id="tvOverlay" style="display:none">
+  <div class="tvwrap">
+    <div class="tvframe"><canvas id="tvCanvas" width="320" height="180"></canvas><div class="tvbrand">JoSubway F0n</div></div>
+    <div class="tvbtns">
+      <button class="tvb" id="tvCartoon">📺 Caricaturas</button>
+      <button class="tvb" id="tvConsole">🎮 JoSubway F0n</button>
+      <button class="tvb" id="tvClose">✕ Salir</button>
+      <button class="tvb" id="tvOff">⏻ Apagar</button>
+    </div>
+    <div class="tvbtns" id="tvGamePad"><button class="tvb pad" id="tvL">◀</button><button class="tvb pad go" id="tvGo">▲ JUGAR</button><button class="tvb pad" id="tvR">▶</button></div>
+  </div>
+</div>
+
 <div class="screen" id="pause" style="display:none">
   <div class="card">
     <h1>Pausa</h1>
     <p id="pauseInfo"></p>
     <button class="big" id="resumeBtn">Continuar</button>
+    <button class="big alt" id="saveBtn" style="margin-top:10px">💾 Guardar partida</button>
     <button class="big alt" id="menuBtn" style="margin-top:10px">Menú principal</button>
   </div>
 </div>
@@ -1390,6 +1420,9 @@ const carTouch={L:false,R:false,G:false,B:false};
 let camYaw=0, camPitch=.3, camUserT=0, aiming=false, touchAim=false, firing=false, pointerLocked=false;
 function rotateCam(dx,dy,k){ camYaw-=dx*k; camPitch=clamp(camPitch+dy*k*.8,-.3,1.15); camUserT=2.2; }
 addEventListener('keydown',e=>{
+  if(tv.overlay){ e.preventDefault(); if(e.repeat) return;
+    if(e.code==='Escape') closeTV(); else if(e.code==='ArrowLeft'||e.code==='KeyA') gameInput('L'); else if(e.code==='ArrowRight'||e.code==='KeyD') gameInput('R');
+    else if(['Space','Enter','ArrowUp','KeyW','KeyE'].includes(e.code)) gameInput('go'); return; }
   if(e.repeat) return;
   keys[e.code]=true;
   if(e.code==='KeyE'||e.code==='Enter'){ action(); }
@@ -1525,6 +1558,7 @@ function drawMinimap(){
   mg.fillStyle='#f2c418'; for(const t of topes){ if(t.axis==='z') mg.fillRect(px(t.streetC-S/2),pz(t.along)-1,S*sc,2); else mg.fillRect(px(t.along)-1,pz(t.streetC-S/2),2,S*sc); }
   mg.font='bold 22px Arial'; mg.textAlign='center'; mg.textBaseline='middle';
   mg.fillStyle='#ffcc00'; mg.fillText('$',px(YONKE.pos.x),pz(YONKE.pos.z));
+  if(HOUSE.door){ mg.fillStyle='#7fffb0'; mg.fillText('⌂',px(HOUSE.door.x),pz(HOUSE.door.z)); }
   if(SPOTS.cop){ mg.fillStyle='#7fb2ff'; mg.fillText('P',px(SPOTS.cop.x),pz(SPOTS.cop.z)); mg.fillStyle='#ff8a8a'; mg.fillText('+',px(SPOTS.hosp.x),pz(SPOTS.hosp.z)); }
   // zona de búsqueda
   if(state.wanted>0 && !state.seen){ mg.strokeStyle='rgba(80,140,255,.9)'; mg.lineWidth=3; mg.beginPath(); mg.arc(px(state.lastKnown.x),pz(state.lastKnown.z),(40+state.wanted*12)*sc,0,7); mg.stroke(); }
@@ -1713,6 +1747,7 @@ function action(){
   if(!state.running || state.paused || state.dead) return;
   initAudio();
   if(dlg.open){ advanceDialog(); return; }
+  if(houseAction()) return;
   // vender carro en el yonke (mundo abierto)
   if(state.inCar && inYonke()){
     if(state.mode==='story'){ storySell(); return; }
@@ -2065,7 +2100,7 @@ function updatePickups(dt){
 const D=(who,...ls)=>ls.map(l=>[who,l]);
 const STORY=[
   {m:'Misión 1',title:'Bienvenido a la Santa Martha',steps:[
-    {t:'dialog',lines:[...D('📞 Primo Toño','¡Primo! ¿Ya llegaste a la colonia? ¡Qué milagro!','Oye, aquí la cosa está dura, pero Don Chuy, el del yonke, siempre anda buscando gente.','Ve a verlo. Si quieres llegar más rápido, súbete a cualquier carro con la F… ya sabes cómo es aquí.'),['Tú','¿A cualquier carro? ¿Y si me ve la tira?'],...D('📞 Primo Toño','Pues te pelas, primo. Escóndete donde no te vean y al rato se les olvida. ¡Ándale!')]},
+    {t:'dialog',lines:[...D('📞 Primo Toño','¡Primo! ¿Ya llegaste a la colonia? ¡Qué milagro!','Oye, aquí la cosa está dura, pero Don Chuy, el del yonke, siempre anda buscando gente.','Ve a verlo. Si quieres llegar más rápido, súbete a cualquier carro con la F… ya sabes cómo es aquí.'),['Tú','¿A cualquier carro? ¿Y si me ve la tira?'],...D('📞 Primo Toño','Pues te pelas, primo. Escóndete donde no te vean y al rato se les olvida. ¡Ándale!','Ah, y ya te dejé las llaves de la casa, aquí en la Calle Allende. Tiene tele, cama y hasta mi JoSubway F0n. Ahí puedes guardar tu partida… digo, descansar.')]},
     {t:'goto',who:'chuy',label:'Ve con Don Chuy al yonke ($ en el mapa)'},
     {t:'dialog',lines:[...D('Don Chuy','Así que tú eres el primo del Toño. Tienes cara de que no rompes un plato… mmm.','Mira, el negocio es fácil: tú me traes carros, yo los desarmo y te pago.','Pero nada de traerme a la tira atrás, ¿eh? Si te persiguen, primero los pierdes y luego vienes.','Y toma, llévate esta pistola. Nomás pa\' que te respeten… no andes de loco.')]},
     {t:'give',w:'pistol',ammo:48},
@@ -2101,7 +2136,7 @@ const STORY=[
 ];
 const story={mi:0,si:0,step:null,timer:0,thief:null,bag:null,failPending:null,lostOnce:false};
 function storyStart(){ story.mi=0; startMission(); }
-function startMission(){ const m=STORY[story.mi]; story.si=0; banner(m.m,m.title); startStep(); }
+function startMission(){ const m=STORY[story.mi]; story.si=0; banner(m.m,m.title); startStep(); if(story.mi>0) saveGame(true); }
 function startStep(){
   const m=STORY[story.mi]; const st=m.steps[story.si]; story.step=st; story.timer=st.timer||0;
   if(st.t==='dialog'){ setTimeout(()=>{ if(state.mode==='story' && story.step===st && state.running) showDialog(st.lines,nextStep); }, story.si===0?1200:300); }
@@ -2242,10 +2277,10 @@ function updateCamera(dt,snap){
   } else {
     if(snap) camYaw=P.h;
     const gun=state.weapon!=='fists', aimNow=gun&&(aiming||touchAim);
-    const d=aimNow?3.1:5.4*(state.camMode===2?2:state.camMode===1?.65:1);
+    const d=HOUSE.inside?(aimNow?2.6:4.2):aimNow?3.1:5.4*(state.camMode===2?2:state.camMode===1?.65:1);
     const sh=aimNow?.75:0; const Rx=-Math.cos(camYaw), Rz=Math.sin(camYaw);
     tl=new THREE.Vector3(P.x+Rx*sh, P.y+1.65, P.z+Rz*sh);
-    const pit=aimNow?clamp(camPitch,-.2,.5):camPitch;
+    const pit=HOUSE.inside?clamp(camPitch,.5,1.1):aimNow?clamp(camPitch,-.2,.5):camPitch;
     tp=new THREE.Vector3(tl.x-Math.sin(camYaw)*Math.cos(pit)*d, tl.y+Math.sin(pit)*d, tl.z-Math.cos(camYaw)*Math.cos(pit)*d);
     if(aimNow) fov=50;
   }
@@ -2270,6 +2305,227 @@ function updateCamera(dt,snap){
   sun.position.set(pp.x+60,110,pp.z+40); sun.target.position.set(pp.x,0,pp.z);
   if(state.inCar){ const fx=Math.sin(state.inCar.h), fz=Math.cos(state.inCar.h); headL.position.set(pp.x+fx*2.5,1.4,pp.z+fz*2.5); headL.target.position.set(pp.x+fx*22,0,pp.z+fz*22); }
   else headL.position.set(0,-50,0);
+}
+
+// =====================================================================
+//  CASA DEL PERSONAJE, TELE, CONSOLA JoSubway F0n
+// =====================================================================
+const HOUSE={inside:false,door:null,spots:[],X:600,Z:600};
+const tvCanvas=document.getElementById('tvCanvas'), tvg=tvCanvas.getContext('2d');
+const tvTex=new THREE.CanvasTexture(tvCanvas); tvTex.encoding=THREE.sRGBEncoding;
+const tv={on:false,ch:'cartoon',t:0,overlay:false,best:0,game:null};
+try{ tv.best=+(localStorage.getItem('sm_toperunner_best')||0); }catch(_){}
+function buildHouse(){
+  // puerta en la calle
+  const b=blockRects.find(r=>r.i===3&&r.j===2);
+  const dz=b.z0+B*.5, fx=b.x0+SIDE;
+  HOUSE.door={x:fx-1.3,z:dz};
+  addBox(.14,2.3,1.5,colMat('#6b3f22'),fx-.05,1.37,dz);
+  addBox(.16,.12,1.7,colMat('#2b1b10'),fx-.06,2.55,dz);
+  const lb=makeLabel('🏠 TU CASA','#7fffb0',true); lb.scale.set(3.6,.9,1); lb.position.set(fx-.6,3.4,dz); scene.add(lb);
+  // interior
+  const X=HOUSE.X, Z=HOUSE.Z, W=9, D=7, H=3.2, x0=X-W/2, x1=X+W/2, z0=Z-D/2, z1=Z+D/2;
+  const g=new THREE.Group(); scene.add(g);
+  const floor=new THREE.Mesh(new THREE.PlaneGeometry(W,D),new THREE.MeshStandardMaterial({map:canvasTex(256,256,(c,w,h)=>{
+    for(let i=0;i<8;i++){ c.fillStyle=i%2?'#a8743f':'#b9824a'; c.fillRect(0,i*32,w,32); } c.strokeStyle='rgba(60,30,10,.4)'; for(let i=0;i<8;i++){ c.beginPath(); c.moveTo(0,i*32); c.lineTo(w,i*32); c.stroke(); for(let k=0;k<3;k++){ const x=(i*57+k*90)%w; c.beginPath(); c.moveTo(x,i*32); c.lineTo(x,i*32+32); c.stroke(); } }
+    noise(c,w,h,3000,.15,['#000','#fff']); },'piso'),roughness:.7}));
+  floor.rotation.x=-Math.PI/2; floor.position.set(X,.01,Z); floor.receiveShadow=true; g.add(floor);
+  const wallMat=new THREE.MeshStandardMaterial({map:canvasTex(256,128,(c,w,h)=>{ c.fillStyle='#9fd8c4'; c.fillRect(0,0,w,h);
+    for(let x=0;x<w;x+=16) for(let y=h-36;y<h;y+=12){ c.fillStyle=((x+y)/4)%2?'#1f5fa8':'#f4f4f4'; c.fillRect(x+1,y+1,14,10);} c.fillStyle='#1f5fa8'; c.fillRect(0,h-38,w,3); noise(c,w,h,1500,.12,['#000','#fff']); },'pared'),roughness:.9});
+  wallMat.map.wrapS=THREE.RepeatWrapping;
+  const wall=(w,h,d,x,y,z)=>{ const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),wallMat); m.position.set(x,y,z); m.receiveShadow=true; g.add(m); };
+  wall(W,H,.2,X,H/2,z0); wall(W,H,.2,X,H/2,z1); wall(.2,H,D,x0,H/2,Z); wall(.2,H,D,x1,H/2,Z);
+  colliders.push({x0:x0-1,x1:x1+1,z0:z0-1,z1:z0+.1},{x0:x0-1,x1:x1+1,z0:z1-.1,z1:z1+1},{x0:x0-1,x1:x0+.1,z0:z0,z1:z1},{x0:x1-.1,x1:x1+1,z0:z0,z1:z1});
+  // puerta interior
+  addBox(1.3,2.2,.08,colMat('#6b3f22'),X,1.1,z0+.12,g);
+  // tapete
+  const rug=new THREE.Mesh(new THREE.PlaneGeometry(3.4,2.2),new THREE.MeshStandardMaterial({map:canvasTex(128,96,(c,w,h)=>{ const cols=['#e6007e','#ff8a1f','#ffd21f','#2fb35a','#00a0e9','#9b4fd0']; for(let i=0;i<12;i++){ c.fillStyle=cols[i%6]; c.fillRect(0,i*8,w,8);} },'sarape')}));
+  rug.rotation.x=-Math.PI/2; rug.position.set(X,.02,Z+1); g.add(rug);
+  // sillón viendo a la tele (+z)
+  const sof=colMat('#7a2b2b');
+  addBox(2.6,.45,.9,sof,X,.35,Z-.2,g); addBox(2.6,.8,.25,sof,X,.75,Z-.62,g); addBox(.25,.6,.9,sof,X-1.3,.55,Z-.2,g); addBox(.25,.6,.9,sof,X+1.3,.55,Z-.2,g);
+  staticObs.push({x:X-.8,z:Z-.3,r:.6},{x:X+.8,z:Z-.3,r:.6});
+  // mesita con control de la consola
+  addBox(1.2,.4,.6,colMat('#5a3a22'),X,.2,Z+1,g); staticObs.push({x:X,z:Z+1,r:.55});
+  addBox(.32,.06,.18,colMat('#f2f2f2'),X+.2,.43,Z+1,g); addBox(.16,.04,.08,colMat('#111'),X+.2,.47,Z+1,g);
+  // mueble de la tele, tele y consola
+  addBox(2.4,.6,.55,colMat('#4a2f1c'),X,.3,z1-.4,g); staticObs.push({x:X-.6,z:z1-.4,r:.5},{x:X+.6,z:z1-.4,r:.5});
+  addBox(2.05,1.2,.1,colMat('#111'),X,1.3,z1-.45,g);
+  const scr=new THREE.Mesh(new THREE.PlaneGeometry(1.9,1.07),new THREE.MeshBasicMaterial({map:tvTex})); scr.position.set(X,1.3,z1-.51); scr.rotation.y=Math.PI; g.add(scr);
+  // JoSubway F0n (torre blanca)
+  const cx=X+.85, cz=z1-.42;
+  addBox(.2,.62,.45,colMat('#f6f6f6',{roughness:.25,metalness:.1}),cx,.91,cz,g); addBox(.06,.6,.46,colMat('#141414'),cx,.91,cz,g);
+  const led=new THREE.Mesh(new THREE.BoxGeometry(.02,.5,.02),new THREE.MeshBasicMaterial({color:0x3aa0ff})); led.position.set(cx-.04,.91,cz-.235); g.add(led); HOUSE.led=led;
+  const cl=makeLabel('JoSubway F0n','#8fd0ff'); cl.scale.set(1.8,.45,1); cl.position.set(cx,1.55,cz-.1); g.add(cl);
+  // cama
+  addBox(1.6,.45,2.2,colMat('#3a2a1a'),x1-1,.25,z0+1.4,g); addBox(1.5,.18,2.1,colMat('#e8e2d0'),x1-1,.55,z0+1.4,g);
+  addBox(1.5,.12,1.3,colMat('#c0392b'),x1-1,.66,z0+1.8,g); addBox(.9,.16,.4,colMat('#ffffff'),x1-1,.68,z0+.55,g);
+  staticObs.push({x:x1-1,z:z0+1.0,r:.8},{x:x1-1,z:z0+1.9,r:.8});
+  // mesa con mantel de hule y garrafón
+  addBox(1.4,.75,.9,colMat('#6b4a2a'),x0+1.2,.38,z0+1.3,g);
+  const mantel=new THREE.Mesh(new THREE.BoxGeometry(1.5,.02,1),new THREE.MeshStandardMaterial({map:canvasTex(64,64,(c,w,h)=>{ for(let i=0;i<8;i++) for(let k=0;k<8;k++){ c.fillStyle=(i+k)%2?'#d62f2f':'#fff'; c.fillRect(i*8,k*8,8,8);} },'hule')}));
+  mantel.position.set(x0+1.2,.77,z0+1.3); g.add(mantel); staticObs.push({x:x0+1.2,z:z0+1.3,r:.85});
+  const garr=new THREE.Mesh(new THREE.CylinderGeometry(.18,.18,.5,12),new THREE.MeshStandardMaterial({color:0x7fc8ff,transparent:true,opacity:.6})); garr.position.set(x0+.5,.25,z1-.5); g.add(garr);
+  // pósters
+  const poster=(txt,sub,bg,fg,x,z,ry)=>{ const m=new THREE.Mesh(new THREE.PlaneGeometry(.9,1.25),new THREE.MeshStandardMaterial({map:canvasTex(128,180,(c,w,h)=>{ c.fillStyle=bg; c.fillRect(0,0,w,h); c.fillStyle=fg; c.textAlign='center'; c.font='900 20px Impact, Arial Black'; c.fillText(txt,w/2,60); c.font='700 12px Arial'; c.fillText(sub,w/2,90); c.strokeStyle=fg; c.lineWidth=4; c.strokeRect(6,6,w-12,h-12); },'poster'+txt)})); m.position.set(x,1.7,z); m.rotation.y=ry; g.add(m); };
+  poster('LUCHA LIBRE','EL TOPAZO vs BACHECITO','#c0392b','#ffd21f',x0+.12,Z+1.5,Math.PI/2);
+  poster('SANTA MARTHA','F.C. · CAMPEONES 2024','#1f5fa8','#ffffff',x1-.12,Z+1.2,-Math.PI/2);
+  // ventana
+  const win=new THREE.Mesh(new THREE.PlaneGeometry(1.4,1),new THREE.MeshBasicMaterial({color:0xffc890})); win.position.set(x0+.12,1.8,Z-1.3); win.rotation.y=Math.PI/2; g.add(win);
+  addBox(.05,1.05,.06,colMat('#222'),x0+.14,1.8,Z-1.3,g); addBox(.05,.06,1.45,colMat('#222'),x0+.14,1.8,Z-1.3,g);
+  const lamp=new THREE.PointLight(0xfff0d0,1.3,16,1.5); lamp.position.set(X,2.9,Z); g.add(lamp);
+  addBox(.4,.1,.4,colMat('#fff4d0',{emissive:0x886644}),X,3.15,Z,g);
+  fixColors(g);
+  HOUSE.spots=[{id:'exit',x:X,z:z0+.9,txt:'para salir a la calle'},{id:'tv',x:X,z:z1-1.3,txt:'para ver la tele / jugar JoSubway F0n 📺'},{id:'bed',x:x1-2.2,z:z0+1.4,txt:'para dormir y guardar la partida 💾'}];
+  HOUSE.spawn={x:X,z:z0+1.4};
+}
+function enterHouse(silent){
+  if(state.wanted>0){ toast('¡La tira te está viendo! Piérdelos primero','#ff6b6b'); return; }
+  HOUSE.inside=true; P.x=HOUSE.spawn.x; P.z=HOUSE.spawn.z; P.h=0; P.vx=P.vz=0; P.y=0; camYaw=0; camPitch=.7;
+  fade(); updateCamera(0,true); if(!silent) toast('🏠 En tu casa','#7fffb0');
+}
+function exitHouse(){
+  HOUSE.inside=false; P.x=HOUSE.door.x; P.z=HOUSE.door.z; P.h=-Math.PI/2; P.vx=P.vz=0; camYaw=-Math.PI/2; camPitch=.3; fade(); updateCamera(0,true);
+}
+function fade(){ const f=$('fade'); f.style.transition='none'; f.style.opacity=1; requestAnimationFrame(()=>{ f.style.transition='opacity .5s'; f.style.opacity=0; }); }
+function houseSpot(){ if(!HOUSE.inside) return null; for(const s of HOUSE.spots){ if(Math.hypot(P.x-s.x,P.z-s.z)<1.5) return s; } return null; }
+function houseAction(){
+  if(state.inCar) return false;
+  if(!HOUSE.inside){ if(HOUSE.door && Math.hypot(P.x-HOUSE.door.x,P.z-HOUSE.door.z)<2.2){ enterHouse(); return true; } return false; }
+  const s=houseSpot(); if(!s) return false;
+  if(s.id==='exit') exitHouse();
+  if(s.id==='tv') openTV();
+  if(s.id==='bed'){ state.hp=100; if(saveGame()) { fade(); toast('😴 Dormiste rico. 💾 Partida guardada','#3fcf6e'); } }
+  return true;
+}
+
+// ---------- tele ----------
+function openTV(){ tv.on=true; tv.overlay=true; state.paused=true; releasePointer(); firing=false; $('tvOverlay').style.display='flex'; paintTVBtns(); }
+function closeTV(off){ tv.overlay=false; if(off) tv.on=false; $('tvOverlay').style.display='none'; state.paused=false; last=performance.now(); if(off){ tvg.fillStyle='#050505'; tvg.fillRect(0,0,320,180); tvTex.needsUpdate=true; } }
+function setChannel(ch){ tv.ch=ch; tv.t=0; tv.static=.35; if(ch==='console'){ tv.game={state:'boot',t:0,lane:1,lx:1,objs:[],speed:120,score:0,spawn:0,road:0}; } paintTVBtns(); }
+function paintTVBtns(){ $('tvCartoon').classList.toggle('on',tv.ch==='cartoon'); $('tvConsole').classList.toggle('on',tv.ch==='console'); $('tvGamePad').style.display=tv.ch==='console'?'flex':'none'; }
+function tvBeep(f,d,type){ if(!actx) return; const o=actx.createOscillator(), g=actx.createGain(); o.type=type||'square'; o.frequency.value=f; g.gain.setValueAtTime(.06,actx.currentTime); g.gain.exponentialRampToValueAtTime(.001,actx.currentTime+(d||.12)); o.connect(g); g.connect(actx.destination); o.start(); o.stop(actx.currentTime+(d||.12)); }
+function gameInput(k){
+  const G=tv.game; if(!G||tv.ch!=='console') return;
+  if(k==='go'){ if(G.state==='menu'||G.state==='over'){ G.state='play'; G.objs=[]; G.speed=120; G.score=0; G.lane=1; G.lx=1; G.spawn=0; tvBeep(660,.1); } return; }
+  if(G.state!=='play') return;
+  if(k==='L') G.lane=Math.max(0,G.lane-1); if(k==='R') G.lane=Math.min(2,G.lane+1); tvBeep(440,.05);
+}
+function drawTV(dt){
+  tv.t+=dt; const g=tvg, W=320, H=180;
+  if(!tv.on){ return; }
+  if(tv.ch==='cartoon') drawCartoon(g,tv.t,W,H); else drawConsole(g,dt,W,H);
+  if(tv.static>0){ tv.static-=dt; const id=g.getImageData(0,0,W,H), d=id.data; for(let i=0;i<d.length;i+=4){ const v=Math.random()*255; d[i]=d[i+1]=d[i+2]=v; } g.putImageData(id,0,0); }
+  // líneas de tele
+  g.fillStyle='rgba(0,0,0,.08)'; for(let y=0;y<H;y+=3) g.fillRect(0,y,W,1);
+  tvTex.needsUpdate=true;
+}
+// caricatura original: "Las aventuras de Tacolín"
+function drawCartoon(g,t,W,H){
+  const loop=t%26, night=Math.floor(t/26)%2===1;
+  const sky=g.createLinearGradient(0,0,0,H); sky.addColorStop(0,night?'#1b1f5a':'#5ec8ff'); sky.addColorStop(1,night?'#5a3a8a':'#c9f1ff'); g.fillStyle=sky; g.fillRect(0,0,W,H);
+  g.fillStyle=night?'#fff6c0':'#ffe14d'; g.beginPath(); g.arc(260,34,18,0,7); g.fill();
+  g.fillStyle='rgba(255,255,255,.9)'; for(let i=0;i<3;i++){ const x=((i*130-t*12)%440+440)%440-60; g.beginPath(); g.ellipse(x,30+i*12,24,9,0,0,7); g.ellipse(x+18,26+i*12,16,8,0,0,7); g.fill(); }
+  g.fillStyle=night?'#2f5a3a':'#6fbf5a'; g.beginPath(); g.moveTo(0,130); for(let x=0;x<=W;x+=8) g.lineTo(x,118+Math.sin((x+t*30)/40)*10); g.lineTo(W,H); g.lineTo(0,H); g.fill();
+  g.fillStyle=night?'#5a4630':'#c99a5a'; g.fillRect(0,140,W,40); g.fillStyle='rgba(0,0,0,.12)'; for(let x=0;x<W;x+=20) g.fillRect(((x-t*90)%W+W)%W,152,10,3);
+  // nopales que se acercan
+  const cx=((300-((t*90)%420))+420)%420-40;
+  g.fillStyle='#2e8b3e'; g.fillRect(cx,112,14,30); g.fillRect(cx-10,120,10,6); g.fillRect(cx-10,110,6,14); g.fillRect(cx+14,116,10,6); g.fillRect(cx+18,106,6,14);
+  // Tacolín salta cuando se acerca el nopal
+  const tx=120, dx=cx-tx, jump= dx<40&&dx>-30 ? Math.sin(clamp((40-dx)/70,0,1)*Math.PI)*46 : 0, ty=138-jump;
+  if(jump>1 && !tv._jumped){ tv._jumped=true; if(tv.overlay) tvBeep(520,.15,'sine'); } if(jump<1) tv._jumped=false;
+  const step=Math.sin(t*14)*5;
+  g.strokeStyle='#3b2a1a'; g.lineWidth=3; g.beginPath(); g.moveTo(tx-6,ty-4); g.lineTo(tx-8+step,ty+8); g.moveTo(tx+6,ty-4); g.lineTo(tx+8-step,ty+8); g.stroke();
+  g.fillStyle='#d23b2b'; g.fillRect(tx-12+step,ty+6,8,4); g.fillRect(tx+4-step,ty+6,8,4);
+  g.fillStyle='#f3c34a'; g.beginPath(); g.arc(tx,ty-6,22,Math.PI,0); g.closePath(); g.fill(); g.strokeStyle='#b8862a'; g.lineWidth=2; g.stroke();
+  g.fillStyle='#4caf50'; for(let i=-18;i<=18;i+=6){ g.beginPath(); g.arc(tx+i,ty-22+Math.abs(i)*.35,4,0,7); g.fill(); }
+  g.fillStyle='#e53935'; g.beginPath(); g.arc(tx-8,ty-20,3,0,7); g.arc(tx+9,ty-19,3,0,7); g.fill();
+  g.fillStyle='#fff'; g.beginPath(); g.arc(tx-6,ty-12,5,0,7); g.arc(tx+7,ty-12,5,0,7); g.fill(); g.fillStyle='#111'; g.beginPath(); g.arc(tx-5,ty-11,2.4,0,7); g.arc(tx+8,ty-11,2.4,0,7); g.fill();
+  g.strokeStyle='#5a2a10'; g.lineWidth=2; g.beginPath(); g.arc(tx+1,ty-6,5,.2,Math.PI-.2); g.stroke();
+  // el Firulais lo persigue
+  const fx=46+Math.sin(t*2)*8, fy=140-Math.abs(Math.sin(t*9))*6;
+  g.fillStyle='#8a5a2b'; g.beginPath(); g.ellipse(fx,fy-8,16,8,0,0,7); g.fill(); g.beginPath(); g.arc(fx+16,fy-14,7,0,7); g.fill();
+  g.fillStyle='#5a3a1a'; g.beginPath(); g.ellipse(fx+14,fy-20,3,6,-.4,0,7); g.fill();
+  g.strokeStyle='#8a5a2b'; g.lineWidth=3; g.beginPath(); g.moveTo(fx-15,fy-10); g.lineTo(fx-24,fy-18+Math.sin(t*20)*4); g.stroke();
+  g.beginPath(); for(const lx of [-10,-4,6,12]){ g.moveTo(fx+lx,fy-2); g.lineTo(fx+lx+Math.sin(t*18+lx)*3,fy+4); } g.stroke();
+  g.fillStyle='#111'; g.beginPath(); g.arc(fx+19,fy-15,1.5,0,7); g.fill();
+  // diálogos
+  const lines=['¡Con todo y salsa!','¡Firulais, ya déjame!','¡Guau guau!','¡Uy, un nopal!','¡Ahí voy, ahí voy!'];
+  const li=Math.floor(loop/4.5)%lines.length; if(loop>3.5 && (loop%4.5)<2.6){ const txt=lines[li], bx=li===2?fx+10:tx, by=(li===2?fy:ty)-50;
+    g.font='bold 11px Arial'; const w=g.measureText(txt).width+12; g.fillStyle='#fff'; g.strokeStyle='#111'; g.lineWidth=1.5; g.beginPath(); g.rect(bx-w/2,by-10,w,18); g.fill(); g.stroke(); g.fillStyle='#111'; g.textAlign='center'; g.fillText(txt,bx,by+3); }
+  // título del episodio
+  if(loop<3.2){ g.fillStyle='rgba(230,0,126,.85)'; g.fillRect(0,50,W,70); g.fillStyle='#ffd21f'; g.textAlign='center'; g.font='400 22px Bungee, Impact, Arial Black, sans-serif'; g.fillText('LAS AVENTURAS',W/2,80); g.fillText('DE TACOLÍN',W/2,106); g.fillStyle='#fff'; g.font='bold 9px Arial'; g.fillText(night?'Episodio 2: La noche del Firulais':'Episodio 1: Huyendo con salsa',W/2,116); }
+  g.fillStyle='rgba(255,255,255,.75)'; g.font='900 12px Arial'; g.textAlign='right'; g.fillText('5½',W-8,16);
+}
+// consola: arranque + "Tope Runner"
+function drawConsole(g,dt,W,H){
+  const G=tv.game; G.t+=dt;
+  if(G.state==='boot'){
+    g.fillStyle='#03060f'; g.fillRect(0,0,W,H);
+    const a=clamp(G.t/1.2,0,1); g.globalAlpha=a;
+    const gr=g.createLinearGradient(60,0,260,0); gr.addColorStop(0,'#3aa0ff'); gr.addColorStop(1,'#b46cff');
+    g.strokeStyle=gr; g.lineWidth=4; g.beginPath(); g.arc(W/2,90,46+Math.sin(G.t*3)*2,Math.PI*1.1,Math.PI*1.9); g.stroke();
+    g.fillStyle='#fff'; g.textAlign='center'; g.font='900 26px Arial'; g.fillText('JoSubway F0n',W/2,98); g.font='bold 9px Arial'; g.fillStyle='#8fd0ff'; g.fillText('S I S T E M A   D E   E N T R E T E N I M I E N T O',W/2,116);
+    g.globalAlpha=1;
+    if(G.t>0 && !G.chimed){ G.chimed=true; [392,523,659,784].forEach((f,i)=>setTimeout(()=>tvBeep(f,.25,'sine'),i*120)); }
+    if(G.t>2.6){ G.state='menu'; }
+    return;
+  }
+  const lanesX=[W/2-60,W/2,W/2+60];
+  g.fillStyle='#2b2d31'; g.fillRect(0,0,W,H); g.fillStyle='#3a3c41'; g.fillRect(W/2-90,0,180,H);
+  G.road=(G.road+dt*(G.state==='play'?G.speed:40))%24;
+  g.fillStyle='#f2c418'; for(const x of [W/2-30,W/2+30]) for(let y=-24+G.road;y<H;y+=24) g.fillRect(x-1,y,2,12);
+  g.fillStyle='#c9b99c'; g.fillRect(0,0,W/2-90,H); g.fillRect(W/2+90,0,W/2-90,H);
+  for(let y=-40+((G.road*2)%40);y<H;y+=40){ g.fillStyle='#e07aa4'; g.fillRect(8,y,30,26); g.fillStyle='#3f88c5'; g.fillRect(W-38,y+10,30,26); }
+  if(G.state==='play'){
+    G.speed+=dt*6; G.score+=dt*10; G.spawn-=dt;
+    if(G.spawn<=0){ G.spawn=Math.max(.35,1.1-G.speed/400); const lane=RI(0,2), r=rnd(); G.objs.push({lane,y:-20,k:r<.45?'tope':r<.75?'bache':'peso'}); }
+    for(const o of G.objs) o.y+=G.speed*dt;
+    G.objs=G.objs.filter(o=>o.y<H+30);
+  }
+  G.lx+=(G.lane-G.lx)*Math.min(1,dt*14);
+  for(const o of G.objs){ const x=lanesX[o.lane];
+    if(o.k==='tope'){ for(let i=0;i<6;i++){ g.fillStyle=i%2?'#111':'#f2c418'; g.fillRect(x-27+i*9,o.y-5,9,10); } }
+    else if(o.k==='bache'){ g.fillStyle='#141414'; g.beginPath(); g.ellipse(x,o.y,16,9,0,0,7); g.fill(); }
+    else if(!o.got){ g.fillStyle='#ffd21f'; g.beginPath(); g.arc(x,o.y,8,0,7); g.fill(); g.fillStyle='#8a5a00'; g.font='bold 10px Arial'; g.textAlign='center'; g.fillText('$',x,o.y+4); }
+  }
+  // carro del jugador
+  const px=W/2+(G.lx-1)*60, py=150;
+  g.fillStyle='#d11f1f'; g.fillRect(px-12,py-20,24,40); g.fillStyle='#1b2a33'; g.fillRect(px-9,py-12,18,10); g.fillRect(px-9,py+6,18,7); g.fillStyle='#fffbe0'; g.fillRect(px-10,py-21,6,3); g.fillRect(px+4,py-21,6,3);
+  if(G.state==='play'){
+    for(const o of G.objs){ if(o.lane!==Math.round(G.lx) || Math.abs(o.y-py)>20) continue;
+      if(o.k==='peso'&&!o.got){ o.got=true; G.score+=25; tvBeep(880,.08); }
+      else if(o.k!=='peso'){ G.state='over'; tvBeep(110,.4,'sawtooth'); if(G.score>tv.best){ tv.best=Math.floor(G.score); try{ localStorage.setItem('sm_toperunner_best',tv.best); }catch(_){} } } }
+  }
+  g.fillStyle='#fff'; g.textAlign='left'; g.font='900 13px Arial'; g.fillText('PUNTOS '+Math.floor(G.score),8,16); g.textAlign='right'; g.fillText('RÉCORD '+tv.best,W-8,16);
+  if(G.state==='menu'||G.state==='over'){
+    g.fillStyle='rgba(3,6,15,.75)'; g.fillRect(0,40,W,96); g.textAlign='center'; g.fillStyle='#ffd21f'; g.font='400 26px Bungee, Impact, Arial Black, sans-serif'; g.fillText(G.state==='over'?'¡TOPAZO!':'TOPE RUNNER',W/2,76);
+    g.fillStyle='#fff'; g.font='bold 11px Arial'; g.fillText(G.state==='over'?'Hiciste '+Math.floor(G.score)+' puntos':'Esquiva topes y baches, junta pesos',W/2,96);
+    g.fillStyle='#8fd0ff'; g.fillText((isTouch?'Toca ▲ JUGAR':'Espacio / ▲ para jugar')+' · ◀ ▶ cambiar de carril',W/2,116);
+  }
+  g.fillStyle='rgba(255,255,255,.35)'; g.font='bold 8px Arial'; g.textAlign='right'; g.fillText('JoSubway F0n',W-6,H-6);
+}
+
+// ---------- guardar partida ----------
+const SAVE_KEY='santaMartha_save_v1';
+function makeSave(){ return {v:1,mode:state.mode,mi:Math.min(story.mi,STORY.length-1),money:state.money,hp:Math.max(30,Math.round(state.hp)),inv:JSON.parse(JSON.stringify(inv)),weapon:state.weapon,sold:state.sold,inside:HOUSE.inside,x:P.x,z:P.z,t:state.t,date:Date.now()}; }
+function saveGame(silent){
+  if(!state.running) return false;
+  if(state.wanted>0){ if(!silent) toast('No puedes guardar con la policía atrás','#ff6b6b'); return false; }
+  try{ localStorage.setItem(SAVE_KEY,JSON.stringify(makeSave())); if(!silent) toast('💾 Partida guardada','#3fcf6e'); refreshContinue(); return true; }
+  catch(e){ if(!silent) toast('Este navegador no deja guardar la partida','#ff6b6b'); return false; }
+}
+function loadSave(){ try{ const s=JSON.parse(localStorage.getItem(SAVE_KEY)||'null'); return s&&s.v===1?s:null; }catch(e){ return null; } }
+function refreshContinue(){
+  const s=loadSave(), b=$('contBtn'); if(!b) return;
+  if(!s){ b.hidden=true; return; } b.hidden=false;
+  $('contInfo').textContent=(s.mode==='story'?'Historia · '+STORY[s.mi].m+': '+STORY[s.mi].title:'Mundo abierto')+' · $'+s.money.toLocaleString('es-MX')+' · '+new Date(s.date).toLocaleDateString('es-MX');
+}
+function applySave(s){
+  state.money=s.money; state.hp=s.hp; state.sold=s.sold||0; state.t=s.t||0;
+  for(const k in inv) delete inv[k]; Object.assign(inv,s.inv||{fists:{clip:0,ammo:0}}); if(!inv.fists) inv.fists={clip:0,ammo:0};
+  state.weapon=inv[s.weapon]?s.weapon:'fists'; updateGunMesh();
+  if(s.inside) enterHouse(true); else { P.x=s.x; P.z=s.z; HOUSE.inside=false; }
 }
 
 // =====================================================================
@@ -2309,6 +2565,8 @@ function update(dt){
     else if(state.inCar && inYonke()) ht=K+' E para venderle el carro a Don Chuy';
     else if(!state.inCar){ let near=false; for(const v of vehicles){ if(dist(v,P)-v.sp.L*.3<4){ near=v; break; } }
       if(near) ht=(isTouch?'Toca 🚗':'F')+(near.driver==='ai'?' para robarte el carro':' para subirte');
+      else if(houseSpot()) ht=K+' E '+houseSpot().txt;
+      else if(!HOUSE.inside && HOUSE.door && Math.hypot(P.x-HOUSE.door.x,P.z-HOUSE.door.z)<2.2) ht=K+' E para entrar a tu casa 🏠';
       else if(nearestPerson(3.5)) ht=K+' E para platicar 💬'; }
   }
   hint.style.display=ht?'block':'none'; if(ht) hint.textContent=ht;
@@ -2351,15 +2609,19 @@ function reset(mode){
   player.userData.head.scale.setScalar(1);
   cleanupStory(); story.step=null; story.timer=0; story.failPending=null;
   for(const k in cheats) cheats[k]=false; setNight(false);
+  HOUSE.inside=false; if(tv.overlay) closeTV(true); tv.on=false;
   populate(); resetWeapons(); PICKUPS.forEach(p=>{p.cd=0; p.lb.visible=p.ring.visible=true;}); aiming=false; touchAim=false; firing=false; camPitch=.3; P.vx=P.vz=0;
   $('cheatBtn').style.display= mode==='open'?'':'none';
   dlg.open=false; $('dialog').style.display='none'; $('bust').style.display='none';
   updateCamera(0,true);
 }
-function startGame(mode){
+function startGame(mode,save){
   initAudio(); pickVoice();
   $('start').style.display='none'; $('end').style.display='none';
   document.body.classList.remove('in-menu'); setMenuLook(false); reset(mode); state.running=true; last=performance.now();
+  if(save){ applySave(save); updateCamera(0,true);
+    if(mode==='story'){ story.mi=save.mi; startMission(); } else { banner('MUNDO ABIERTO','Partida cargada'); }
+    toast('💾 Partida cargada','#3fcf6e'); return; }
   if(mode==='story') storyStart();
   else { giveWeapon('pistol',48,true); state.weapon='fists'; updateGunMesh(); banner('MUNDO ABIERTO','Colonia Santa Martha'); toast(isTouch?'Joystick a la izquierda, arrastra a la derecha para mirar. 🔫 para disparar':'Haz clic para controlar la cámara con el mouse. Q cambia de arma','#ffcc00'); toastTimer=5; }
 }
@@ -2370,6 +2632,7 @@ function finish(){
   if(engGain) engGain.gain.value=0; if(sirGain) sirGain.gain.value=0;
 }
 $('storyBtn').onclick=()=>startGame('story');
+$('contBtn').onclick=()=>{ const sv=loadSave(); if(sv) startGame(sv.mode,sv); };
 $('openBtn').onclick=()=>startGame('open');
 $('againBtn').onclick=()=>startGame('story');
 $('endOpenBtn').onclick=()=>startGame('open');
@@ -2378,6 +2641,12 @@ $('endMenuBtn').onclick=()=>toMenu();
 setupWorldNPCs();
 spawnWalkers();
 setupPickups();
+buildHouse();
+$('tvCartoon').onclick=()=>setChannel('cartoon'); $('tvConsole').onclick=()=>setChannel('console');
+$('tvClose').onclick=()=>closeTV(); $('tvOff').onclick=()=>closeTV(true);
+$('tvL').onclick=()=>gameInput('L'); $('tvR').onclick=()=>gameInput('R'); $('tvGo').onclick=()=>gameInput('go');
+['tvL','tvR','tvGo'].forEach(id=>$(id).addEventListener('touchstart',e=>{ e.preventDefault(); gameInput(id==='tvL'?'L':id==='tvR'?'R':'go'); },{passive:false}));
+$('saveBtn').onclick=()=>{ if(saveGame()) closePause(); };
 fixColors(scene);
 let last=performance.now();
 reset('open');
@@ -2406,6 +2675,7 @@ const NEWS=['Vecinos reportan que el tope de la Av. Hidalgo ya tiene su propio c
   'El Firulais sigue sin aparecer; se ofrece recompensa de un kilo de tortillas',
   'Clima: calor de a madres en la tarde, tormenta en la noche, como siempre'];
 document.getElementById('tickerMove').innerHTML=NEWS.map(n=>'<span>'+n+'</span>').join('');
+refreshContinue();
 $('ctrlBtn').onclick=()=>{ $('ctrlPanel').hidden=false; };
 $('ctrlClose').onclick=()=>{ $('ctrlPanel').hidden=true; };
 $('menuVoiceBtn').onclick=()=>{ toggleVoice(); $('menuVoiceBtn').textContent='🔊 Voces: '+(voiceOn?'sí':'no'); };
@@ -2414,13 +2684,15 @@ function loop(now){
   if(state.running && !state.paused) update(dt);
   else if(!state.running){ for(const v of vehicles){ if(v.driver==='ai') aiDrive(v,dt); vehiclePhysics(v,dt); } updatePeople(dt*.8); }
   updateHUD(dt);
+  if(tv.on && (HOUSE.inside||tv.overlay)) drawTV(dt);
+  if(HOUSE.led) HOUSE.led.material.color.setHSL(.58,1,.4+.2*Math.sin(performance.now()/400));
   if(state.running) updateCamera(dt); else menuCam(dt);
   drawMinimap();
   renderer.render(scene,camera);
   requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);
-window.__game={setCam:(y)=>{camYaw=y;},shoot,cheat:(id)=>CHEATS.find(c=>c.id===id).fn(),selectW:(i)=>selectWeaponIdx(i),step:(n,dt)=>{for(let i=0;i<n;i++) update(dt||1/30);},state,P,vehicles,people,story,dlg,CHARS,cheats,yonke:YONKE,info:renderer.info,scene,action,enterExit,punch,setWanted,spawnNear,openCheats,closeCheats};
+window.__game={drawTV,gameInput,setChannel,openTV,HOUSE,tv,houseAction,saveGame,loadSave,startGame,setCam:(y)=>{camYaw=y;},shoot,cheat:(id)=>CHEATS.find(c=>c.id===id).fn(),selectW:(i)=>selectWeaponIdx(i),step:(n,dt)=>{for(let i=0;i<n;i++) update(dt||1/30);},state,P,vehicles,people,story,dlg,CHARS,cheats,yonke:YONKE,info:renderer.info,scene,action,enterExit,punch,setWanted,spawnNear,openCheats,closeCheats};
 })();
 </script>
 </body>
