@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3a0d4a"/>
+      <stop offset=".45" stop-color="#e6007e"/>
+      <stop offset=".8" stop-color="#ff8a1f"/>
+      <stop offset="1" stop-color="#ffc23a"/>
+    </linearGradient>
+    <linearGradient id="star" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fff6b0"/>
+      <stop offset=".5" stop-color="#ffd21f"/>
+      <stop offset="1" stop-color="#ff9a00"/>
+    </linearGradient>
+    <radialGradient id="sun" cx=".5" cy=".5" r=".5">
+      <stop offset="0" stop-color="#fff1a0" stop-opacity=".95"/>
+      <stop offset="1" stop-color="#ffb02e" stop-opacity="0"/>
+    </radialGradient>
+    <clipPath id="r"><rect width="512" height="512" rx="112"/></clipPath>
+  </defs>
+  <g clip-path="url(#r)">
+    <rect width="512" height="512" fill="url(#sky)"/>
+    <circle cx="256" cy="330" r="190" fill="url(#sun)"/>
+    <!-- papel picado -->
+    <g>
+      <path d="M0 0H512V22H0Z" fill="#1d0a24" opacity=".5"/>
+      <g transform="translate(0,14)">
+        <path d="M0 0h86v58l-11 12-11-12-11 12-10-12-11 12-11-12-11 12-10-12V0z" fill="#ffd21f"/>
+        <path d="M86 0h86v58l-11 12-11-12-11 12-10-12-11 12-11-12-11 12-10-12V0z" fill="#2fb35a"/>
+        <path d="M172 0h86v58l-11 12-11-12-11 12-10-12-11 12-11-12-11 12-10-12V0z" fill="#00a0e9"/>
+        <path d="M258 0h86v58l-11 12-11-12-11 12-10-12-11 12-11-12-11 12-10-12V0z" fill="#ff8a1f"/>
+        <path d="M344 0h86v58l-11 12-11-12-11 12-10-12-11 12-11-12-11 12-10-12V0z" fill="#9b4fd0"/>
+        <path d="M430 0h86v58l-11 12-11-12-11 12-10-12-11 12-11-12-11 12-10-12V0z" fill="#ffd21f"/>
+        <g fill="#000" opacity=".22"><circle cx="43" cy="26" r="9"/><circle cx="129" cy="26" r="9"/><circle cx="215" cy="26" r="9"/><circle cx="301" cy="26" r="9"/><circle cx="387" cy="26" r="9"/><circle cx="473" cy="26" r="9"/></g>
+      </g>
+    </g>
+    <!-- casas con tinacos -->
+    <g fill="#2a0b2e">
+      <path d="M0 512V380h70v-28h16v28h22v-60h92v40h40v-80h104v52h50v-26h70v34h48v-24h16v24H512V512Z"/>
+      <rect x="126" y="296" width="26" height="24" rx="4"/>
+      <rect x="252" y="256" width="28" height="24" rx="4"/>
+      <rect x="430" y="336" width="24" height="20" rx="4"/>
+      <rect x="30" y="362" width="22" height="18" rx="4"/>
+    </g>
+    <g fill="#ffcf6a" opacity=".9">
+      <rect x="130" y="384" width="16" height="20"/><rect x="164" y="384" width="16" height="20"/>
+      <rect x="262" y="328" width="16" height="20"/><rect x="296" y="328" width="16" height="20"/><rect x="296" y="372" width="16" height="20"/>
+      <rect x="400" y="400" width="16" height="20"/><rect x="28" y="420" width="14" height="18"/>
+    </g>
+    <!-- estrella -->
+    <g transform="translate(256,268)">
+      <path d="M0-150 L41-56 L143-46 L66 22 L89 122 L0 70 L-89 122 L-66 22 L-143-46 L-41-56Z" fill="#1a0820" transform="translate(0,12)" opacity=".55"/>
+      <path d="M0-150 L41-56 L143-46 L66 22 L89 122 L0 70 L-89 122 L-66 22 L-143-46 L-41-56Z" fill="url(#star)" stroke="#2a0b2e" stroke-width="14" stroke-linejoin="round"/>
+      <path d="M0-118 L30-48 L104-40" fill="none" stroke="#fffbe0" stroke-width="10" stroke-linecap="round" opacity=".8"/>
+    </g>
+  </g>
+</svg>
