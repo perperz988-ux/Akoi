@@ -210,6 +210,20 @@
   .tvb.pad{min-width:70px;font-size:20px;padding:12px 18px}
   .tvb.go{background:#ff8a1f;color:#1a0f00;border:0}
   @media (max-height:500px){ .tvframe{padding:8px 8px 18px;width:min(70vw,calc((100vh - 120px) * 1.78))} .tvwrap{gap:6px} .tvb{padding:7px 10px;font-size:13px} .tvb.pad{padding:8px 14px} }
+  .places-card{max-width:980px}
+  .places-body{display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap}
+  #bigMap{width:min(420px,100%);height:auto;aspect-ratio:1;border-radius:10px;flex:0 1 420px}
+  #placeList{flex:1 1 280px;min-width:0;display:flex;flex-direction:column;gap:6px;max-height:60vh;overflow:auto}
+  .place{pointer-events:auto;display:flex;align-items:center;gap:10px;text-align:left;background:#252a32;color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:8px 10px;cursor:pointer;font:inherit}
+  .place:hover:not(:disabled){border-color:var(--accent)}
+  .place:disabled{cursor:default;opacity:.9}
+  .place .pn{background:#ffd21f;color:#000;font-weight:900;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:13px;flex:none}
+  .place .pi{font-size:20px;flex:none}
+  .place .pt{min-width:0}
+  .place b{display:block;font-size:14px}
+  .place small{display:block;font-size:12px;color:var(--muted)}
+  .ver{color:#7fffb0}
+  @media (max-height:500px){ #bigMap{width:min(230px,40vw)} #placeList{max-height:52vh} }
 </style>
 </head>
 <body>
@@ -225,7 +239,7 @@
   <div id="street" class="panel">Calle Hidalgo</div>
   <div id="obj" class="panel" style="display:none"><span id="objTitle"></span><div id="objText"></div></div>
   <div id="mapwrap" class="panel"><canvas id="minimap" width="340" height="340"></canvas><div id="stars">☆☆☆☆☆</div></div>
-  <div id="btnrow"><button class="hbtn" id="pauseBtn" title="Pausa (Esc)">☰</button><button class="hbtn" id="cheatBtn" title="Trucos (M)">🎮 Trucos</button><button class="hbtn" id="voiceBtn" title="Voces (V)">🔊</button></div>
+  <div id="btnrow"><button class="hbtn" id="pauseBtn" title="Pausa (Esc)">☰</button><button class="hbtn" id="placesBtn" title="Lugares (L)">🗺️ Lugares</button><button class="hbtn" id="cheatBtn" title="Trucos (M)">🎮 Trucos</button><button class="hbtn" id="voiceBtn" title="Voces (V)">🔊</button></div>
   <div id="speed">0<small>KM/H</small></div>
   <div id="hint" class="panel"></div>
   <div id="xhair"></div>
@@ -254,7 +268,7 @@
   <div class="menu-shade"></div>
   <div class="menu-wrap">
     <div class="menu-left">
-      <div class="eyebrow">Colonia · Alcaldía Iztapalapa-ish · C.P. 09000</div>
+      <div class="eyebrow">Colonia · Alcaldía Iztapalapa-ish · C.P. 09000 · <span class="ver">v9: callejones, monumentos y perros</span></div>
       <h1 class="logo"><span class="logo-top">SANTA</span><span class="logo-main">MARTHA</span></h1>
       <div class="logo-stars" aria-hidden="true"><i>★</i><i>★</i><i>★</i><i>★</i><i>★</i></div>
       <p class="pitch">Acabas de llegar a la colonia. Róbate cualquier carro, platica con la banda, juégale al vivo con la tira y conviértete en leyenda del barrio.</p>
@@ -298,6 +312,18 @@
       <button class="tvb" id="tvOff">⏻ Apagar</button>
     </div>
     <div class="tvbtns" id="tvGamePad"><button class="tvb pad" id="tvL">◀</button><button class="tvb pad go" id="tvGo">▲ JUGAR</button><button class="tvb pad" id="tvR">▶</button></div>
+  </div>
+</div>
+
+<div class="screen" id="places" style="display:none">
+  <div class="card places-card">
+    <h1>🗺️ <span>Lugares</span></h1>
+    <p id="placesNote"></p>
+    <div class="places-body">
+      <canvas id="bigMap" width="520" height="520"></canvas>
+      <div id="placeList"></div>
+    </div>
+    <button class="big" id="placesClose" style="margin-top:12px">Cerrar</button>
   </div>
 </div>
 
@@ -1526,8 +1552,9 @@ addEventListener('keydown',e=>{
   if(e.code==='KeyC') state.camMode=(state.camMode+1)%3;
   if(e.code==='KeyH') honk(state.inCar);
   if(e.code==='KeyV') toggleVoice();
-  if(e.code==='Escape'){ if($('cheats').style.display==='flex') closeCheats(); else if($('pause').style.display==='flex') closePause(); else if(state.running) openPause(); }
+  if(e.code==='Escape'){ if($('places').style.display==='flex') closePlaces(); else if($('cheats').style.display==='flex') closeCheats(); else if($('pause').style.display==='flex') closePause(); else if(state.running) openPause(); }
   if(e.code==='KeyM' && state.mode==='open' && state.running) openCheats();
+  if(e.code==='KeyL' && state.running && !state.paused) openPlaces();
   if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space','Tab'].includes(e.code)) e.preventDefault(); });
 addEventListener('keyup',e=>{ keys[e.code]=false; });
 // mouse: clic = disparar / golpe, clic derecho = apuntar, mover = cámara
@@ -1640,15 +1667,15 @@ function toast(msg,color){ const t=$('toast'); t.textContent=msg; t.style.color=
 function banner(sub,txt){ $('bannerSub').textContent=sub; $('bannerTxt').textContent=txt; $('banner').style.opacity=1; bannerTimer=3.2; }
 function fmtTime(s){ s=Math.max(0,s); const m=Math.floor(s/60), r=Math.floor(s%60); return m+':'+String(r).padStart(2,'0'); }
 const mm=$('minimap'), mg=mm.getContext('2d');
-function drawMinimap(){
-  const Wm=mm.width, sc=Wm/(LIM2-LIM+40), ox=LIM-20;
+function drawMap(mg,Wm,big){
+  const  sc=Wm/(LIM2-LIM+40), ox=LIM-20;
   const px=x=>(x-ox)*sc, pz=z=>(z-ox)*sc;
   mg.fillStyle='#3d3f42'; mg.fillRect(0,0,Wm,Wm);
   for(const b of blockRects){ const y=b.i===YONKE.i&&b.j===YONKE.j, pl=PLAZAS[b.i+','+b.j]; mg.fillStyle= y?'#7d6a50':pl?'#8fbf7a':'#c9b99c'; mg.fillRect(px(b.x0),pz(b.z0),B*sc,B*sc); }
   mg.fillStyle='#4a4038'; for(const a of ALLEYS) mg.fillRect(px(a.x0),pz(a.z0),(a.x1-a.x0)*sc,(a.z1-a.z0)*sc);
   mg.fillStyle='#fff'; mg.font='bold 20px Arial'; mg.textAlign='center'; mg.textBaseline='middle'; for(const m of MONUMENTS) mg.fillText(m.icon,px(m.x),pz(m.z));
   mg.fillStyle='#f2c418'; for(const t of topes){ if(t.axis==='z') mg.fillRect(px(t.streetC-S/2),pz(t.along)-1,S*sc,2); else mg.fillRect(px(t.along)-1,pz(t.streetC-S/2),2,S*sc); }
-  mg.font='bold 22px Arial'; mg.textAlign='center'; mg.textBaseline='middle';
+  mg.font='bold '+(big?30:22)+'px Arial'; mg.textAlign='center'; mg.textBaseline='middle';
   mg.fillStyle='#ffcc00'; mg.fillText('$',px(YONKE.pos.x),pz(YONKE.pos.z));
   if(HOUSE.door){ mg.fillStyle='#7fffb0'; mg.fillText('⌂',px(HOUSE.door.x),pz(HOUSE.door.z)); }
   if(SPOTS.cop){ mg.fillStyle='#7fb2ff'; mg.fillText('P',px(SPOTS.cop.x),pz(SPOTS.cop.z)); mg.fillStyle='#ff8a8a'; mg.fillText('+',px(SPOTS.hosp.x),pz(SPOTS.hosp.z)); }
@@ -1663,7 +1690,11 @@ function drawMinimap(){
   mg.save(); mg.translate(px(pp.x),pz(pp.z)); mg.rotate(-ph+Math.PI);
   mg.fillStyle='#3fd1ff'; mg.beginPath(); mg.moveTo(0,-11); mg.lineTo(8,9); mg.lineTo(0,5); mg.lineTo(-8,9); mg.closePath(); mg.fill(); mg.strokeStyle='#000'; mg.lineWidth=1.5; mg.stroke();
   mg.restore();
+  if(big){ mg.font='bold 15px Arial'; mg.textAlign='left'; mg.textBaseline='middle'; mg.lineWidth=3;
+    for(const pl of placeList()){ const X=px(pl.x), Z=pz(pl.z); mg.fillStyle='#000'; mg.beginPath(); mg.arc(X,Z,13,0,7); mg.fill(); mg.fillStyle='#ffd21f'; mg.textAlign='center'; mg.fillText(String(pl.n),X,Z+1); }
+  }
 }
+function drawMinimap(){ drawMap(mg,mm.width,false); }
 function streetAt(x,z){
   let best=null, bd=1e9;
   streetCenters.forEach((c,k)=>{ const dx=Math.abs(x-c); if(dx<S/2+3 && dx<bd){bd=dx;best=STREETS_X[k];} const dz=Math.abs(z-c); if(dz<S/2+3 && dz<bd){bd=dz;best=STREETS_Z[k];} });
@@ -2340,7 +2371,8 @@ function buildCheatGrid(){
 }
 function openCheats(){ if(state.mode!=='open') return; releasePointer(); firing=false; state.paused=true; buildCheatGrid(); $('cheats').style.display='flex'; }
 function closeCheats(){ $('cheats').style.display='none'; state.paused=false; last=performance.now(); }
-$('cheatBtn').onclick=()=>openCheats(); $('cheatClose').onclick=()=>closeCheats();
+$('cheatBtn').onclick=()=>openCheats();
+$('placesBtn').onclick=()=>openPlaces(); $('placesClose').onclick=()=>closePlaces(); $('cheatClose').onclick=()=>closeCheats();
 function setNight(on){
   scene.background=new THREE.Color(on?0x0b1430:0xa9c8de); scene.fog.color.set(on?0x0b1430:0xc9d3d6);
   hemi.intensity=on?.25:.75; sun.intensity=on?.12:1.35; sun.color.set(on?0x8fa8ff:0xfff1d8); headL.intensity=on?2.4:0;
@@ -2601,6 +2633,37 @@ function drawConsole(g,dt,W,H){
     g.fillStyle='#8fd0ff'; g.fillText((isTouch?'Toca ▲ JUGAR':'Espacio / ▲ para jugar')+' · ◀ ▶ cambiar de carril',W/2,116);
   }
   g.fillStyle='rgba(255,255,255,.35)'; g.font='bold 8px Arial'; g.textAlign='right'; g.fillText('JoSubway F0n',W-6,H-6);
+}
+
+// ---------- lugares (mapa grande) ----------
+function placeList(){
+  const L=[]; let n=1;
+  const add=(ico,name,desc,x,z,h)=>L.push({n:n++,ico,name,desc,x,z,h:h||0});
+  if(HOUSE.door) add('🏠','Tu casa','Tele con caricaturas, JoSubway F0n y cama para guardar',HOUSE.door.x,HOUSE.door.z,Math.PI/2);
+  for(const m of MONUMENTS) add(m.icon==='A'?'👼':m.icon==='R'?'🏛️':'🔺',({A:'Ángel de la Independencia',R:'Monumento a la Revolución','△':'Pirámide del Sol (a escala)'})[m.icon],'Monumento en su plaza',m.x,m.z-31,0);
+  ALLEYS.forEach((a,k)=>add('🚧','Callejón '+(k+1)+' · '+streetAt(a.xc,a.z0-6),'Sin salida, con ratero al fondo (entra a pie)',a.xc,a.z0-3,0));
+  add('💰','Yonke de Don Chuy','Vende carros robados',YONKE.zone.x0-6,YONKE.pos.z,Math.PI/2);
+  if(SPOTS.cop){ add('🚓','Comandancia','Aquí apareces si te detienen',SPOTS.cop.x,SPOTS.cop.z,0); add('✚','Clínica','Aquí apareces si te hospitalizan',SPOTS.hosp.x,SPOTS.hosp.z,0); }
+  if(dogs.length){ let best=dogs[0]; for(const d of dogs) if(Math.hypot(d.x-P.x,d.z-P.z)<Math.hypot(best.x-P.x,best.z-P.z)) best=d; add('🐶','Perrito más cercano: '+best.name,'Hazle cariño con E y te sigue',best.x+1.5,best.z,0); }
+  return L;
+}
+function openPlaces(){
+  releasePointer(); firing=false; state.paused=true;
+  const c=$('bigMap'); drawMap(c.getContext('2d'),c.width,true);
+  const box=$('placeList'); box.innerHTML='';
+  const canGo=state.mode==='open';
+  $('placesNote').textContent= canGo? 'Toca un lugar para ir directo.' : 'En el modo historia no puedes teletransportarte, pero aquí ves dónde está cada cosa (número en el mapa).';
+  for(const pl of placeList()){ const b=document.createElement('button'); b.className='place';
+    b.innerHTML=`<span class="pn">${pl.n}</span><span class="pi">${pl.ico}</span><span class="pt"><b>${pl.name}</b><small>${pl.desc} · ${streetAt(pl.x,pl.z)} · ${Math.round(Math.hypot(pl.x-P.x,pl.z-P.z))} m</small></span>`;
+    if(canGo) b.onclick=()=>goPlace(pl); else b.disabled=true;
+    box.appendChild(b); }
+  $('places').style.display='flex';
+}
+function closePlaces(){ $('places').style.display='none'; state.paused=false; last=performance.now(); }
+function goPlace(pl){
+  if(state.inCar) forceExit(state.inCar);
+  HOUSE.inside=false; P.x=pl.x; P.z=pl.z; P.h=pl.h; P.vx=P.vz=0; P.y=groundY(P.x,P.z); camYaw=pl.h; camPitch=.3;
+  closePlaces(); fade(); updateCamera(0,true); toast(pl.ico+' '+pl.name,'#ffd21f');
 }
 
 // ---------- guardar partida ----------
@@ -2915,7 +2978,7 @@ function loop(now){
   requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);
-window.__game={setPitch:(v)=>{camPitch=v;},punch,dogs,ALLEYS,MONUMENTS,lootBags,spawnThieves,drawTV,gameInput,setChannel,openTV,HOUSE,tv,houseAction,saveGame,loadSave,startGame,setCam:(y)=>{camYaw=y;},shoot,cheat:(id)=>CHEATS.find(c=>c.id===id).fn(),selectW:(i)=>selectWeaponIdx(i),step:(n,dt)=>{for(let i=0;i<n;i++) update(dt||1/30);},state,P,vehicles,people,story,dlg,CHARS,cheats,yonke:YONKE,info:renderer.info,scene,action,enterExit,punch,setWanted,spawnNear,openCheats,closeCheats};
+window.__game={placeList,openPlaces,goPlace,setPitch:(v)=>{camPitch=v;},punch,dogs,ALLEYS,MONUMENTS,lootBags,spawnThieves,drawTV,gameInput,setChannel,openTV,HOUSE,tv,houseAction,saveGame,loadSave,startGame,setCam:(y)=>{camYaw=y;},shoot,cheat:(id)=>CHEATS.find(c=>c.id===id).fn(),selectW:(i)=>selectWeaponIdx(i),step:(n,dt)=>{for(let i=0;i<n;i++) update(dt||1/30);},state,P,vehicles,people,story,dlg,CHARS,cheats,yonke:YONKE,info:renderer.info,scene,action,enterExit,punch,setWanted,spawnNear,openCheats,closeCheats};
 })();
 </script>
 </body>
