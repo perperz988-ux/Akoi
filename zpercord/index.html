@@ -6,24 +6,24 @@
 <title>Zpercord</title>
 <style>
 :root{
-  --bg0:#060d1c;      /* server rail */
-  --bg1:#0a1528;      /* sidebars */
-  --bg2:#0f1d38;      /* chat */
-  --bg3:#16284c;      /* inputs / hover */
-  --bg4:#1d3361;      /* active */
-  --line:#1b2d52;
-  --text:#e4ecff;
-  --muted:#8ea3cc;
-  --dim:#5d729c;
-  --blue:#3b82f6;
-  --blue2:#60a5fa;
-  --blue3:#1d4ed8;
-  --green:#22c55e;
-  --yellow:#f59e0b;
-  --red:#ef4444;
-  --pro1:#38bdf8;
-  --pro2:#6366f1;
-  --pro3:#a855f7;
+  --bg0:#1e1f26;      /* server rail */
+  --bg1:#2c2f35;      /* sidebars */
+  --bg2:#36393f;      /* chat */
+  --bg3:#40444b;      /* inputs / hover */
+  --bg4:#202225;      /* active */
+  --line:#202225;
+  --text:#dcddde;
+  --muted:#72767d;
+  --dim:#949ba4;
+  --blue:#5865f2;
+  --blue2:#7289da;
+  --blue3:#4752c4;
+  --green:#43b581;
+  --yellow:#faa61a;
+  --red:#f04747;
+  --pro1:#43b581;
+  --pro2:#5865f2;
+  --pro3:#9c27b0;
 }
 *{box-sizing:border-box}
 html,body{margin:0;height:100%;background:var(--bg0);color:var(--text);font:15px/1.4 "Segoe UI",system-ui,-apple-system,Roboto,sans-serif;overflow:hidden}
@@ -360,8 +360,8 @@ const PERMS = [
   ["STREAM", "Transmitir", "Compartir pantalla en canales de voz."],
 ];
 const DEFAULT_EVERYONE = { VIEW: 1, SEND: 1, ATTACH: 1, REACT: 1, CONNECT: 1, STREAM: 1 };
-const COLORS = ["#3b82f6", "#60a5fa", "#06b6d4", "#14b8a6", "#22c55e", "#84cc16", "#eab308", "#f59e0b", "#f97316", "#ef4444", "#ec4899", "#a855f7", "#8b5cf6", "#6366f1", "#94a3b8", "#e4ecff"];
-const AVATAR_BG = ["#2563eb", "#1d4ed8", "#0891b2", "#4f46e5", "#7c3aed", "#0d9488", "#db2777", "#ea580c", "#16a34a", "#475569"];
+const COLORS = ["#5865f2", "#7289da", "#43b581", "#faa61a", "#f04747", "#9c27b0", "#2ecc71", "#e91e63", "#00bcd4", "#ff9800", "#3f51b5", "#00897b", "#c2185b", "#1976d2", "#512da8", "#d32f2f"];
+const AVATAR_BG = ["#5865f2", "#7289da", "#43b581", "#faa61a", "#f04747", "#9c27b0", "#2ecc71", "#e91e63", "#00bcd4", "#ff9800"];
 const EMOJIS = "😀 😂 🤣 😊 😍 🥰 😎 🤔 😮 😢 😭 😡 🥳 😴 🤯 🙃 👍 👎 👏 🙌 🙏 💪 👀 🔥 ✨ 💯 ❤️ 💙 💜 💔 ✅ ❌ ⭐ 🎉 🎮 🎧 🎵 🍕 🍔 ☕ 🌙 ☀️ 🌊 🚀 💎 🏆 🐱 🐶 🦊 🐸 👾 🤖 💀 👻 🫡".split(" ");
 const PRO = { msgLimit: 4000, freeMsgLimit: 2000, upload: 500 * 1024 * 1024, freeUpload: 10 * 1024 * 1024, boosts: 2 };
 const LEVELS = [0, 2, 7, 14];
@@ -369,19 +369,19 @@ const LEVELS = [0, 2, 7, 14];
 /* ---------------- seed data ---------------- */
 function seed() {
   const users = {
-    me: { id: "me", name: "Tú", username: "tu_usuario", color: "#2563eb", status: "online", about: "¡Hola! Soy nuevo en Zpercord.", custom: "", pro: false, anim: false, bannerColor: "#1d4ed8", themeA: "#1e3a8a", themeB: "#6d28d9", emojiAv: "" },
-    nova: { id: "nova", name: "Nova", username: "nova.dev", color: "#7c3aed", status: "online", about: "Programadora full-stack · café ☕", custom: "codeando 🚀", pro: true, anim: true, bannerColor: "#6d28d9", themeA: "#4338ca", themeB: "#a21caf" },
-    kai: { id: "kai", name: "Kai", username: "kai_plays", color: "#0891b2", status: "idle", about: "Gamer de corazón 🎮", custom: "AFK un rato", pro: false },
-    luna: { id: "luna", name: "Luna", username: "lunita", color: "#db2777", status: "dnd", about: "Artista digital 🎨", custom: "dibujando, no molestar", pro: true, anim: false, bannerColor: "#be185d", themeA: "#831843", themeB: "#1e3a8a" },
-    max: { id: "max", name: "Max", username: "maxpower", color: "#ea580c", status: "online", about: "Fan del lo-fi", custom: "🎧 escuchando música", pro: false },
-    zbot: { id: "zbot", name: "Zbot", username: "zbot", color: "#1d4ed8", status: "online", about: "Bot oficial. Escribe /ayuda", custom: "/ayuda", bot: true, emojiAv: "🤖" },
-    sofi: { id: "sofi", name: "Sofi", username: "sofi_m", color: "#16a34a", status: "offline", about: "", custom: "", pro: false },
+    me: { id: "me", name: "Tú", username: "tu_usuario", color: "#5865f2", status: "online", about: "¡Hola! Soy nuevo en Zpercord.", custom: "", pro: false, anim: false, bannerColor: "#7289da", themeA: "#5865f2", themeB: "#7289da", emojiAv: "" },
+    nova: { id: "nova", name: "Nova", username: "nova.dev", color: "#9c27b0", status: "online", about: "Programadora full-stack · café ☕", custom: "codeando 🚀", pro: true, anim: true, bannerColor: "#7b2cbf", themeA: "#5865f2", themeB: "#9c27b0" },
+    kai: { id: "kai", name: "Kai", username: "kai_plays", color: "#00bcd4", status: "idle", about: "Gamer de corazón 🎮", custom: "AFK un rato", pro: false },
+    luna: { id: "luna", name: "Luna", username: "lunita", color: "#e91e63", status: "dnd", about: "Artista digital 🎨", custom: "dibujando, no molestar", pro: true, anim: false, bannerColor: "#c2185b", themeA: "#e91e63", themeB: "#5865f2" },
+    max: { id: "max", name: "Max", username: "maxpower", color: "#ff9800", status: "online", about: "Fan del lo-fi", custom: "🎧 escuchando música", pro: false },
+    zbot: { id: "zbot", name: "Zbot", username: "zbot", color: "#7289da", status: "online", about: "Bot oficial. Escribe /ayuda", custom: "/ayuda", bot: true, emojiAv: "🤖" },
+    sofi: { id: "sofi", name: "Sofi", username: "sofi_m", color: "#43b581", status: "offline", about: "", custom: "", pro: false },
   };
-  const s1 = makeServer("Zona Gamer", "🎮", "#2563eb", true);
-  const admin = { id: uid(), name: "Admin", color: "#ef4444", hoist: true, perms: { ADMIN: 1 } };
-  const mod = { id: uid(), name: "Moderador", color: "#22c55e", hoist: true, perms: { KICK: 1, MANAGE_CHANNELS: 1, MENTION_ALL: 1 } };
-  const vip = { id: uid(), name: "VIP", color: "#f59e0b", hoist: true, perms: {} };
-  const bots = { id: uid(), name: "Bots", color: "#60a5fa", hoist: true, perms: {} };
+  const s1 = makeServer("Zona Gamer", "🎮", "#5865f2", true);
+  const admin = { id: uid(), name: "Admin", color: "#f04747", hoist: true, perms: { ADMIN: 1 } };
+  const mod = { id: uid(), name: "Moderador", color: "#43b581", hoist: true, perms: { KICK: 1, MANAGE_CHANNELS: 1, MENTION_ALL: 1 } };
+  const vip = { id: uid(), name: "VIP", color: "#faa61a", hoist: true, perms: {} };
+  const bots = { id: uid(), name: "Bots", color: "#7289da", hoist: true, perms: {} };
   s1.roles.splice(0, 0, admin, mod, vip, bots);
   s1.members = [
     { userId: "me", roles: [admin.id] }, { userId: "nova", roles: [mod.id, vip.id] }, { userId: "kai", roles: [vip.id] },
@@ -413,11 +413,11 @@ function seed() {
   s1.messages[general.id][2].reactions = { "🙌": ["kai", "nova"], "🔥": ["luna"] };
   s1.messages[general.id][3].reactions = { "❤️": ["nova", "max", "kai"] };
 
-  const s2 = makeServer("Estudio Pixel", "🎨", "#db2777", true);
+  const s2 = makeServer("Estudio Pixel", "🎨", "#e91e63", true);
   s2.members = [{ userId: "me", roles: [] }, { userId: "luna", roles: [] }, { userId: "nova", roles: [] }];
   s2.ownerId = "luna";
   s2.messages[s2.channels[0].id] = [msg("luna", "Este es mi espacio para compartir arte ✨ ¡pasen!", now - 864e5)];
-  const s3 = makeServer("Código Azul", "💻", "#0891b2", true);
+  const s3 = makeServer("Código Azul", "💻", "#00bcd4", true);
   s3.members = [{ userId: "me", roles: [] }, { userId: "nova", roles: [] }, { userId: "max", roles: [] }, { userId: "zbot", roles: [] }];
   s3.ownerId = "nova";
   s3.messages[s3.channels[0].id] = [msg("nova", "```js\nconsole.log('hola Zpercord');\n```\nPrimer mensaje del server 😎", now - 72e5)];
