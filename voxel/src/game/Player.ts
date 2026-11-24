@@ -1,5 +1,7 @@
 // Player controller: walking, sprinting, sneaking, jumping, swimming, flying and survival stats.
-import { B, L_SOLID } from '../world/Blocks';
+import { B, L_CLIMB, L_SOFT, L_SOLID } from '../world/Blocks';
+import { item } from './Items';
+import type { Stack } from '../world/World';
 import type { World } from '../world/World';
 import { Body, makeBody, moveBody, overlapsSolid } from './Physics';
 import { Inventory } from './Inventory';
@@ -15,6 +17,8 @@ export class Player {
   exhaustion = 0;
   air = 10;
   inv = new Inventory(36);
+  armor: (Stack | null)[] = [null, null, null, null];
+  climbing = false;
   mode: 'survival' | 'creative' = 'survival';
   flying = false;
   sneaking = false;
@@ -45,6 +49,7 @@ export class Player {
 
   hurt(dmg: number, fromX: number | null, fromZ: number | null, src: string) {
     if (!this.alive || this.creative || this.invuln > 0 || dmg <= 0) return;
+    if (src !== 'starvation' && src !== 'drowning' && src !== 'the void') dmg = Math.max(1, Math.round(dmg * (1 - Math.min(0.8, this.armorPoints * 0.04)) * 2) / 2);
     this.health -= dmg;
     this.invuln = 0.5;
     this.hurtFlash = 0.4;
@@ -57,6 +62,8 @@ export class Player {
     this.onHurt(dmg);
     if (this.health <= 0) { this.health = 0; this.alive = false; this.onDeath(src); }
   }
+
+  get armorPoints() { let n = 0; for (const a of this.armor) if (a) n += item(a.id).armor?.points || 0; return n; }
 
   eat(food: number) {
     this.hunger = Math.min(20, this.hunger + food);
@@ -118,6 +125,18 @@ export class Player {
       }
     }
 
+    // ladders
+    this.climbing = false;
+    if (!this.flying) {
+      for (let y = Math.floor(b.y); y <= Math.floor(b.y + 1.2); y++) if (L_CLIMB[world.getBlock(Math.floor(b.x), y, Math.floor(b.z))]) this.climbing = true;
+      if (this.climbing) {
+        if (input.jump || (fwd > 0.3 && (b.hitX || b.hitZ))) b.vy = 3.2;
+        else if (this.sneaking) b.vy = 0;
+        else b.vy = Math.max(b.vy, -2.5);
+        this.fallStart = null;
+      }
+    }
+
     const prevY = b.y;
     const wasGround = b.onGround;
     const vyBefore = b.vy;
@@ -130,7 +149,8 @@ export class Player {
     if (b.onGround || this.flying || b.inWater) {
       if (this.fallStart !== null && b.onGround && !this.flying) {
         const fall = this.fallStart - b.y;
-        if (fall > 3.5 && vyBefore < -8) this.hurt(Math.floor(fall - 3), null, null, 'a fall');
+        const under = world.getBlock(Math.floor(b.x), Math.floor(b.y - 0.05), Math.floor(b.z));
+        if (fall > 3.5 && vyBefore < -8 && !L_SOFT[under]) this.hurt(Math.floor(fall - 3), null, null, 'a fall');
         if (fall > 1) this.onStep(b.x, b.y - 0.5, b.z);
       }
       this.fallStart = null;
@@ -176,7 +196,7 @@ export class Player {
   serialize() {
     return {
       x: this.body.x, y: this.body.y, z: this.body.z, yaw: this.yaw, pitch: this.pitch, health: this.health, hunger: this.hunger,
-      saturation: this.saturation, air: this.air, inv: this.inv.serialize(), flying: this.flying, spawn: this.spawn, mode: this.mode,
+      saturation: this.saturation, air: this.air, inv: this.inv.serialize(), armor: this.armor.map((a) => (a ? { ...a } : null)), flying: this.flying, spawn: this.spawn, mode: this.mode,
     };
   }
   load(d: any) {
@@ -184,7 +204,8 @@ export class Player {
     this.setPos(d.x, d.y, d.z);
     this.yaw = d.yaw || 0; this.pitch = d.pitch || 0;
     this.health = d.health ?? 20; this.hunger = d.hunger ?? 20; this.saturation = d.saturation ?? 5; this.air = d.air ?? 10;
-    this.inv.load(d.inv); this.flying = !!d.flying; if (d.spawn) this.spawn = d.spawn;
+    this.inv.load(d.inv);
+    if (Array.isArray(d.armor)) this.armor = [0, 1, 2, 3].map((i) => (d.armor[i] ? { ...d.armor[i] } : null)); this.flying = !!d.flying; if (d.spawn) this.spawn = d.spawn;
     if (this.health <= 0) this.health = 20;
   }
 }

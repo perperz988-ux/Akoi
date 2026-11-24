@@ -51,6 +51,7 @@ export interface WorldOptions {
   lodStart: number;
   fancyLeaves: boolean;
   shadows: boolean;
+  dim?: number;
 }
 
 let sharedWorkers: Worker[] | null = null;
@@ -203,6 +204,7 @@ export class World {
       this.scheduleFluidAround(x, y, z);
       if (!L_SOLID[id] || id === B.AIR) {
         this.checkSupport(x, y + 1, z);
+        this.checkSupport(x, y - 1, z);
         this.checkSupport(x + 1, y, z); this.checkSupport(x - 1, y, z);
         this.checkSupport(x, y, z + 1); this.checkSupport(x, y, z - 1);
       }
@@ -230,7 +232,8 @@ export class World {
     if (id === B.DOOR_UPPER) return below === B.DOOR_LOWER;
     if (id === B.CACTUS) return below === B.SAND || below === B.CACTUS;
     switch (d.support) {
-      case 'soil': return below === B.GRASS || below === B.DIRT || below === B.FROST_GRASS || below === B.FARMLAND;
+      case 'soil': return below === B.GRASS || below === B.DIRT || below === B.FROST_GRASS || below === B.FARMLAND || below === B.SKY_GRASS || below === B.MOSS || below === B.ASH_SOIL;
+      case 'ceiling': { const a = this.getBlock(x, y + 1, z); return a === UNLOADED || L_SOLID[a] === 1 || a === id; }
       case 'sand': return below === B.SAND || below === B.DIRT || below === B.GRASS;
       case 'farmland': return below === B.FARMLAND;
       case 'solid': return L_SOLID[below] === 1;
@@ -428,16 +431,16 @@ export class World {
     if (this.opts.worldId && this.savedKeys.has(skey)) {
       Store.loadChunk(this.opts.worldId, skey).then((d) => {
         if (this.disposed || !this.pending.has(k)) return;
-        if (!d) { this.post({ type: 'gen', seed: this.seed, cx, cz }); return; }
+        if (!d) { this.post({ type: 'gen', seed: this.seed, cx, cz, dim: this.opts.dim || 0 }); return; }
         this.pending.delete(k);
         const n = CHUNK * CHUNK * HEIGHT;
         const c = new Chunk(cx, cz, Store.rleDecode(d.b, n), Store.rleDecode(d.m, n));
         c.modified = true;
         if (d.c) for (const [i, items] of d.c as [number, (Stack | null)[]][]) c.crates.set(i, items);
         this.insertChunk(c);
-      }).catch(() => { this.post({ type: 'gen', seed: this.seed, cx, cz }); });
+      }).catch(() => { this.post({ type: 'gen', seed: this.seed, cx, cz, dim: this.opts.dim || 0 }); });
     } else {
-      this.post({ type: 'gen', seed: this.seed, cx, cz });
+      this.post({ type: 'gen', seed: this.seed, cx, cz, dim: this.opts.dim || 0 });
     }
   }
 

@@ -15,6 +15,9 @@ export interface ItemDef {
   food?: number;         // hunger restored
   desc?: string;
   fuel?: boolean;
+  armor?: { slot: number; points: number; tier: number };
+  ranged?: boolean;
+  fishing?: boolean;
 }
 
 export const ITEMS: ItemDef[] = [];
@@ -74,6 +77,31 @@ for (const t of TIERS) for (const k of KINDS) {
 r('wood_tiller', 'Wooden Tiller', { maxStack: 1, tool: { type: 'tiller', tier: 1, speed: 1, damage: 1, durability: 60 } });
 r('stone_tiller', 'Stone Tiller', { maxStack: 1, tool: { type: 'tiller', tier: 2, speed: 1, damage: 1, durability: 130 } });
 
+// ---- expansion items (appended so existing save ids stay stable) ----
+r('prism_shard', 'Prism Shard');
+r('frostquartz', 'Frostquartz');
+r('rubellite', 'Rubellite Gem');
+r('emberite_ingot', 'Emberite Ingot');
+r('starstone', 'Starstone');
+r('raw_fish', 'Raw Fish', { food: 2 });
+r('cooked_fish', 'Grilled Fish', { food: 6 });
+r('ashfruit', 'Ashfruit', { food: 4 });
+r('berry_pie', 'Ember Pie', { food: 9 });
+r('bow', 'Shortbow', { maxStack: 1, ranged: true, tool: { type: 'blade', tier: 0, speed: 1, damage: 1, durability: 250 } });
+r('arrow', 'Arrow');
+r('fishing_line', 'Fishing Line', { maxStack: 1, fishing: true, tool: { type: 'blade', tier: 0, speed: 1, damage: 1, durability: 120 } });
+export const ARMOR_SLOTS = ['Helm', 'Vest', 'Greaves', 'Boots'];
+export const ARMOR_TIERS = [
+  { key: 'copper', name: 'Copper', pts: [1, 3, 2, 1], tier: 3 },
+  { key: 'iron', name: 'Iron', pts: [2, 5, 4, 2], tier: 4 },
+  { key: 'azure', name: 'Azure', pts: [3, 6, 5, 3], tier: 5 },
+  { key: 'ember', name: 'Emberite', pts: [3, 8, 6, 3], tier: 6 },
+];
+for (const t of ARMOR_TIERS) ARMOR_SLOTS.forEach((sl, i) => r(`${t.key}_${sl.toLowerCase()}`, `${t.name} ${sl}`, { maxStack: 1, armor: { slot: i, points: t.pts[i], tier: t.tier } }));
+const EMBER_TIER = { key: 'ember', name: 'Emberite', tier: 6, speed: 11, dmg: 6, dur: 2000 };
+TIERS.push(EMBER_TIER);
+for (const k of KINDS) r(`ember_${k.type}`, `Emberite ${k.name}`, { maxStack: 1, tool: { type: k.type, tier: 6, speed: EMBER_TIER.speed, damage: k.base + EMBER_TIER.dmg + (k.type === 'blade' ? 6 : 0), durability: EMBER_TIER.dur } });
+
 export function item(id: number): ItemDef { return ITEMS[id] || ITEMS[B.STONE]; }
 export function maxStack(id: number) { return item(id).maxStack; }
 export function itemName(id: number) { return item(id)?.name ?? '?'; }
@@ -90,7 +118,7 @@ export function toolMatches(tool: ToolType, blockTool: string) {
 // Icons
 // ------------------------------------------------------------------------------------------
 type RGB = [number, number, number];
-const TIER_COL: Record<number, RGB> = { 1: [170, 128, 76], 2: [140, 142, 150], 3: [214, 124, 72], 4: [216, 214, 218], 5: [70, 130, 236] };
+const TIER_COL: Record<number, RGB> = { 1: [170, 128, 76], 2: [140, 142, 150], 3: [214, 124, 72], 4: [216, 214, 218], 5: [70, 130, 236], 6: [250, 110, 36] };
 
 function pix(draw: (set: (x: number, y: number, c: RGB, a?: number) => void, rnd: () => number) => void, seed: string): HTMLCanvasElement {
   const c = document.createElement('canvas'); c.width = 16; c.height = 16;
@@ -162,8 +190,30 @@ const ITEM_ART: Record<string, (set: any, r: () => number) => void> = {
   water_bucket: (s) => bucket(s, [60, 130, 220]),
   crag_shard: (s) => gem(s, [130, 110, 96]),
   torch: (s) => { for (let i = 0; i < 9; i++) { s(7, 6 + i, [132, 96, 60]); s(8, 6 + i, [104, 74, 46]); } for (const [x, y, c] of [[7, 5, [255, 150, 40]], [8, 5, [255, 150, 40]], [7, 4, [255, 220, 120]], [8, 4, [255, 200, 90]], [7, 3, [255, 246, 190]], [8, 2, [255, 236, 150]], [6, 5, [240, 110, 30]], [9, 5, [240, 110, 30]]] as [number, number, number[]][]) s(x, y, c); },
+  prism_shard: (s) => gem(s, [180, 120, 240]),
+  frostquartz: (s) => gem(s, [170, 230, 250]),
+  rubellite: (s) => gem(s, [220, 40, 80]),
+  emberite_ingot: (s) => ingot(s, [250, 110, 36]),
+  starstone: (s) => gem(s, [255, 226, 110]),
+  raw_fish: (s) => fish(s, [120, 170, 200]),
+  cooked_fish: (s) => fish(s, [190, 120, 60]),
+  ashfruit: (s) => { for (let y = 4; y < 14; y++) for (let x = 3; x < 13; x++) if ((x - 8) ** 2 + (y - 9) ** 2 < 22) s(x, y, x + y < 14 ? [255, 160, 80] : [210, 70, 40]); s(8, 3, [60, 50, 50]); s(9, 2, [90, 150, 60]); s(10, 2, [90, 150, 60]); },
+  berry_pie: (s) => { for (let y = 7; y < 13; y++) for (let x = 2; x < 14; x++) if (Math.abs(x - 7.5) < 6 - (y < 9 ? 9 - y : 0)) s(x, y, y < 9 ? [220, 170, 100] : [190, 130, 70]); for (const x of [4, 7, 10]) s(x, 8, [210, 50, 50]); },
+  bow: (s) => { for (let i = 0; i < 12; i++) { const a = i / 11 * Math.PI; s(3 + Math.sin(a) * 6, 2 + i, [150, 100, 56]); } for (let y = 2; y < 14; y++) s(3, y, [230, 230, 230]); },
+  arrow: (s) => { for (let i = 0; i < 10; i++) s(3 + i, 12 - i, [150, 110, 70]); s(13, 2, [200, 200, 210]); s(12, 2, [200, 200, 210]); s(13, 3, [200, 200, 210]); s(2, 12, [240, 240, 240]); s(3, 13, [240, 240, 240]); s(2, 13, [240, 240, 240]); },
+  fishing_line: (s) => { for (let i = 0; i < 12; i++) s(2 + i, 13 - i, [130, 90, 50]); for (let y = 2; y < 12; y++) s(13, y, [220, 220, 220]); s(13, 12, [220, 50, 50]); s(13, 13, [240, 240, 240]); },
   glowcap_stew: (s) => { for (let y = 8; y < 14; y++) for (let x = 2; x < 14; x++) if (Math.abs(x - 8) < 6 - (y - 8) * 0.5) s(x, y, [150, 100, 60]); for (let x = 3; x < 13; x++) s(x, 8, [90, 220, 210]); s(6, 7, [200, 255, 250]); s(9, 7, [200, 255, 250]); },
 };
+function fish(s: any, c: RGB) { for (let y = 5; y < 11; y++) for (let x = 2; x < 12; x++) if (((x - 7) / 5) ** 2 + ((y - 8) / 3) ** 2 < 1) s(x, y, y < 7 ? [Math.min(255, c[0] + 40), Math.min(255, c[1] + 40), Math.min(255, c[2] + 40)] : c); for (let y = 5; y < 11; y++) if (Math.abs(y - 8) < 3) s(12 + Math.abs(y - 8) * 0.5, y, dk(c, 0.8)); s(4, 7, [20, 20, 20]); }
+function armorIcon(slot: number, c: RGB, key: string) {
+  return pix((s) => {
+    const hi: RGB = [Math.min(255, c[0] + 50), Math.min(255, c[1] + 50), Math.min(255, c[2] + 50)];
+    if (slot === 0) { for (let y = 3; y < 11; y++) for (let x = 3; x < 13; x++) { if (y > 7 && x > 5 && x < 10) continue; s(x, y, y < 5 ? hi : c); } }
+    else if (slot === 1) { for (let y = 2; y < 14; y++) for (let x = 2; x < 14; x++) { if (y < 5 && x > 5 && x < 10) continue; if (y > 5 && (x < 4 || x > 11)) continue; s(x, y, x === 7 || x === 8 ? hi : c); } }
+    else if (slot === 2) { for (let y = 2; y < 14; y++) for (let x = 3; x < 13; x++) { if (y > 5 && x > 6 && x < 9) continue; s(x, y, y < 4 ? hi : c); } }
+    else { for (let y = 7; y < 13; y++) { for (let x = 2; x < 7; x++) s(x, y, y < 9 ? hi : c); for (let x = 9; x < 14; x++) s(x, y, y < 9 ? hi : c); } s(6, 12, c); s(13, 12, c); }
+  }, key);
+}
 function ingot(s: any, c: RGB) { for (let y = 6; y < 12; y++) for (let x = 2 + (11 - y) * 0.5; x < 14 - (11 - y) * 0.5; x++) s(x, y, y === 6 ? [Math.min(255, c[0] + 40), Math.min(255, c[1] + 40), Math.min(255, c[2] + 40)] : y === 11 ? dk(c, 0.7) : c); }
 function gem(s: any, c: RGB) { for (let y = 2; y < 14; y++) for (let x = 2; x < 14; x++) { const d = Math.abs(x - 7.5) + Math.abs(y - 8) * 0.8; if (d < 6) s(x, y, d < 2 ? [Math.min(255, c[0] + 90), Math.min(255, c[1] + 90), Math.min(255, c[2] + 90)] : (x < 8 ? c : dk(c, 0.75))); } }
 function meat(s: any, c: RGB, bone: RGB) { for (let y = 3; y < 12; y++) for (let x = 3; x < 12; x++) if ((x - 7) ** 2 + (y - 7) ** 2 < 17) s(x, y, (x + y) % 5 === 0 ? dk(c, 0.8) : c); for (let i = 0; i < 4; i++) s(11 + i * 0.7, 11 + i * 0.7, bone); s(14, 13, bone); s(13, 14, bone); }
@@ -188,7 +238,8 @@ export function itemCanvas(id: number): HTMLCanvasElement {
       out = document.createElement('canvas'); out.width = 16; out.height = 16;
       out.getContext('2d')!.drawImage(tileCanvasFn(faceTile(d.block, 0, bd.shape === SHAPE_CROSS && d.block === B.BERRY_BUSH ? 1 : 0)), 0, 0);
     }
-  } else if (d.tool) out = toolIcon(d.tool, d.key);
+  } else if (d.armor) out = armorIcon(d.armor.slot, TIER_COL[d.armor.tier] || [200, 200, 200], d.key);
+  else if (d.tool) out = toolIcon(d.tool, d.key);
   else out = pix(ITEM_ART[d.key] || ((s: any) => { for (let i = 4; i < 12; i++) for (let j = 4; j < 12; j++) s(i, j, [255, 0, 255]); }), d.key);
   iconCanvas.set(id, out);
   return out;

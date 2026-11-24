@@ -1,6 +1,8 @@
 import { Game } from './core/Game';
 import { UI } from './ui/UI';
 import { setLang, watchTranslations } from './ui/i18n';
+import { I } from './game/Items';
+import { B } from './world/Blocks';
 
 const canvas = document.getElementById('game') as HTMLCanvasElement;
 const root = document.getElementById('ui') as HTMLElement;
@@ -12,6 +14,7 @@ watchTranslations(root);
 game.setState('menu');
 game.start();
 (window as any).akoi = game;
+(window as any).akoiIds = { I, B };
 
 // Android back button: close panels / pause instead of leaving the app.
 (async () => {

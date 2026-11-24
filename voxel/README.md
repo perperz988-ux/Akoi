@@ -58,6 +58,21 @@ keeps the screen on, hardware accelerated, requires OpenGL ES 3, and maps the An
   difficulty), continue, rename, delete. Only modified chunks are stored (run-length compressed). Autosave every
   30 s and when the app is paused/backgrounded.
 
+## Expansion: dimensions, caves, ores and more
+
+* **Dimensions:** craft a **Sky Rift** (frostquartz + glow dust + prism shards) or an **Ember Rift** (rubellite + slate + coal)
+  at a Workbench, place it and *Use* it. **Celestia** is a realm of floating islands, cloud banks, silverleaf trees, Starstone
+  and peaceful Cloudrays (fall off an island and you drop back home). The **Ashen Wastes** is a volcanic land of basalt spires,
+  ash plains, magma seas, ember trees, Emberite and hostile Cinderhounds. A return rift is placed when you arrive.
+* **Cave zones:** glowing moss grottos (moss, mud, hanging glow vines, glowcaps), prism crystal caverns (crystal blocks and
+  shard clusters), frost caves under the Frostlands and basalt in the deep layers.
+* **New ores:** Frostquartz (high mountains), Rubellite (very deep), Starstone (Celestia), Emberite (Ashen Wastes) — plus
+  storage blocks for each and a new top tool tier (Emberite).
+* **Combat & survival:** armour sets (copper, iron, azure, emberite — 4 slots each, damage reduction), Shortbow + arrows,
+  Blast Kegs (chain-reacting explosives), fishing with a Fishing Line, bedrolls (sleep through the night, set spawn),
+  new food (fish, ashfruit, ember pie).
+* **Building:** ladders (climbable), slabs, steps, fence posts, lanterns, bookshelves, rugs, gem blocks.
+
 ## Controls
 
 * **Touch:** floating joystick (left side; push to the edge to sprint), drag anywhere else to look,

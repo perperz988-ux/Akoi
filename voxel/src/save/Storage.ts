@@ -54,10 +54,10 @@ export async function putWorld(w: WorldMeta) {
 }
 export async function deleteWorld(id: string) {
   const db = await open();
-  if (!db) { mem.worlds.delete(id); for (const k of [...mem.chunks.keys()]) if (k.startsWith(id + ':')) mem.chunks.delete(k); return; }
+  if (!db) { mem.worlds.delete(id); for (const k of [...mem.chunks.keys()]) if (k.startsWith(id + ':') || k.startsWith(id + '@')) mem.chunks.delete(k); return; }
   const tx = db.transaction(['worlds', 'chunks'], 'readwrite');
   tx.objectStore('worlds').delete(id);
-  tx.objectStore('chunks').delete(IDBKeyRange.bound(id + ':', id + ':￿'));
+  for (const pre of [id + ':', id + '@1:', id + '@2:']) tx.objectStore('chunks').delete(IDBKeyRange.bound(pre, pre + '\uffff'));
   await new Promise((r) => { tx.oncomplete = r; tx.onerror = r; });
 }
 export async function listChunkKeys(id: string): Promise<Set<string>> {

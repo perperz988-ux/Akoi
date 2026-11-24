@@ -427,7 +427,7 @@ export class UI implements UIHooks {
       }
       body.appendChild(sp);
       const sv = h('div', 'set', `<label>Set world spawn here</label><button class="btn">Set</button>`);
-      sv.querySelector('button')!.addEventListener('click', () => { g.player.spawn = { x: g.player.x, y: g.player.y, z: g.player.z }; this.toast('Spawn point set'); });
+      sv.querySelector('button')!.addEventListener('click', () => { g.player.spawn = { x: g.player.x, y: g.player.y, z: g.player.z }; if (g.meta) (g.meta.state || (g.meta.state = {})).spawnDim = g.dim; this.toast('Spawn point set'); });
       body.appendChild(sv);
     } else body.appendChild(h('div', 'small', 'Switch to Creative mode for flight, unlimited blocks and creature summoning.'));
     s.classList.add('on');
@@ -442,7 +442,7 @@ export class UI implements UIHooks {
       <div class="info"></div>
       <div class="topbtns"><div class="ibtn tap" id="hcr">${ICON.star}</div><div class="ibtn tap" id="hinv">${ICON.bag}</div><div class="ibtn tap" id="hpause">${ICON.pause}</div></div>
       <div class="toasts"></div><div class="iname"></div>
-      <div class="bottom"><div class="bars"><div class="bar hp"></div><div class="bar air"></div><div class="bar food"></div></div><div class="hotbar"></div></div>`;
+      <div class="bottom"><div class="bars"><div class="bar hp"></div><div class="arm" style="font-size:11px;font-weight:800;color:#cfe3ea;text-shadow:0 1px 2px #000"></div><div class="bar air"></div><div class="bar food"></div></div><div class="hotbar"></div></div>`;
     hud.style.display = 'none';
     this.root.appendChild(hud);
     this.hud = hud;
@@ -514,6 +514,10 @@ export class UI implements UIHooks {
       for (let i = 0; i < 10; i++) { const f = Math.max(0, Math.min(1, v / 2 - i)); ((kids[i] as HTMLElement).firstChild as HTMLElement).style.width = (f * 100) + '%'; }
     };
     fill(this.hpEl, p.health); fill(this.foodEl, p.hunger);
+    const armEl = this.hud.querySelector('.arm') as HTMLElement;
+    const ap = p.armorPoints;
+    const armTxt = surv && ap > 0 ? `🛡 ${ap}` : '';
+    if (armEl.textContent !== armTxt) armEl.textContent = armTxt;
     const showAir = surv && (p.body.headInWater || p.air < 10);
     this.airEl.style.visibility = showAir ? 'visible' : 'hidden';
     if (showAir) fill(this.airEl, p.air * 2);
@@ -576,7 +580,7 @@ export class UI implements UIHooks {
 
   private invSignature() {
     const g = this.game;
-    return JSON.stringify([g.player.inv.slots, this.crate, this.cursor, this.invTab, this.station]);
+    return JSON.stringify([g.player.inv.slots, g.player.armor, this.crate, this.cursor, this.invTab, this.station]);
   }
   private refreshInventoryIfChanged() { if (this.invSignature() !== this.invSig) this.renderInventory(); }
 
@@ -658,6 +662,26 @@ export class UI implements UIHooks {
       if (this.crate) grid(this.crate, 0, 27, 'Crate');
       grid(inv.slots, 9, 36, 'Pack');
       grid(inv.slots, 0, 9, 'Hotbar');
+      if (!this.crate) {
+        left.appendChild(h('div', 'sect', 'Armor'));
+        const aEl = h('div', 'grid');
+        for (let i = 0; i < 4; i++) {
+          const tmp = h('div'); tmp.innerHTML = this.slotHtml(g.player.armor[i]);
+          const el = tmp.firstElementChild as HTMLElement;
+          if (!g.player.armor[i]) el.innerHTML = `<span class="small" style="font-size:9px">${['Helm', 'Vest', 'Greaves', 'Boots'][i]}</span>`;
+          el.addEventListener('click', () => {
+            const c = this.cursor;
+            if (c && item(c.id).armor?.slot !== i) { this.toast('That does not go there'); return; }
+            const old = g.player.armor[i];
+            g.player.armor[i] = c ? { ...c, count: 1 } : null;
+            this.cursor = old;
+            g.audio.ui();
+            this.renderInventory();
+          });
+          aEl.appendChild(el);
+        }
+        left.appendChild(aEl);
+      }
     }
     left.scrollTop = leftScroll;
     // crafting

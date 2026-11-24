@@ -21,6 +21,7 @@ export class Sky {
   private cloudMat: THREE.ShaderMaterial;
   private wind = 0;
   flash = 0;
+  dim = 0;
 
   constructor(private scene: THREE.Scene) {
     this.skyMat = new THREE.ShaderMaterial({
@@ -117,7 +118,8 @@ export class Sky {
     }
   }
 
-  setCloudsVisible(v: boolean) { this.clouds.visible = v; }
+  private cloudsOn = true;
+  setCloudsVisible(v: boolean) { this.cloudsOn = v; this.clouds.visible = v; }
 
   /** t: time of day 0..1 (0 = sunrise, 0.25 noon, 0.5 sunset, 0.75 midnight); rain 0..1. */
   update(dt: number, t: number, rain: number, camera: THREE.Camera, fogFar: number, underwater: boolean, underground: number) {
@@ -134,6 +136,13 @@ export class Sky {
     const rainK = rain * 0.75;
     top.lerp(RAIN.clone().multiplyScalar(0.25 + day * 0.75), rainK);
     hor.lerp(RAIN.clone().multiplyScalar(0.3 + day * 0.7), rainK);
+    if (this.dim === 2) {
+      top.lerp(new THREE.Color().setRGB(0.24, 0.05, 0.04, THREE.SRGBColorSpace), 0.85);
+      hor.lerp(new THREE.Color().setRGB(0.62, 0.22, 0.09, THREE.SRGBColorSpace), 0.85);
+    } else if (this.dim === 1) {
+      top.lerp(new THREE.Color().setRGB(0.42, 0.5, 0.98, THREE.SRGBColorSpace), 0.35 * day);
+      hor.lerp(new THREE.Color().setRGB(0.98, 0.86, 1.0, THREE.SRGBColorSpace), 0.45 * day);
+    }
     if (this.flash > 0) { top.lerp(new THREE.Color(1, 1, 1), this.flash); hor.lerp(new THREE.Color(1, 1, 1), this.flash); this.flash = Math.max(0, this.flash - dt * 3); }
     const u = this.skyMat.uniforms;
     u.uTop.value.copy(top); u.uHor.value.copy(hor); u.uSun.value.copy(sunDir);
@@ -155,7 +164,8 @@ export class Sky {
     const tx = Math.round(p.x / snap) * snap, tz = Math.round(p.z / snap) * snap;
     this.sun.position.set(tx + ldir.x * 120, Math.max(10, p.y) + ldir.y * 120, tz + ldir.z * 120);
     this.sun.target.position.set(tx, p.y, tz);
-    this.hemi.intensity = (0.35 + 1.05 * day) * (1 - rain * 0.25);
+    this.hemi.intensity = this.dim === 2 ? 0.9 : (0.35 + 1.05 * day) * (1 - rain * 0.25);
+    if (this.dim === 2) this.sun.intensity = 0.7;
     this.hemi.color.copy(top).lerp(new THREE.Color(1, 1, 1), 0.45);
     this.hemi.groundColor.setRGB(0.32 + 0.1 * day, 0.3 + 0.08 * day, 0.26);
     // fog
@@ -172,7 +182,8 @@ export class Sky {
     this.fog.color.copy(this.fogColor);
     // clouds
     this.wind += dt * 1.2;
-    this.clouds.position.set(p.x, 150, p.z);
+    this.clouds.position.set(p.x, this.dim === 1 ? 20 : 150, p.z);
+    this.clouds.visible = this.cloudsOn && this.dim !== 2;
     const cu = this.cloudMat.uniforms;
     cu.uOff.value.set((p.x + this.wind) / 300, -p.z / 300);
     cu.uCol.value.copy(new THREE.Color(1, 1, 1).lerp(new THREE.Color(0.1, 0.12, 0.18), 1 - day).lerp(RAIN, rain * 0.6));

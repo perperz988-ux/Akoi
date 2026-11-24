@@ -116,6 +116,8 @@ export class Audio {
       case 'glimmerwing': for (let i = 0; i < 3; i++) this.tone(2400 + i * 300, 0.12, 0.03 * v, 'sine', i * 0.07); break;
       case 'gloomling': this.tone(70 * p, 0.6, 0.25 * v, 'sawtooth', 0, 1.5); this.noiseBurst('bandpass', 300, 4, 0.5, 0.15 * v); break;
       case 'crawler': for (let i = 0; i < 5; i++) this.noiseBurst('bandpass', 2400, 6, 0.03, 0.2 * v, i * 0.05); break;
+      case 'cloudray': this.tone(520 * p, 0.6, 0.06 * v, 'sine', 0, 1.3); this.tone(780 * p, 0.5, 0.04 * v, 'sine', 0.15, 0.9); break;
+      case 'cinderhound': this.noiseBurst('bandpass', 400, 2, 0.3, 0.3 * v); this.tone(110 * p, 0.3, 0.2 * v, 'sawtooth', 0, 0.7); break;
       case 'stingwisp': this.tone(320 * p, 0.4, 0.07 * v, 'sawtooth', 0, 1.1); this.tone(330 * p, 0.4, 0.07 * v, 'square', 0); break;
     }
   }

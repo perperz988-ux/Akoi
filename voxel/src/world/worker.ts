@@ -17,7 +17,7 @@ function geomBuffers(g: GeomData | null, out: ArrayBuffer[]) {
 self.onmessage = (e: MessageEvent) => {
   const m = e.data;
   if (m.type === 'gen') {
-    const r = gen(m.seed).generateChunk(m.cx, m.cz);
+    const r = gen(m.seed).generateChunk(m.cx, m.cz, m.dim || 0);
     (self as any).postMessage({ type: 'gen', uid: m.uid, cx: m.cx, cz: m.cz, blocks: r.blocks, meta: r.meta }, [r.blocks.buffer, r.meta.buffer]);
   } else if (m.type === 'mesh') {
     const r = meshChunk(m.cx, m.cz, m.blocks, m.metas, m.lod, m.fancy);

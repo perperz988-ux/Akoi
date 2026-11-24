@@ -25,6 +25,7 @@ export class Generator {
   private nC: Simplex; private nH: Simplex; private nE: Simplex; private nR: Simplex; private nI: Simplex;
   private nRiv: Simplex; private nT: Simplex; private nW: Simplex; private nCave1: Simplex; private nCave2: Simplex;
   private nCave3: Simplex; private nD: Simplex;
+  private nZone: Simplex; private nSky: Simplex; private nSky2: Simplex; private nAsh: Simplex; private nAsh2: Simplex;
   private colCache = new Map<number, Column>();
 
   constructor(seed: number) {
@@ -34,6 +35,7 @@ export class Generator {
     this.nC = new Simplex(s()); this.nH = new Simplex(s()); this.nE = new Simplex(s()); this.nR = new Simplex(s());
     this.nI = new Simplex(s()); this.nRiv = new Simplex(s()); this.nT = new Simplex(s()); this.nW = new Simplex(s());
     this.nCave1 = new Simplex(s()); this.nCave2 = new Simplex(s()); this.nCave3 = new Simplex(s()); this.nD = new Simplex(s());
+    this.nZone = new Simplex(s()); this.nSky = new Simplex(s()); this.nSky2 = new Simplex(s()); this.nAsh = new Simplex(s()); this.nAsh2 = new Simplex(s());
   }
 
   column(x: number, z: number): Column {
@@ -115,7 +117,9 @@ export class Generator {
     return v < 0;
   }
 
-  generateChunk(cx: number, cz: number): { blocks: Uint8Array; meta: Uint8Array } {
+  generateChunk(cx: number, cz: number, dim = 0): { blocks: Uint8Array; meta: Uint8Array } {
+    if (dim === 1) return this.genSky(cx, cz);
+    if (dim === 2) return this.genAsh(cx, cz);
     const blocks = new Uint8Array(CHUNK * CHUNK * HEIGHT);
     const meta = new Uint8Array(CHUNK * CHUNK * HEIGHT);
     const x0 = cx * CHUNK, z0 = cz * CHUNK;
@@ -169,6 +173,7 @@ export class Generator {
 
     // fix grass under cave openings: dirt below air is fine; turf with no air above remains turf
     this.ores(blocks, cx, cz);
+    this.caveZones(blocks, meta, cols, cx, cz);
     this.decorate(blocks, meta, cols, cx, cz);
     this.features(blocks, cx, cz);
     // glowcaps on cave floors
@@ -252,6 +257,8 @@ export class Generator {
     vein(B.GLOWSHARD_ORE, 3, 4, 4, 36);
     vein(B.SUNSTONE_ORE, 2, 6, 4, 28);
     vein(B.AZURITE_ORE, 2, 4, 3, 18);
+    vein(B.FROSTQUARTZ_ORE, 4, 6, 62, 120);
+    vein(B.RUBELLITE_ORE, 2, 4, 3, 14);
   }
 
   private decorate(blocks: Uint8Array, meta: Uint8Array, cols: Column[], cx: number, cz: number) {
@@ -334,6 +341,137 @@ export class Generator {
   }
 
   /** Finds a dry land spawn point near the origin. */
+  /** Decorates cave air pockets into themed zones: glowing moss grottos, prism crystal caverns, frost caves, deep basalt. */
+  private caveZones(blocks: Uint8Array, meta: Uint8Array, cols: Column[], cx: number, cz: number) {
+    const r = mulberry32(hash3(cx, 211, cz, this.seed) * 4294967296);
+    const solidStone = (b: number) => b === B.STONE || b === B.SLATE || b === B.DIRT || b === B.GRAVEL;
+    for (let z = 0; z < 16; z++) for (let x = 0; x < 16; x++) {
+      const col = cols[x + z * 16];
+      const wx = cx * 16 + x, wz = cz * 16 + z;
+      const frosty = col.biome === BIOME.TUNDRA;
+      for (let y = 5; y < col.h - 5; y++) {
+        const i = idx(x, y, z);
+        if (blocks[i] !== B.AIR) continue;
+        const below = blocks[i - 256], above = blocks[i + 256];
+        const floor = solidStone(below), ceil = solidStone(above);
+        if (!floor && !ceil) continue;
+        const zone = this.nZone.n3(wx / 80, y / 36, wz / 80);
+        if (frosty && y > 30) {
+          if (floor && r() < 0.6) blocks[i - 256] = B.ICE;
+          else if (ceil && r() < 0.3) blocks[i + 256] = B.SNOW;
+        } else if (zone > 0.3) { // glowing moss grotto
+          if (floor) { blocks[i - 256] = r() < 0.15 ? B.MUD : B.MOSS; if (r() < 0.12) blocks[i] = B.GLOWCAP; }
+          if (ceil && r() < 0.22) {
+            const len = 1 + Math.floor(r() * 4);
+            for (let k = 0; k < len; k++) { const j = i - k * 256; if (blocks[j] !== B.AIR) break; blocks[j] = B.GLOW_VINE; }
+          }
+        } else if (zone < -0.38) { // prism crystal cavern
+          if (floor && r() < 0.1) blocks[i] = B.CRYSTAL_SHARD;
+          if (floor && r() < 0.18) blocks[i - 256] = B.CRYSTAL_BLOCK;
+          if (ceil && r() < 0.18) blocks[i + 256] = B.CRYSTAL_BLOCK;
+        } else if (y < 20) { // deep basalt
+          if (floor && r() < 0.35) blocks[i - 256] = B.BASALT;
+          if (ceil && r() < 0.35) blocks[i + 256] = B.BASALT;
+        }
+      }
+    }
+    void meta;
+  }
+
+  // ---------------------------------------------------------------- Celestia (sky islands)
+  private genSky(cx: number, cz: number) {
+    const blocks = new Uint8Array(CHUNK * CHUNK * HEIGHT), meta = new Uint8Array(CHUNK * CHUNK * HEIGHT);
+    const r = mulberry32(hash3(cx, 401, cz, this.seed) * 4294967296);
+    for (let z = 0; z < 16; z++) for (let x = 0; x < 16; x++) {
+      const wx = cx * 16 + x, wz = cz * 16 + z;
+      const mask = this.nSky2.fbm2(wx / 260, wz / 260, 3) * 0.6;
+      for (let y = 24; y < 112; y++) {
+        const fall = ((y - 66) / 36) ** 2;
+        const d = this.nSky.n3(wx / 64, y / 30, wz / 64) + this.nSky2.n3(wx / 22, y / 16, wz / 22) * 0.3 + mask - fall * 0.9;
+        if (d > 0.28) blocks[idx(x, y, z)] = B.SKYSTONE;
+      }
+      // cloud banks
+      const c = this.nSky2.fbm2(wx / 50 + 100, wz / 50, 2);
+      if (c > 0.32) for (let y = 30; y < 30 + Math.floor((c - 0.32) * 12) + 1; y++) blocks[idx(x, y, z)] = B.CLOUD;
+      // surface pass
+      for (let y = 111; y > 24; y--) {
+        const i = idx(x, y, z);
+        if (blocks[i] !== B.SKYSTONE || blocks[i + 256] !== B.AIR) continue;
+        blocks[i] = B.SKY_GRASS;
+        const p = r();
+        if (p < 0.1) blocks[i + 256] = B.TALL_GRASS;
+        else if (p < 0.13) blocks[i + 256] = r() < 0.5 ? B.SUNPETAL : B.BLUEBELL;
+        else if (p < 0.135 && x > 2 && x < 13 && z > 2 && z < 13 && y < 100) this.silverTree(blocks, x, y + 1, z, r);
+      }
+    }
+    // starstone & glowshard veins
+    for (let v = 0; v < 6; v++) {
+      let x = r() * 16, y = 30 + r() * 70, z = r() * 16;
+      const ore = v < 4 ? B.STARSTONE_ORE : B.GLOWSHARD_ORE;
+      for (let k = 0; k < 6; k++) {
+        const ix = Math.floor(x), iy = Math.floor(y), iz = Math.floor(z);
+        if (ix >= 0 && ix < 16 && iz >= 0 && iz < 16) { const i = idx(ix, iy, iz); if (blocks[i] === B.SKYSTONE) blocks[i] = ore; }
+        x += r() * 2 - 1; y += r() * 2 - 1; z += r() * 2 - 1;
+      }
+    }
+    return { blocks, meta };
+  }
+
+  private silverTree(blocks: Uint8Array, x: number, y: number, z: number, r: () => number) {
+    const h = 4 + Math.floor(r() * 3);
+    for (let ly = h - 2; ly <= h + 1; ly++) {
+      const rad = ly > h ? 1 : 2;
+      for (let dz = -rad; dz <= rad; dz++) for (let dx = -rad; dx <= rad; dx++) {
+        if (Math.abs(dx) === rad && Math.abs(dz) === rad) continue;
+        const i = idx(x + dx, y + ly, z + dz);
+        if (blocks[i] === B.AIR) blocks[i] = B.SILVER_LEAVES;
+      }
+    }
+    for (let ly = 0; ly < h; ly++) blocks[idx(x, y + ly, z)] = B.SILVER_LOG;
+  }
+
+  // ---------------------------------------------------------------- Ashen Wastes (volcanic)
+  private genAsh(cx: number, cz: number) {
+    const blocks = new Uint8Array(CHUNK * CHUNK * HEIGHT), meta = new Uint8Array(CHUNK * CHUNK * HEIGHT);
+    const r = mulberry32(hash3(cx, 503, cz, this.seed) * 4294967296);
+    const LAVA = 40;
+    for (let z = 0; z < 16; z++) for (let x = 0; x < 16; x++) {
+      const wx = cx * 16 + x, wz = cz * 16 + z;
+      let h = Math.floor(50 + this.nAsh.fbm2(wx / 140, wz / 140, 4) * 22 + Math.abs(this.nAsh2.n2(wx / 40, wz / 40)) * 8);
+      const pillar = this.nAsh2.n2(wx / 9, wz / 9);
+      if (pillar > 0.72) h += Math.floor((pillar - 0.72) * 60);
+      h = Math.max(6, Math.min(118, h));
+      for (let y = 0; y <= h; y++) {
+        let id: number = y === 0 ? B.DEEPSTONE : h - y < 3 && pillar <= 0.72 ? B.ASH_SOIL : B.BASALT;
+        if (y > 4 && y < h - 4 && this.nAsh.n3(wx / 30, y / 20, wz / 30) > 0.55) id = y < 14 ? B.MAGMA : B.AIR;
+        blocks[idx(x, y, z)] = id;
+      }
+      for (let y = h + 1; y <= LAVA; y++) blocks[idx(x, y, z)] = B.MAGMA;
+      if (h > LAVA + 1 && pillar <= 0.72) {
+        const p = r();
+        if (p < 0.012 && x > 2 && x < 13 && z > 2 && z < 13) {
+          const th = 3 + Math.floor(r() * 3);
+          for (let ly = 1; ly <= th; ly++) blocks[idx(x, h + ly, z)] = B.CHARRED_LOG;
+          for (let dz = -1; dz <= 1; dz++) for (let dx = -1; dx <= 1; dx++) for (let ly = th; ly <= th + 1; ly++) {
+            const i = idx(x + dx, h + ly, z + dz);
+            if (blocks[i] === B.AIR && (ly === th || (!dx || !dz))) blocks[i] = B.EMBER_LEAVES;
+          }
+        } else if (p < 0.03) blocks[idx(x, h + 1, z)] = B.DRY_SHRUB;
+        else if (p < 0.036) blocks[idx(x, h + 1, z)] = B.GLOWCAP;
+      }
+    }
+    for (let v = 0; v < 10; v++) {
+      let x = r() * 16, y = 8 + r() * 60, z = r() * 16;
+      const ore = v < 6 ? B.EMBERITE_ORE : v < 8 ? B.COAL_ORE : B.SUNSTONE_ORE;
+      for (let k = 0; k < 6; k++) {
+        const ix = Math.floor(x), iy = Math.floor(y), iz = Math.floor(z);
+        if (ix >= 0 && ix < 16 && iz >= 0 && iz < 16 && iy > 0 && iy < HEIGHT) { const i = idx(ix, iy, iz); if (blocks[i] === B.BASALT) blocks[i] = ore; }
+        x += r() * 2 - 1; y += r() * 2 - 1; z += r() * 2 - 1;
+      }
+    }
+    return { blocks, meta };
+  }
+
   findSpawn(): { x: number; y: number; z: number } {
     for (let r = 0; r < 4000; r += 8) {
       const steps = Math.max(1, Math.floor(r / 6));

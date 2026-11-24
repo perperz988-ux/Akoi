@@ -4,7 +4,7 @@ import { B, L_OPAQUE, L_SOLID, UNLOADED } from '../world/Blocks';
 import type { World } from '../world/World';
 import { Body, makeBody, moveBody } from './Physics';
 import { I } from './Items';
-import { Model, buildCrawler, buildGlimmerwing, buildGloomling, buildHopkin, buildMossback, buildStingwisp, disposeModel } from './Models';
+import { Model, buildCrawler, buildGlimmerwing, buildGloomling, buildHopkin, buildMossback, buildStingwisp, buildCloudray, buildCinderhound, disposeModel } from './Models';
 
 export interface MobType {
   key: string; name: string; hostile: boolean; flying: boolean;
@@ -21,6 +21,8 @@ export const MOB_TYPES: MobType[] = [
   { key: 'glimmerwing', name: 'Glimmerwing', hostile: false, flying: true, hw: 0.25, h: 0.35, health: 3, speed: 2.4, damage: 0, range: 0, aggro: 0, drops: [[I.glow_dust, 1, 2, 1]], lure: [], food: [], build: buildGlimmerwing, category: 'ambient' },
   { key: 'gloomling', name: 'Gloomling', hostile: true, flying: false, hw: 0.32, h: 1.75, health: 18, speed: 2.7, damage: 3, range: 1.5, aggro: 18, drops: [[I.gloom_essence, 0, 1, 0.7], [I.raw_meat, 0, 1, 0.3]], lure: [], food: [], build: buildGloomling, category: 'hostile' },
   { key: 'crawler', name: 'Crag Crawler', hostile: true, flying: false, hw: 0.55, h: 0.7, health: 24, speed: 2.0, damage: 4, range: 1.6, aggro: 12, drops: [[I.crag_shard, 1, 2, 1], [I.coal, 0, 2, 0.5], [B.RUBBLE, 1, 2, 0.5]], lure: [], food: [], build: buildCrawler, category: 'hostile' },
+  { key: 'cloudray', name: 'Cloudray', hostile: false, flying: true, hw: 0.5, h: 0.3, health: 10, speed: 2.2, damage: 0, range: 0, aggro: 0, drops: [[I.fiber, 1, 2, 1], [B.CLOUD, 1, 2, 0.6]], lure: [], food: [], build: buildCloudray, category: 'ambient' },
+  { key: 'cinderhound', name: 'Cinderhound', hostile: true, flying: false, hw: 0.35, h: 1.1, health: 20, speed: 3.6, damage: 4, range: 1.5, aggro: 20, drops: [[I.coal, 1, 2, 1], [I.emberite_ingot, 0, 1, 0.25], [I.raw_meat, 0, 1, 0.5]], lure: [], food: [], build: buildCinderhound, category: 'hostile' },
   { key: 'stingwisp', name: 'Stingwisp', hostile: true, flying: true, hw: 0.3, h: 0.5, health: 8, speed: 4.2, damage: 2, range: 1.2, aggro: 22, drops: [[I.glow_dust, 0, 1, 0.6], [I.fiber, 0, 1, 0.4]], lure: [], food: [], build: buildStingwisp, category: 'hostile' },
 ];
 export const mobType = (k: string) => MOB_TYPES.find((t) => t.key === k)!;
@@ -30,6 +32,7 @@ export interface MobContext {
   player: { x: number; y: number; z: number; eye: number; sneaking: boolean; heldId: number; alive: boolean; survival: boolean; hurt: (dmg: number, fx: number, fz: number, src: string) => void };
   dayFactor: number;
   difficulty: number; // 0 peaceful, 1 normal, 2 hard
+  dim?: number;
   spawning: boolean;
   drop: (x: number, y: number, z: number, id: number, count: number) => void;
   fx: { puff: (x: number, y: number, z: number, n: number, col?: [number, number, number]) => void; sparkle: (x: number, y: number, z: number, c: [number, number, number]) => void; burst: (x: number, y: number, z: number, col: [number, number, number], n: number) => void };
@@ -147,6 +150,15 @@ export class MobManager {
     const top = world.getBlock(x, sy, z);
     const night = this.ctx.dayFactor < 0.25;
     const hostileOk = this.ctx.difficulty > 0 && player.survival;
+    if (this.ctx.dim === 1) {
+      if (this.count('ambient') < 6 && top === B.SKY_GRASS && this.isClear(x, sy + 1, z, 2)) this.spawn(mobType('cloudray'), x + 0.5, sy + 3 + Math.random() * 4, z + 0.5);
+      else if (night && hostileOk && this.count('hostile') < 3 && this.isClear(x, sy + 1, z, 2)) this.spawn(mobType('stingwisp'), x + 0.5, sy + 4, z + 0.5);
+      return;
+    }
+    if (this.ctx.dim === 2) {
+      if (hostileOk && this.count('hostile') < 5 + this.ctx.difficulty * 2 && (top === B.ASH_SOIL || top === B.BASALT) && this.isClear(x, sy + 1, z, 2)) this.spawn(mobType('cinderhound'), x + 0.5, sy + 1, z + 0.5);
+      return;
+    }
     const r = Math.random();
     // underground spawn attempt
     if (r < 0.35 && hostileOk && this.count('hostile') < 6 + this.ctx.difficulty * 2) {
@@ -371,7 +383,7 @@ export class MobManager {
     }
     b.vy = Math.max(-40, b.vy);
     moveBody(w, b, dt);
-    if (b.inMagma) { m.health -= dt * 4; if (m.health <= 0) this.damage(m, 1, b.x, b.z); }
+    if (b.inMagma && t.key !== 'cinderhound') { m.health -= dt * 4; if (m.health <= 0) this.damage(m, 1, b.x, b.z); }
     if (b.touchCactus && Math.random() < dt * 2) this.damage(m, 1, b.x + (Math.random() - 0.5), b.z + (Math.random() - 0.5));
     if (b.y < -20) this.remove(m);
   }

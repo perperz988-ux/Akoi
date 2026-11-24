@@ -3,7 +3,7 @@
 import {
   ATLAS_CELL, ATLAS_COLS, ATLAS_SIZE, ATLAS_TILE, B, CHUNK, HEIGHT, L_CULLSAME, L_EMIT, L_FILTER, L_OPAQUE,
   L_RENDER, L_SHAPE, RENDER_CUTOUT, RENDER_NONE, RENDER_OPAQUE, RENDER_WATER, SECTIONS, SHAPE_BOX, SHAPE_CROSS,
-  SHAPE_CUBE, SHAPE_LIQUID, blockBoxes, faceTile, FAST_LEAF,
+  SHAPE_CUBE, SHAPE_LIQUID, blockBoxes, faceTile, FAST_LEAF, isLeaf,
 } from './Blocks';
 import { hash3 } from './Noise';
 
@@ -21,7 +21,6 @@ const queue = new Int32Array(QN);
 const cullOpaque = new Uint8Array(256);
 const hm = new Int16Array(RA);
 
-const isLeaf = (id: number) => id === B.ASH_LEAVES || id === B.PINE_LEAVES || id === B.PALM_LEAVES;
 
 class Buf {
   pos = new Float32Array(4096); nor = new Int8Array(4096); uv = new Float32Array(4096);
@@ -328,7 +327,7 @@ function connectivity(sec: number, out: Uint8Array) {
 
 export function meshChunk(cx: number, cz: number, blocks: Uint8Array[], metas: Uint8Array[], lod: number, fancy: boolean): MeshOutput {
   for (let i = 0; i < 256; i++) cullOpaque[i] = L_OPAQUE[i];
-  if (!fancy) { cullOpaque[B.ASH_LEAVES] = 1; cullOpaque[B.PINE_LEAVES] = 1; cullOpaque[B.PALM_LEAVES] = 1; }
+  if (!fancy) for (let i = 0; i < 256; i++) if (isLeaf(i)) cullOpaque[i] = 1;
   fillRegion(blocks, metas);
   if (lod > 0) return meshLod(cx, cz);
   computeLight();

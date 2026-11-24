@@ -88,7 +88,14 @@ export class Game {
   biome = '';
   private torchTimer = 0;
   private placeCd = 0;
-  loadingTarget = { x: 0, z: 0, fresh: false };
+  loadingTarget = { x: 0, z: 0, fresh: false, arrive: false };
+  dim = 0;
+  private fuses: { x: number; y: number; z: number; t: number }[] = [];
+  private arrows: { x: number; y: number; z: number; vx: number; vy: number; vz: number; life: number; mesh: THREE.Mesh }[] = [];
+  private arrowGeo = new THREE.BoxGeometry(0.06, 0.06, 0.6);
+  private arrowMat = new THREE.MeshLambertMaterial({ color: 0xb08a5a });
+  fishing: { x: number; y: number; z: number; t: number; bob: THREE.Mesh } | null = null;
+  private travelling = false;
   private loadingT = 0;
 
   constructor(canvas: HTMLCanvasElement) {
@@ -204,25 +211,20 @@ export class Game {
     this.meta = meta;
     this.setState('loading');
     this.ui.setLoading(0, 'Shaping terrain…');
-    const s = this.settings;
-    const world = new World({ scene: this.scene, seed: meta.seed, worldId: meta.id, materials: this.mats, radius: s.renderDistance, lodStart: s.lodDistance, fancyLeaves: s.fancyLeaves, shadows: s.shadows });
-    await world.init();
-    this.world = world;
-    world.onDrop = (x, y, z, id, m) => { for (const st of this.blockDrops(id, m, null)) this.spawnDrop(x + 0.5, y + 0.5, z + 0.5, st.id, st.count, st.dur); };
-    world.onCrateSpill = (x, y, z, items) => { for (const st of items) this.spawnDrop(x + 0.5, y + 0.5, z + 0.5, st.id, st.count, st.dur); };
-    (this.mobs as any).ctx.world = world;
+    this.dim = (meta.state && meta.state.dim) || 0;
+    const world = await this.makeWorld(this.dim);
     this.player = Object.assign(new Player(), { onStep: this.player.onStep, onHurt: this.player.onHurt, onDeath: this.player.onDeath, onSplash: this.player.onSplash });
     this.player.mode = meta.mode;
     const st = meta.state || {};
     this.time = st.time ?? DAY_LENGTH * 0.05;
     this.rules = { daylightCycle: true, mobSpawning: true, keepInventory: false, difficulty: 1, weatherCycle: true, ...(st.rules || {}) };
     this.rain = this.rainTarget = st.rain ?? 0; this.storm = !!st.storm;
-    if (meta.player) { this.player.load(meta.player); this.player.mode = meta.mode; this.loadingTarget = { x: this.player.x, z: this.player.z, fresh: false }; }
+    if (meta.player) { this.player.load(meta.player); this.player.mode = meta.mode; this.loadingTarget = { x: this.player.x, z: this.player.z, fresh: false, arrive: false }; }
     else {
       const sp = world.gen.findSpawn();
       this.player.spawn = { ...sp };
       this.player.setPos(sp.x, sp.y + 1, sp.z);
-      this.loadingTarget = { x: sp.x, z: sp.z, fresh: true };
+      this.loadingTarget = { x: sp.x, z: sp.z, fresh: true, arrive: false };
     }
     this.mobs.clear(); this.drops.clear();
     this.viewMode = 0;
@@ -230,8 +232,70 @@ export class Game {
     this.handItemId = -2;
   }
 
+  private async makeWorld(dim: number) {
+    const s = this.settings, meta = this.meta!;
+    const world = new World({ scene: this.scene, seed: meta.seed, worldId: dim ? `${meta.id}@${dim}` : meta.id, materials: this.mats, radius: s.renderDistance, lodStart: s.lodDistance, fancyLeaves: s.fancyLeaves, shadows: s.shadows, dim });
+    await world.init();
+    this.world = world;
+    world.onDrop = (x, y, z, id, m) => { for (const st of this.blockDrops(id, m, null)) this.spawnDrop(x + 0.5, y + 0.5, z + 0.5, st.id, st.count, st.dur); };
+    world.onCrateSpill = (x, y, z, items) => { for (const st of items) this.spawnDrop(x + 0.5, y + 0.5, z + 0.5, st.id, st.count, st.dur); };
+    (this.mobs as any).ctx.world = world;
+    return world;
+  }
+
+  /** Travel between the Overworld (0), Celestia (1) and the Ashen Wastes (2). */
+  async travel(dim: number) {
+    if (dim === this.dim || this.travelling || !this.meta) return;
+    this.travelling = true;
+    const p = this.player, st = this.meta.state || (this.meta.state = {});
+    if (this.dim === 0) st.owPos = { x: p.x, y: p.y, z: p.z };
+    await this.save();
+    this.closeWorld();
+    this.cancelFishing();
+    this.dim = dim;
+    st.dim = dim;
+    this.setState('loading');
+    this.ui.setLoading(0, dim === 1 ? 'Rising to Celestia…' : dim === 2 ? 'Descending into the Ashen Wastes…' : 'Returning home…');
+    await this.makeWorld(dim);
+    if (dim === 0 && st.owPos) { p.setPos(st.owPos.x, st.owPos.y, st.owPos.z); this.loadingTarget = { x: p.x, z: p.z, fresh: false, arrive: false }; }
+    else { const x = Math.floor(p.x) + 0.5, z = Math.floor(p.z) + 0.5; p.setPos(x, 90, z); this.loadingTarget = { x, z, fresh: false, arrive: true }; }
+    this.loadingT = 0;
+    this.travelling = false;
+  }
+
+  /** On arrival in another dimension: find solid ground (or build a platform) and place a return rift. */
+  private arriveSafely() {
+    const w = this.world!, p = this.player;
+    const bx = Math.floor(p.x), bz = Math.floor(p.z);
+    let spot: [number, number, number] | null = null;
+    for (let r = 0; r <= 24 && !spot; r += 2) for (let dx = -r; dx <= r && !spot; dx += 2) for (let dz = -r; dz <= r && !spot; dz += 2) {
+      if (Math.max(Math.abs(dx), Math.abs(dz)) !== r) continue;
+      const x = bx + dx, z = bz + dz, y = w.surfaceY(x, z);
+      if (y < 4 || y > HEIGHT - 4) continue;
+      const top = w.getBlock(x, y, z);
+      if (!L_SOLID[top] || isLiquid(top)) continue;
+      if (w.getBlock(x, y + 1, z) !== B.AIR || w.getBlock(x, y + 2, z) !== B.AIR) continue;
+      spot = [x, y + 1, z];
+    }
+    if (!spot) {
+      const y = 70, mat = this.dim === 1 ? B.SKYSTONE : B.BASALT;
+      for (let dx = -2; dx <= 2; dx++) for (let dz = -2; dz <= 2; dz++) { w.setBlock(bx + dx, y - 1, bz + dz, mat); for (let dy = 0; dy < 3; dy++) w.setBlock(bx + dx, y + dy, bz + dz, B.AIR); }
+      spot = [bx, y, bz];
+    }
+    p.setPos(spot[0] + 0.5, spot[1], spot[2] + 0.5);
+    const rift = this.dim === 1 ? B.SKY_RIFT : B.ASH_RIFT;
+    let placed = false;
+    for (const [dx, dz] of [[2, 0], [-2, 0], [0, 2], [0, -2], [1, 1]]) {
+      const x = spot[0] + dx, z = spot[2] + dz, y = spot[1];
+      if (this.replaceable(w.getBlock(x, y, z)) && L_SOLID[w.getBlock(x, y - 1, z)]) { w.setBlock(x, y, z, rift); placed = true; break; }
+    }
+    if (!placed) { w.setBlock(spot[0] + 2, spot[1] - 1, spot[2], B.SKYSTONE); w.setBlock(spot[0] + 2, spot[1], spot[2], rift); }
+    this.ui.toast(this.dim === 1 ? 'Celestia — use the rift to return home' : 'Ashen Wastes — use the rift to return home');
+  }
+
   private finishLoading() {
     const w = this.world!;
+    if (this.loadingTarget.arrive) { this.arriveSafely(); this.save(); this.setState('play'); return; }
     if (this.loadingTarget.fresh) {
       const x = Math.floor(this.player.x), z = Math.floor(this.player.z);
       const y = w.surfaceY(x, z) + 1;
@@ -240,6 +304,7 @@ export class Game {
       this.save();
     }
     this.setState('play');
+    if (this.dim !== 0) return;
     this.ui.toast(this.meta!.mode === 'creative' ? 'Creative mode — double-tap jump to fly' : 'Gather wood: hold BREAK on a tree trunk');
   }
 
@@ -264,7 +329,7 @@ export class Game {
     const m = this.meta;
     m.player = this.player.serialize();
     m.mode = this.player.mode;
-    m.state = { time: this.time, rules: this.rules, rain: this.rainTarget, storm: this.storm };
+    m.state = { ...(m.state || {}), time: this.time, rules: this.rules, rain: this.rainTarget, storm: this.storm, dim: this.dim };
     m.lastPlayed = Date.now();
     m.playTime += this.playTimeAcc; this.playTimeAcc = 0;
     try { await Store.putWorld(m); await this.world.saveAll(); } catch (e) { console.warn('save failed', e); }
@@ -410,6 +475,11 @@ export class Game {
     this.updateCameraAndSky(dt);
     this.updateTargeting(dt);
     this.updateHand(dt);
+    this.updateFuses(dt);
+    this.updateArrows(dt);
+    this.updateFishing(dt);
+    if (this.dim === 1 && p.y < 2 && p.alive && !this.travelling) { this.ui.toast('You fell from Celestia…'); this.travel(0); }
+    (this.mobs as any).ctx.dim = this.dim;
 
     // torch flames near the player
     this.torchTimer -= dt;
@@ -491,11 +561,12 @@ export class Game {
     cam.updateMatrixWorld();
     const camBlock = w.getBlock(Math.floor(cam.position.x), Math.floor(cam.position.y), Math.floor(cam.position.z));
     const underwater = camBlock === B.WATER;
-    const biome = w.gen.column(Math.floor(p.x), Math.floor(p.z)).biome;
-    this.biome = BIOME_NAMES[biome];
+    const biome = this.dim ? -1 : w.gen.column(Math.floor(p.x), Math.floor(p.z)).biome;
+    this.biome = this.dim === 1 ? 'Celestia' : this.dim === 2 ? 'Ashen Wastes' : BIOME_NAMES[biome];
     const snowy = biome === BIOME.TUNDRA || (biome === BIOME.MOUNTAINS && p.y > SEA + 45);
     const desert = biome === BIOME.DESERT;
-    const rain = desert ? 0 : this.rain;
+    const rain = desert || this.dim ? 0 : this.rain;
+    this.sky.dim = this.dim;
     const ug = this.undergroundFactor();
     this.sky.update(dt, (this.time / DAY_LENGTH) % 1, rain, cam, Math.max(48, w.renderRadius * 16 - 8), underwater, ug);
     if (this.state !== 'pause') this.particles.update(dt, cam.position, rain * (1 - ug), snowy, (x, z) => w.surfaceY(Math.floor(x), Math.floor(z)));
@@ -504,7 +575,7 @@ export class Game {
     w.updateVisibility(cam);
     // held light source illuminates surroundings
     const held = p.inv.held;
-    const lightItem = held && (held.id === B.TORCH || held.id === B.GLOWCAP || held.id === B.LUMEN_LAMP || held.id === B.GLOWSHARD_ORE || held.id === I.glowshard);
+    const lightItem = held && (held.id === B.TORCH || held.id === B.GLOWCAP || held.id === B.LUMEN_LAMP || held.id === B.GLOWSHARD_ORE || held.id === I.glowshard || held.id === B.LANTERN || held.id === B.CRYSTAL_SHARD || held.id === B.GLOW_VINE);
     shared.uHandLight.value += ((lightItem ? 0.85 : 0) - shared.uHandLight.value) * Math.min(1, dt * 8 || 1);
     shared.uHandPos.value.set(p.x, eyeY, p.z);
   }
@@ -655,6 +726,9 @@ export class Game {
       case B.GRASS: case B.FROST_GRASS: case B.FARMLAND: return one(B.DIRT);
       case B.COAL_ORE: return one(I.coal, 1 + (r < 0.2 ? 1 : 0));
       case B.AZURITE_ORE: return one(I.azurite);
+      case B.FROSTQUARTZ_ORE: return this.canHarvest(id, held) ? one(I.frostquartz, 1 + (r < 0.3 ? 1 : 0)) : [];
+      case B.RUBELLITE_ORE: return this.canHarvest(id, held) ? one(I.rubellite) : [];
+      case B.STARSTONE_ORE: return this.canHarvest(id, held) ? one(I.starstone) : [];
       case B.GLOWSHARD_ORE: return one(I.glowshard, 1 + (r < 0.5 ? 1 : 0));
       case B.ASH_LEAVES: case B.PINE_LEAVES: case B.PALM_LEAVES:
         if (r < 0.08 && id !== B.PALM_LEAVES) return one(id === B.ASH_LEAVES ? B.ASH_SAPLING : B.PINE_SAPLING);
@@ -668,6 +742,10 @@ export class Game {
       case B.GRAIN: return meta >= 7 ? [{ id: I.grain_item, count: 1 + (r < 0.5 ? 1 : 0) }, { id: I.seeds, count: 1 + Math.floor(Math.random() * 2) }] : one(I.seeds);
       case B.DOOR_LOWER: case B.DOOR_UPPER: return one(I.door);
       case B.LUMEN_LAMP: return one(B.LUMEN_LAMP);
+      case B.CRYSTAL_SHARD: return one(I.prism_shard, 1 + Math.floor(r * 3));
+      case B.EMBER_LEAVES: return r < 0.1 ? one(I.ashfruit) : r < 0.16 ? one(I.stick) : [];
+      case B.SILVER_LEAVES: return r < 0.12 ? one(I.stick) : [];
+      case B.GLOW_VINE: return one(B.GLOW_VINE);
     }
     if (!this.canHarvest(id, held)) return [];
     return BLOCKS[id]?.item ? one(id) : [];
@@ -770,6 +848,9 @@ export class Game {
         case B.CRATE: return 'Open';
         case B.WORKBENCH: return 'Craft';
         case B.KILN: return 'Kiln';
+        case B.BED: return 'Sleep';
+        case B.SKY_RIFT: case B.ASH_RIFT: return 'Travel';
+        case B.BLAST_KEG: return 'Ignite';
         case B.DOOR_LOWER: case B.DOOR_UPPER: return (w.getMeta(t.x, t.y, t.z) & 4) ? 'Close' : 'Open';
         case B.BERRY_BUSH: if (w.getMeta(t.x, t.y, t.z)) return 'Harvest'; break;
         case B.GRAIN: if (w.getMeta(t.x, t.y, t.z) >= 7) return 'Harvest'; break;
@@ -784,6 +865,9 @@ export class Game {
       const d = item(held.id);
       if (d.food && p.hunger < 20 && !p.creative) return 'Eat';
       if (held.id === I.bucket) return 'Fill';
+      if (d.ranged) return 'Shoot';
+      if (d.fishing) return this.fishing ? 'Reel' : 'Cast';
+      if (d.armor) return 'Equip';
       if (held.id === I.water_bucket) return 'Pour';
     }
     return null;
@@ -793,6 +877,9 @@ export class Game {
     const p = this.player, w = this.world!;
     if (!p.alive || this.placeCd > 0) return;
     const t = this.target, held = p.inv.held;
+    if (held && item(held.id).ranged) { this.shoot(); return; }
+    if (held && item(held.id).fishing) { this.castLine(); return; }
+    if (held && item(held.id).armor) { this.equip(); return; }
     // tapping a creature attacks it
     if (this.targetMob && !(held && item(held.id).food)) { if (this.attackCd <= 0) this.attack(); return; }
     if (t && (!p.sneaking || interactOnly)) {
@@ -801,6 +888,9 @@ export class Game {
         case B.CRATE: { const inv = w.getCrate(t.x, t.y, t.z); if (inv) { this.audio.block('wood', 'place'); this.ui.openCrate(inv, t.x, t.y, t.z); } return; }
         case B.WORKBENCH: this.ui.openInventory('bench'); return;
         case B.KILN: this.ui.openInventory('kiln'); return;
+        case B.BED: this.sleep(t.x, t.y, t.z); return;
+        case B.SKY_RIFT: case B.ASH_RIFT: this.audio.thunder(); this.travel(this.dim !== 0 ? 0 : t.id === B.SKY_RIFT ? 1 : 2); return;
+        case B.BLAST_KEG: this.ignite(t.x, t.y, t.z, 3); return;
         case B.DOOR_LOWER: case B.DOOR_UPPER: {
           const ly = t.id === B.DOOR_LOWER ? t.y : t.y - 1;
           const m = w.getMeta(t.x, ly, t.z) ^ 4;
@@ -905,6 +995,17 @@ export class Game {
       else if (t.nx === 1) meta = 2; else if (t.nx === -1) meta = 1; else if (t.nz === 1) meta = 4; else if (t.nz === -1) meta = 3;
       else meta = 0;
     }
+    if (id === B.LADDER) {
+      if (t.ny !== 0) return;
+      meta = t.nz === 1 ? 0 : t.nx === -1 ? 1 : t.nx === 1 ? 2 : 3;
+    } else if (id === B.STONE_SLAB || id === B.PLANK_SLAB) {
+      const { o, d } = this.eyeRay();
+      const hy = o.y + d.y * t.t - Math.floor(o.y + d.y * t.t);
+      meta = t.ny === -1 || (t.ny === 0 && hy > 0.5) ? 1 : 0;
+    } else if (id === B.STONE_STAIRS || id === B.PLANK_STAIRS) {
+      const a = ((p.yaw % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+      meta = [2, 1, 0, 3][Math.round(a / (Math.PI / 2)) % 4];
+    }
     if (def.solid && this.blocksEntity(x, y, z)) return;
     if (!w.isSupported(id, meta, x, y, z)) {
       if (id === B.TORCH && w.isSupported(id, 0, x, y, z)) meta = 0; else return;
@@ -915,6 +1016,166 @@ export class Game {
     if (!p.creative) p.inv.consumeHeld();
     this.swing = 0.7;
     this.placeCd = 0.12;
+  }
+
+  // ---------------------------------------------------------------- expansion mechanics
+  private sleep(x: number, y: number, z: number) {
+    const p = this.player;
+    p.spawn = { x: x + 0.5, y: y + 1, z: z + 0.5 };
+    if (this.meta) (this.meta.state || (this.meta.state = {})).spawnDim = this.dim;
+    if (this.dim !== 0) { this.ui.toast('Spawn point set'); return; }
+    const danger = !p.creative && this.mobs.mobs.some((m) => m.type.hostile && Math.hypot(m.body.x - p.x, m.body.z - p.z) < 10);
+    if (danger) { this.ui.toast('You cannot rest — creatures are nearby'); return; }
+    if (this.sky.dayFactor < 0.35) {
+      const day = Math.floor(this.time / DAY_LENGTH) + (this.timeOfDay > 0.5 ? 1 : 0);
+      this.time = (day + 0.01) * DAY_LENGTH;
+      p.health = Math.min(20, p.health + 4);
+      this.ui.toast('You slept until morning');
+    } else this.ui.toast('Spawn point set');
+  }
+
+  ignite(x: number, y: number, z: number, fuse: number) {
+    if (this.fuses.some((f) => f.x === x && f.y === y && f.z === z)) return;
+    this.fuses.push({ x, y, z, t: fuse });
+    this.audio.block('sand', 'hit');
+  }
+
+  private updateFuses(dt: number) {
+    for (let i = this.fuses.length - 1; i >= 0; i--) {
+      const f = this.fuses[i];
+      f.t -= dt;
+      if (Math.random() < dt * 20) this.particles.flame(f.x + 0.5, f.y + 1.05, f.z + 0.5);
+      if (f.t <= 0) { this.fuses.splice(i, 1); this.explode(f.x + 0.5, f.y + 0.5, f.z + 0.5, 3.4); }
+    }
+  }
+
+  explode(cx: number, cy: number, cz: number, R: number) {
+    const w = this.world!;
+    const keepIds = new Set<number>([B.DEEPSTONE, B.SKY_RIFT, B.ASH_RIFT, B.WATER, B.MAGMA]);
+    const r = Math.ceil(R);
+    for (let dy = -r; dy <= r; dy++) for (let dz = -r; dz <= r; dz++) for (let dx = -r; dx <= r; dx++) {
+      const d = Math.hypot(dx, dy, dz) + Math.random() * 0.8;
+      if (d > R) continue;
+      const x = Math.floor(cx) + dx, y = Math.floor(cy) + dy, z = Math.floor(cz) + dz;
+      const id = w.getBlock(x, y, z);
+      if (id === B.AIR || id === UNLOADED || keepIds.has(id)) continue;
+      if (id === B.BLAST_KEG) { this.ignite(x, y, z, 0.4 + Math.random() * 0.4); continue; }
+      const m = w.getMeta(x, y, z);
+      w.setBlock(x, y, z, B.AIR);
+      if (Math.random() < 0.3) for (const st of this.blockDrops(id, m, null)) this.spawnDrop(x + 0.5, y + 0.5, z + 0.5, st.id, st.count, st.dur);
+    }
+    const p = this.player;
+    const pd = Math.hypot(p.x - cx, p.y + 1 - cy, p.z - cz);
+    if (pd < R + 2.5) p.hurt(Math.round(16 * (1 - pd / (R + 2.5))), cx, cz, 'a blast');
+    for (const m of [...this.mobs.mobs]) {
+      const md = Math.hypot(m.body.x - cx, m.body.y - cy, m.body.z - cz);
+      if (md < R + 2.5) this.mobs.damage(m, Math.round(20 * (1 - md / (R + 2.5))), cx, cz);
+    }
+    this.particles.puff(cx, cy - 0.5, cz, 40, [0.35, 0.33, 0.32]);
+    this.particles.burst(cx, cy, cz, [1, 0.6, 0.2], 40);
+    this.sky.flash = 0.35;
+    this.audio.thunder();
+    if (this.settings.haptics) navigator.vibrate?.(120);
+  }
+
+  private shoot() {
+    const p = this.player;
+    if (!p.creative && !p.inv.remove(I.arrow, 1)) { this.ui.toast('You need arrows'); return; }
+    if (this.attackCd > 0) return;
+    const { o, d } = this.eyeRay();
+    const mesh = new THREE.Mesh(this.arrowGeo, this.arrowMat);
+    this.scene.add(mesh);
+    this.arrows.push({ x: o.x + d.x * 0.5, y: o.y + d.y * 0.5, z: o.z + d.z * 0.5, vx: d.x * 34, vy: d.y * 34, vz: d.z * 34, life: 6, mesh });
+    this.useDurability();
+    this.attackCd = 0.55; this.swing = 0.8;
+    this.audio.swing();
+  }
+
+  private updateArrows(dt: number) {
+    const w = this.world!;
+    for (let i = this.arrows.length - 1; i >= 0; i--) {
+      const a = this.arrows[i];
+      a.life -= dt;
+      let done = a.life <= 0;
+      const steps = 4;
+      for (let s2 = 0; s2 < steps && !done; s2++) {
+        const h = dt / steps;
+        a.vy -= 14 * h;
+        a.x += a.vx * h; a.y += a.vy * h; a.z += a.vz * h;
+        const id = w.getBlock(Math.floor(a.x), Math.floor(a.y), Math.floor(a.z));
+        if (id !== B.AIR && L_SOLID[id]) {
+          done = true;
+          if (Math.random() < 0.6) this.spawnDrop(a.x - a.vx * h, a.y - a.vy * h, a.z - a.vz * h, I.arrow, 1);
+          this.audio.block(blockDef(id === UNLOADED ? B.STONE : id).mat, 'hit', 0.6);
+          if (id === B.BLAST_KEG) this.ignite(Math.floor(a.x), Math.floor(a.y), Math.floor(a.z), 1.5);
+        }
+        for (const m of this.mobs.mobs) {
+          const b = m.body;
+          if (a.x > b.x - b.hw - 0.1 && a.x < b.x + b.hw + 0.1 && a.z > b.z - b.hw - 0.1 && a.z < b.z + b.hw + 0.1 && a.y > b.y && a.y < b.y + b.h) {
+            this.mobs.damage(m, 6 + Math.round(Math.hypot(a.vx, a.vy, a.vz) / 12), a.x - a.vx, a.z - a.vz);
+            done = true; break;
+          }
+        }
+      }
+      a.mesh.position.set(a.x, a.y, a.z);
+      a.mesh.lookAt(a.x + a.vx, a.y + a.vy, a.z + a.vz);
+      if (done) { this.scene.remove(a.mesh); this.arrows.splice(i, 1); }
+    }
+  }
+
+  private castLine() {
+    if (this.fishing) { this.cancelFishing(); this.ui.toast('Line reeled in'); return; }
+    const { o, d } = this.eyeRay();
+    const hit = this.raycast(o, d, 14, true);
+    if (!hit || hit.id !== B.WATER) {
+      // also accept flowing water directly in view
+      this.ui.toast('Cast your line into water');
+      return;
+    }
+    const bob = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.15, 0.15), new THREE.MeshBasicMaterial({ color: 0xe04040 }));
+    bob.position.set(hit.x + 0.5, hit.y + 0.9, hit.z + 0.5);
+    this.scene.add(bob);
+    this.fishing = { x: hit.x + 0.5, y: hit.y + 0.9, z: hit.z + 0.5, t: 3 + Math.random() * 6, bob };
+    this.audio.splash();
+  }
+
+  private cancelFishing() {
+    if (!this.fishing) return;
+    this.scene.remove(this.fishing.bob);
+    this.fishing.bob.geometry.dispose();
+    this.fishing = null;
+  }
+
+  private updateFishing(dt: number) {
+    const f = this.fishing;
+    if (!f) return;
+    const p = this.player;
+    const held = p.inv.held;
+    if (!held || !item(held.id).fishing || Math.hypot(p.x - f.x, p.z - f.z) > 18) { this.cancelFishing(); return; }
+    f.t -= dt;
+    f.bob.position.y = f.y + Math.sin(performance.now() / 300) * 0.04 - (f.t < 0.6 ? 0.15 : 0);
+    if (f.t <= 0) {
+      const r = Math.random();
+      const catchId = r < 0.8 ? I.raw_fish : r < 0.88 ? I.fiber : r < 0.94 ? I.arrow : r < 0.98 ? I.prism_shard : I.rubellite;
+      this.particles.splash(f.x, f.y, f.z);
+      this.audio.splash();
+      if (p.inv.add(catchId, 1)) this.spawnDrop(p.x, p.y + 1, p.z, catchId, 1);
+      else this.audio.pickup();
+      this.ui.toast('Caught: ' + item(catchId).name);
+      this.useDurability();
+      this.cancelFishing();
+    }
+  }
+
+  private equip() {
+    const p = this.player, s = p.inv.held;
+    if (!s) return;
+    const a = item(s.id).armor!;
+    const old = p.armor[a.slot];
+    p.armor[a.slot] = { ...s, count: 1 };
+    p.inv.slots[p.inv.selected] = old;
+    this.audio.block('metal', 'place');
+    this.ui.toast('Equipped: ' + item(s.id).name);
   }
 
   // ---------------------------------------------------------------- crafting / UI helpers
@@ -940,9 +1201,17 @@ export class Game {
     return true;
   }
 
-  respawn() {
+  async respawn() {
     const p = this.player;
+    const sd = this.meta?.state?.spawnDim || 0;
     p.respawn();
+    if (sd !== this.dim) {
+      const sp = { ...p.spawn };
+      if (this.meta?.state) this.meta.state.owPos = sp;
+      await this.travel(sd);
+      if (sd !== 0) { p.setPos(sp.x, sp.y, sp.z); this.loadingTarget = { x: sp.x, z: sp.z, fresh: false, arrive: false }; }
+      return;
+    }
     this.setState('play');
   }
 
@@ -955,6 +1224,7 @@ export class Game {
         p.inv.slots[i] = null;
       }
     }
+    if (!this.rules.keepInventory) for (let i = 0; i < 4; i++) { const a = p.armor[i]; if (a) this.drops.spawn(p.x, p.y + 1, p.z, a, (Math.random() - 0.5) * 6, 4, (Math.random() - 0.5) * 6, 2); p.armor[i] = null; }
     this.particles.puff(p.x, p.y + 0.8, p.z, 16, [0.8, 0.2, 0.2]);
     this.setState('dead');
     this.ui.onDeath(`You were defeated by ${src}.`);

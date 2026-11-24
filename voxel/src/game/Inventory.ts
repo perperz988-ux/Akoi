@@ -132,6 +132,43 @@ rc('kiln', 'Smelting', B.CLAY_BRICKS, 4, [B.CLAY, 4], ['fuel', 1]);
 rc('kiln', 'Smelting', I.bucket, 1, [B.CLAY, 3], ['fuel', 1]);
 rc('kiln', 'Smelting', I.coal, 1, ['logs', 1], ['fuel', 1]);
 rc('kiln', 'Cooking', I.cooked_meat, 2, [I.raw_meat, 2], ['fuel', 1]);
+// ---- expansion ----
+rc('kiln', 'Cooking', I.cooked_fish, 2, [I.raw_fish, 2], ['fuel', 1]);
+rc('kiln', 'Smelting', I.emberite_ingot, 1, [B.EMBERITE_ORE, 1], ['fuel', 1]);
+rc('bench', 'Food', I.berry_pie, 1, [I.grain_item, 2], [I.berries, 4]);
+rc('hand', 'Basics', B.LADDER, 3, [I.stick, 7]);
+rc('hand', 'Decor', B.RUG_RED, 3, [B.CLOTH_RED, 2]);
+rc('hand', 'Decor', B.RUG_BLUE, 3, [B.CLOTH_BLUE, 2]);
+rc('hand', 'Building', B.MOSSY_RUBBLE, 2, [B.RUBBLE, 2], [B.MOSS, 1]);
+rc('bench', 'Furniture', B.BED, 1, [B.CLOTH_WHITE, 3], ['planks', 3]);
+rc('bench', 'Furniture', B.LANTERN, 1, [I.iron_ingot, 2], [B.TORCH, 1]);
+rc('bench', 'Furniture', B.BOOKSHELF, 1, ['planks', 6], [B.CLOTH_WHITE, 2]);
+rc('bench', 'Furniture', B.FENCE, 3, [I.stick, 4], ['planks', 2]);
+rc('bench', 'Building', B.STONE_SLAB, 6, [B.STONE_BRICKS, 3]);
+rc('bench', 'Building', B.PLANK_SLAB, 6, ['planks', 3]);
+rc('bench', 'Building', B.STONE_STAIRS, 4, [B.STONE_BRICKS, 6]);
+rc('bench', 'Building', B.PLANK_STAIRS, 4, ['planks', 6]);
+rc('bench', 'Building', B.CRYSTAL_BLOCK, 1, [I.prism_shard, 4]);
+rc('bench', 'Weapons', I.bow, 1, [I.stick, 3], [I.fiber, 3]);
+rc('hand', 'Weapons', I.arrow, 4, [I.stick, 1], [I.fiber, 1], [B.RUBBLE, 1]);
+rc('bench', 'Tools', I.fishing_line, 1, [I.stick, 3], [I.fiber, 2]);
+rc('bench', 'Explosives', B.BLAST_KEG, 1, [B.SAND, 4], [I.coal, 4]);
+for (const [blk, it] of [[B.FROSTQUARTZ_BLOCK, I.frostquartz], [B.RUBELLITE_BLOCK, I.rubellite], [B.EMBERITE_BLOCK, I.emberite_ingot], [B.STARSTONE_BLOCK, I.starstone]]) {
+  rc('bench', 'Building', blk, 1, [it, 9]);
+  rc('hand', 'Materials', it, 9, [blk, 1]);
+}
+for (const [tier, mat] of [['copper', I.copper_ingot], ['iron', I.iron_ingot], ['azure', I.azurite], ['ember', I.emberite_ingot]] as [string, number][]) {
+  rc('bench', 'Armor', I[`${tier}_helm`], 1, [mat, 5]);
+  rc('bench', 'Armor', I[`${tier}_vest`], 1, [mat, 8]);
+  rc('bench', 'Armor', I[`${tier}_greaves`], 1, [mat, 7]);
+  rc('bench', 'Armor', I[`${tier}_boots`], 1, [mat, 4]);
+}
+rc('bench', 'Tools', I.ember_pick, 1, [I.emberite_ingot, 3], [I.stick, 2], [I.starstone, 1]);
+rc('bench', 'Tools', I.ember_axe, 1, [I.emberite_ingot, 3], [I.stick, 2], [I.starstone, 1]);
+rc('bench', 'Tools', I.ember_spade, 1, [I.emberite_ingot, 1], [I.stick, 2], [I.starstone, 1]);
+rc('bench', 'Weapons', I.ember_blade, 1, [I.emberite_ingot, 2], [I.stick, 1], [I.starstone, 1], [I.gloom_essence, 2]);
+rc('bench', 'Dimensions', B.SKY_RIFT, 1, [I.frostquartz, 4], [I.glow_dust, 2], [I.prism_shard, 2]);
+rc('bench', 'Dimensions', B.ASH_RIFT, 1, [I.rubellite, 2], [B.SLATE, 4], [I.coal, 2]);
 
 export function ingredientIds(ing: string | number): number[] { return typeof ing === 'string' ? TAGS[ing] : [ing]; }
 export function ingredientName(ing: string | number): string { return typeof ing === 'string' ? TAG_NAMES[ing] : item(ing).name; }

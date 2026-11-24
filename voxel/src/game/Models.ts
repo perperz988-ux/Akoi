@@ -201,6 +201,51 @@ export function buildStingwisp(): Model {
   return m;
 }
 
+export function buildCloudray(): Model {
+  const b = new Builder(), m = b.m;
+  const body: RGB = [0.78, 0.84, 0.98], belly: RGB = [0.96, 0.97, 1.0], tip: RGB = [0.62, 0.7, 0.95];
+  const glow = b.glowMat(0xbfe8ff);
+  b.box(m.body, 0.6, 0.18, 1.0, body, 0, 0, 0);
+  b.box(m.body, 0.5, 0.06, 0.9, belly, 0, -0.1, 0);
+  b.box(m.body, 0.08, 0.08, 0.04, [1, 1, 1], 0.16, 0.05, 0.5, glow);
+  b.box(m.body, 0.08, 0.08, 0.04, [1, 1, 1], -0.16, 0.05, 0.5, glow);
+  b.box(m.body, 0.06, 0.06, 0.8, tip, 0, 0, -0.85);
+  for (const sx of [1, -1]) {
+    const w = b.pivot(m.body, sx * 0.3, 0, 0);
+    b.box(w, 0.9, 0.06, 0.7, body, sx * 0.45, 0, -0.05);
+    b.box(w, 0.4, 0.05, 0.4, tip, sx * 0.95, 0, -0.15);
+    m.wings.push(w);
+  }
+  m.head = null;
+  return m;
+}
+
+export function buildCinderhound(): Model {
+  const b = new Builder(), m = b.m;
+  const hide: RGB = [0.22, 0.18, 0.18], crack: RGB = [0.35, 0.28, 0.26];
+  const ember = b.glowMat(0xff6a20), eye = b.glowMat(0xffe070);
+  b.box(m.body, 0.5, 0.45, 1.0, hide, 0, 0.65, 0);
+  b.box(m.body, 0.52, 0.08, 0.6, [1, 1, 1], 0, 0.9, 0.05, ember);
+  b.box(m.body, 0.1, 0.25, 0.1, [1, 1, 1], 0, 1.0, -0.25, ember);
+  b.box(m.body, 0.1, 0.3, 0.1, [1, 1, 1], 0, 1.02, 0.15, ember);
+  const head = b.pivot(m.body, 0, 0.8, 0.5);
+  b.box(head, 0.42, 0.36, 0.4, crack, 0, 0.05, 0.15);
+  b.box(head, 0.3, 0.18, 0.25, hide, 0, -0.05, 0.42);
+  b.box(head, 0.08, 0.06, 0.04, [1, 1, 1], 0.12, 0.12, 0.36, eye);
+  b.box(head, 0.08, 0.06, 0.04, [1, 1, 1], -0.12, 0.12, 0.36, eye);
+  b.box(head, 0.08, 0.16, 0.08, hide, 0.14, 0.3, 0.05);
+  b.box(head, 0.08, 0.16, 0.08, hide, -0.14, 0.3, 0.05);
+  m.head = head;
+  for (const [x, z] of [[0.18, 0.35], [-0.18, 0.35], [0.18, -0.35], [-0.18, -0.35]]) {
+    const leg = b.pivot(m.body, x, 0.5, z);
+    b.box(leg, 0.14, 0.5, 0.16, hide, 0, -0.25, 0);
+    m.legs.push(leg);
+  }
+  const tail = b.pivot(m.body, 0, 0.75, -0.5);
+  b.box(tail, 0.08, 0.08, 0.4, [1, 1, 1], 0, 0.1, -0.2, ember);
+  return m;
+}
+
 /** The player's avatar (third-person view): a hooded wanderer. */
 export function buildAvatar(): Model {
   const b = new Builder(), m = b.m;
