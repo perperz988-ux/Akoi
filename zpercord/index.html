@@ -119,8 +119,8 @@ input:focus,textarea:focus,select:focus{border-color:var(--blue)}
 .welcome .big{width:68px;height:68px;border-radius:50%;background:var(--bg4);display:grid;place-items:center;font-size:34px;margin-bottom:10px}
 .welcome h1{margin:0 0 4px;font-size:28px}
 .welcome p{margin:0;color:var(--muted)}
-.msg{display:flex;gap:14px;padding:2px 16px 2px 16px;position:relative;transition:background .08s}
-.msg.first{margin-top:14px}
+.msg{display:flex;gap:14px;padding:2px 16px 2px 16px;position:relative;transition:background .08s;border-radius:4px}
+.msg.first{margin-top:14px;padding-top:14px;border-top:1px solid var(--line)}
 .msg:hover{background:var(--bg3)}
 .msg.mention{background:#3b82f61a;box-shadow:inset 3px 0 var(--blue2)}
 .msg .gut{width:40px;flex:none;color:var(--dim);font-size:11px;text-align:right;padding-top:3px;opacity:0}
@@ -226,7 +226,7 @@ a{color:var(--blue2)}
 /* ---------- modals ---------- */
 .overlay{position:fixed;inset:0;background:#000b;display:grid;place-items:center;z-index:100;animation:fade .15s}
 @keyframes fade{from{opacity:0}}
-.modal{background:var(--bg2);border-radius:12px;width:min(460px,94vw);max-height:90vh;overflow:auto;box-shadow:0 10px 50px #000a;animation:pop .18s}
+.modal{background:var(--bg2);border-radius:12px;width:min(460px,94vw);max-height:90vh;overflow:auto;box-shadow:0 8px 30px #0008,0 0 0 1px var(--line);animation:pop .18s}
 @keyframes pop{from{transform:scale(.94);opacity:0}}
 .modal .mh{padding:20px 20px 6px;text-align:center}
 .modal .mh h2{margin:0 0 6px;font-size:22px}
@@ -277,7 +277,7 @@ label.l{display:block;font-size:12px;font-weight:700;text-transform:uppercase;co
 .mrow{display:flex;align-items:center;gap:10px;padding:10px;border-bottom:1px solid var(--line);flex-wrap:wrap}
 
 /* ---------- profile popout ---------- */
-.pop{position:fixed;z-index:120;width:300px;background:var(--bg1);border-radius:12px;overflow:hidden;box-shadow:0 10px 40px #000c;animation:pop .14s}
+.pop{position:fixed;z-index:120;width:300px;background:var(--bg1);border-radius:12px;overflow:hidden;box-shadow:0 8px 24px #0008,0 0 0 1px var(--line);animation:pop .14s}
 .pop .bn{height:64px}
 .pop .pav{margin:-36px 0 0 14px;border:6px solid var(--bg1);width:84px;height:84px;font-size:32px;border-radius:50%}
 .pop .pav .dot{width:20px;height:20px;border-width:4px}
@@ -288,7 +288,7 @@ label.l{display:block;font-size:12px;font-weight:700;text-transform:uppercase;co
 .pop .sec{font-size:11px;font-weight:800;text-transform:uppercase;color:var(--muted);margin:10px 0 4px}
 .badges{display:flex;gap:4px;margin:-30px 10px 0 auto;justify-content:flex-end;height:30px;align-items:center}
 .badges span{background:#050b18cc;border-radius:6px;padding:2px 5px;font-size:14px}
-.ctx{position:fixed;z-index:130;background:#050b18;border:1px solid var(--line);border-radius:8px;padding:6px;min-width:190px;box-shadow:0 8px 30px #000c}
+.ctx{position:fixed;z-index:130;background:var(--bg1);border:1px solid var(--line);border-radius:8px;padding:6px;min-width:190px;box-shadow:0 8px 24px #0008}
 .ctx button{display:block;width:100%;text-align:left;padding:7px 10px;border-radius:4px;font-size:14px}
 .ctx button:hover{background:var(--blue)}
 .ctx button.red{color:var(--red)}.ctx button.red:hover{background:var(--red);color:#fff}
