@@ -366,8 +366,9 @@ const DEFAULT_EVERYONE = { VIEW: 1, SEND: 1, ATTACH: 1, REACT: 1, CONNECT: 1, ST
 const COLORS = ["#5865f2", "#7289da", "#43b581", "#faa61a", "#f04747", "#9c27b0", "#2ecc71", "#e91e63", "#00bcd4", "#ff9800", "#3f51b5", "#00897b", "#c2185b", "#1976d2", "#512da8", "#d32f2f"];
 const AVATAR_BG = ["#5865f2", "#7289da", "#43b581", "#faa61a", "#f04747", "#9c27b0", "#2ecc71", "#e91e63", "#00bcd4", "#ff9800"];
 const EMOJIS = "😀 😂 🤣 😊 😍 🥰 😎 🤔 😮 😢 😭 😡 🥳 😴 🤯 🙃 👍 👎 👏 🙌 🙏 💪 👀 🔥 ✨ 💯 ❤️ 💙 💜 💔 ✅ ❌ ⭐ 🎉 🎮 🎧 🎵 🍕 🍔 ☕ 🌙 ☀️ 🌊 🚀 💎 🏆 🐱 🐶 🦊 🐸 👾 🤖 💀 👻 🫡".split(" ");
-const PRO = { msgLimit: 4000, freeMsgLimit: 2000, upload: 500 * 1024 * 1024, freeUpload: 10 * 1024 * 1024, boosts: 2 };
 const LEVELS = [0, 2, 7, 14];
+const MSG_LIMIT = 4000;
+const UPLOAD_LIMIT = 500 * 1024 * 1024;
 
 /* ---------------- seed data - clean state like Discord -------- */
 function seed() {
@@ -382,8 +383,8 @@ function seed() {
     cur: { server: null, channel: null, dm: null },
   };
 }
-function makeServer(name, icon, color, withDefaults) {
-  const s = { id: uid(), name, icon, color, ownerId: "me", banner: "", boosts: 0, roles: [{ id: "everyone", name: "@everyone", color: "", hoist: false, perms: { ...DEFAULT_EVERYONE } }], members: [{ userId: "me", roles: [] }], categories: [], channels: [], emojis: [], messages: {}, desc: "" };
+function makeServer(name, icon, color, withDefaults, isPublic = false) {
+  const s = { id: uid(), name, icon, color, ownerId: "me", banner: "", boosts: 0, public: isPublic, roles: [{ id: "everyone", name: "@everyone", color: "", hoist: false, perms: { ...DEFAULT_EVERYONE } }], members: [{ userId: "me", roles: [] }], categories: [], channels: [], emojis: [], messages: {}, desc: "" };
   if (withDefaults) {
     const t = { id: uid(), name: "Canales de texto" }, v = { id: uid(), name: "Canales de voz" };
     s.categories.push(t, v);
@@ -407,7 +408,6 @@ const user = id => S.users[id] || { id, name: "Usuario desconocido", color: "#47
 const server = (id = S.cur.server) => S.servers.find(s => s.id === id);
 const channel = (s = server(), id = S.cur.channel) => s && s.channels.find(c => c.id === id);
 const member = (s, userId) => s.members.find(m => m.userId === userId);
-const isPro = (u = me()) => !!u.pro;
 
 /* ---------------- permissions ---------------- */
 function rolesOf(s, userId) {
@@ -436,11 +436,10 @@ function emojiSlots(s) { return [50, 100, 150, 250][boostLevel(s)]; }
 
 /* ---------------- avatar ---------------- */
 function avatar(u, cls = "", status = true) {
-  const pro = u.pro && u.anim;
-  const bg = pro ? `background:linear-gradient(135deg,${u.themeA || u.color},${u.themeB || u.color},${u.color})` : `background:${u.color}`;
+  const bg = `background:${u.color}`;
   const inner = u.emojiAv ? `<span style="font-size:1.15em">${esc(u.emojiAv)}</span>` : esc((u.name || "?").slice(0, 1).toUpperCase());
   const st = status ? `<span class="dot ${u.status === "invisible" ? "offline" : u.status}"></span>` : "";
-  return `<div class="av ${cls} ${pro ? "anim" : ""}" style="${bg}" data-user="${u.id}">${inner}${st}</div>`;
+  return `<div class="av ${cls}" style="${bg}" data-user="${u.id}">${inner}${st}</div>`;
 }
 
 /* ---------------- formatting ---------------- */
@@ -529,15 +528,13 @@ function renderHomeSide() {
     h += `<button class="homebtn" style="margin:0 0 40px;text-align:center;color:var(--muted)" data-act="discover"><span style="font-size:28px">🧭</span><div>Explorar</div></button>`;
   }
   h += `<button class="homebtn ${!S.cur.dm ? "active" : ""}" data-act="friends"><span class="ico">👥</span>Amigos</button>`;
-  h += `<button class="homebtn" data-act="openSettings" data-tab="pro"><span class="ico">💎</span>Zpercord Pro</button>`;
-  h += `<button class="homebtn" data-act="shop"><span class="ico">🛍️</span>Tienda</button>`;
+  h += `<button class="homebtn" data-act="openSettings" data-tab="appearance"><span class="ico">🎨</span>Apariencia</button>`;
   h += `<div class="dmhead"><span>Mensajes directos</span><button data-act="newDm" title="Crear MD">＋</button></div>`;
   for (const id of S.dmOrder) {
     const u = user(id), n = unreadCount({ dm: id });
     h += `<div class="member" data-act="openDm" data-id="${id}" style="${S.cur.dm === id ? "background:var(--bg4)" : ""}">${avatar(u, "sm")}<div style="min-width:0;flex:1"><div class="nm" style="${n ? "color:#fff" : ""}">${esc(u.name)}</div>${u.custom ? `<div class="cs">${esc(u.custom)}</div>` : ""}</div>${n ? `<span style="background:var(--red);color:#fff;padding:0 6px;border-radius:9px;font-size:11px">${n}</span>` : ""}</div>`;
   }
   h += `</div>`;
-  if (!isPro()) h += `<div class="probanner shine"><h3>💎 Zpercord Pro</h3><p>Avatar animado, 500 MB de subida, emojis en todas partes y 2 mejoras de servidor.</p><button class="btn" style="background:#fff;color:#1e3a8a" data-act="openSettings" data-tab="pro">Ver Pro</button></div>`;
   return h;
 }
 
@@ -583,7 +580,7 @@ function renderHomeMain() {
     if (!S.pending.length) h += `<p style="color:var(--muted);text-align:center;margin-top:40px">No hay solicitudes pendientes.</p>`;
   } else {
     h += `<div class="mgroup">${tab === "online" ? "En línea" : "Todos los amigos"} — ${list.length}</div>`;
-    for (const u of list) h += `<div class="friend" data-act="openDm" data-id="${u.id}">${avatar(u)}<div><b>${esc(u.name)}</b> ${u.pro ? '<span class="tag pro">PRO</span>' : ""}<div style="color:var(--muted);font-size:13px">${esc(u.custom || statusName(u.status))}</div></div><div class="acts"><button title="Mensaje">💬</button><button data-act="profile" data-id="${u.id}" title="Perfil">⋮</button></div></div>`;
+    for (const u of list) h += `<div class="friend" data-act="openDm" data-id="${u.id}">${avatar(u)}<div><b>${esc(u.name)}</b><div style="color:var(--muted);font-size:13px">${esc(u.custom || statusName(u.status))}</div></div><div class="acts"><button title="Mensaje">💬</button><button data-act="profile" data-id="${u.id}" title="Perfil">⋮</button></div></div>`;
   }
   return h + `</div>`;
 }
@@ -652,7 +649,7 @@ function renderMessages(list, s) {
     const only = /^(\p{Extended_Pictographic}|️|‍|\s|:[a-z0-9_]+:)+$/u.test(m.content) && m.content.length < 30;
     let reply = "";
     if (m.replyTo) { const r = list.find(x => x.id === m.replyTo); reply = `<div class="reply">↱ ${r ? `<b style="color:${(s && nameColor(s, r.authorId)) || "inherit"}">@${esc(user(r.authorId).name)}</b> ${esc(r.content.slice(0, 80))}` : "<i>Mensaje original eliminado</i>"}</div>`; }
-    const tags = `${u.bot ? '<span class="tag bot">✔ BOT</span>' : ""}${u.pro ? '<span class="tag pro" title="Suscriptor de Zpercord Pro">💎 PRO</span>' : ""}`;
+    const tags = `${u.bot ? '<span class="tag bot">✔ BOT</span>' : ""}`;
     const editing = UI.editing === m.id;
     const textHtml = editing ? `<textarea class="editbox" data-id="${m.id}" style="margin-top:4px">${esc(m.content)}</textarea><div style="font-size:12px;color:var(--muted)">escape para <a href="#" data-act="cancelEdit">cancelar</a> · enter para <a href="#" data-act="saveEdit" data-id="${m.id}">guardar</a></div>` :
       `<div class="text ${only ? "bigemoji" : ""}">${fmt(m.content, s)}${m.edited ? ' <span class="edited">(editado)</span>' : ""}</div>`;
@@ -778,13 +775,12 @@ function newServerModal() {
       $("[data-back]", o).onclick = () => { step = 0; draw(o); };
       const go = () => {
         const name = f.name.value.trim(); if (!name) return f.name.focus();
-        const s = makeServer(name, f.icon.value.trim(), col, true);
+        const s = makeServer(name, f.icon.value.trim(), col, true, true);  // All servers are public by default now
         if (o.tpl === "Gaming") { const t = s.categories[0]; s.channels.push({ id: uid(), name: "clips", type: "text", categoryId: t.id, topic: "", private: false, roles: [] }, { id: uid(), name: "buscar-grupo", type: "text", categoryId: t.id, topic: "", private: false, roles: [] }); s.channels.push({ id: uid(), name: "Escuadrón", type: "voice", categoryId: s.categories[1].id, private: false, roles: [] }); }
         if (o.tpl === "Estudio") { const t = s.categories[0]; s.channels.push({ id: uid(), name: "deberes", type: "text", categoryId: t.id, topic: "", private: false, roles: [] }, { id: uid(), name: "recursos", type: "text", categoryId: t.id, topic: "", private: false, roles: [] }); s.channels.push({ id: uid(), name: "Sala de estudio", type: "voice", categoryId: s.categories[1].id, private: false, roles: [] }); }
         if (o.tpl === "Arte") { const t = s.categories[0]; s.channels.push({ id: uid(), name: "mis-obras", type: "text", categoryId: t.id, topic: "", private: false, roles: [] }, { id: uid(), name: "inspiración", type: "text", categoryId: t.id, topic: "", private: false, roles: [] }); }
         if (o.tpl !== "custom") s.roles.unshift({ id: uid(), name: "Miembro", color: "#60a5fa", hoist: false, perms: {} });
-        s.messages[s.channels[0].id] = [msg("zbot", `¡Bienvenido a **${name}**! 🎉\nEste es tu nuevo servidor. Crea canales, roles e invita a tus amigos.`)];
-        s.members.push({ userId: "zbot", roles: [] });
+        s.messages[s.channels[0].id] = [msg("me", `¡Bienvenido a **${name}**! 🎉\nEste es tu nuevo servidor. Crea canales, roles e invita a tus amigos.`)];
         S.servers.push(s); S.cur = { server: s.id, channel: s.channels[0].id, dm: null }; save(); o.remove(); render(); toast("Servidor creado ✨");
       };
       $("[data-create]", o).onclick = go; f.onsubmit = e => { e.preventDefault(); go(); };
@@ -800,22 +796,26 @@ function joinServerModal() {
       const existing = S.servers.find(s => s.invite === code);
       if (existing) { S.cur = { server: existing.id, channel: visibleChannels(existing)[0]?.id, dm: null }; o.remove(); render(); return; }
       const nm = code.charAt(0).toUpperCase() + code.slice(1);
-      const s = makeServer(nm + " Hub", "🌐", rand(COLORS.slice(0, 13)), true);
-      s.invite = code; s.ownerId = "max"; s.members.push({ userId: "max", roles: [] }, { userId: "kai", roles: [] });
-      s.messages[s.channels[0].id] = [msg("max", `¡Bienvenido/a a ${nm} Hub, @${me().name}! 👋`)];
+      const s = makeServer(nm + " Hub", "🌐", rand(COLORS.slice(0, 13)), true, true);
+      s.invite = code;
+      s.messages[s.channels[0].id] = [msg("me", `¡Bienvenido/a a ${nm} Hub! 👋\nEste es un servidor público. ¡Disfruta!`)];
       S.servers.push(s); S.cur = { server: s.id, channel: s.channels[0].id, dm: null }; save(); o.remove(); render(); toast("Te uniste a " + s.name);
     };
     $("[data-ok]", o).onclick = go; $("[data-f]", o).onsubmit = e => { e.preventDefault(); go(); };
   });
 }
 function discoverModal() {
-  const list = [["lofi", "🎧", "Lofi Café", "Música para estudiar y relajarse", 12840], ["retro", "👾", "Retro Arcade", "Juegos clásicos y emulación", 5320], ["devs", "💻", "Devs en Español", "Programación, ayuda y proyectos", 22109], ["anime", "🌸", "Anime Club", "Temporadas, mangas y fanarts", 40122], ["astro", "🔭", "Astronomía", "El universo en tu bolsillo", 3011]];
-  modal(`<div class="mh"><h2>🧭 Explorar servidores</h2><p>Descubre comunidades públicas en Zpercord.</p></div><div class="mb">${list.map(l => `<div class="radio" data-code="${l[0]}"><span class="ri">${l[1]}</span><div style="flex:1"><b>${l[2]}</b><small>${l[3]} · ${l[4].toLocaleString()} miembros</small></div><button class="btn" style="padding:6px 12px">Unirse</button></div>`).join("")}</div>`, o => {
-    $$("[data-code]", o).forEach(b => b.onclick = () => {
-      const [code, icon, name] = list.find(l => l[0] === b.dataset.code);
-      let s = S.servers.find(x => x.invite === code);
-      if (!s) { s = makeServer(name, icon, rand(COLORS.slice(0, 13)), true); s.invite = code; s.ownerId = "nova"; s.members.push({ userId: "nova", roles: [] }, { userId: "luna", roles: [] }, { userId: "max", roles: [] }); s.messages[s.channels[0].id] = [msg("nova", `¡Bienvenidos a ${name}! ${icon}`)]; S.servers.push(s); toast("Te uniste a " + name); }
-      S.cur = { server: s.id, channel: s.channels[0].id, dm: null }; save(); o.remove(); render();
+  const publicServers = S.servers.filter(s => s.public && s.id !== server()?.id);
+  const content = publicServers.length
+    ? `<div class="mb">${publicServers.map(s => `<div class="radio" data-sid="${s.id}"><span class="ri">${s.icon || "🌐"}</span><div style="flex:1"><b>${esc(s.name)}</b><small>${esc(s.desc || "Servidor público")} · ${s.members.length} miembros</small></div><button class="btn" style="padding:6px 12px">Unirse</button></div>`).join("")}</div>`
+    : `<div class="mb" style="text-align:center;padding:40px 20px"><p style="color:var(--muted);font-size:16px">📭 No hay servidores públicos todavía</p><p style="color:var(--dim);font-size:13px">¡Crea un servidor público para que otros lo descubran!</p></div>`;
+  modal(`<div class="mh"><h2>🧭 Catálogo de servidores</h2><p>Descubre y únete a servidores públicos.</p></div>${content}`, o => {
+    $$("[data-sid]", o).forEach(b => b.onclick = () => {
+      const s = S.servers.find(x => x.id === b.dataset.sid);
+      if (!s) return;
+      if (!member(s, "me")) s.members.push({ userId: "me", roles: [] });
+      S.cur = { server: s.id, channel: visibleChannels(s)[0]?.id, dm: null };
+      save(); o.remove(); render(); toast("¡Te uniste a " + s.name + "! 🎉");
     });
   });
 }
@@ -891,7 +891,7 @@ function emojiPicker(anchor, onPick, superMode) {
   const r = anchor.getBoundingClientRect(); const pr = p.getBoundingClientRect();
   p.style.left = Math.max(8, Math.min(r.right - pr.width, innerWidth - pr.width - 8)) + "px"; p.style.top = Math.max(8, r.top - pr.height - 8) + "px";
   $("[data-q]", p).oninput = e => { const q = e.target.value.toLowerCase(); $$("[data-e]", p).forEach(b => b.style.display = !q || b.dataset.n.includes(q) ? "" : "none"); };
-  p.onclick = e => { const b = e.target.closest("[data-e]"); if (!b) return; if (b.dataset.lock) { p.remove(); proUpsell("Usa emojis personalizados en cualquier servidor con Zpercord Pro."); return; } onPick(b.dataset.e, b); p.remove(); };
+  p.onclick = e => { const b = e.target.closest("[data-e]"); if (!b) return; if (b.dataset.lock) { p.remove(); return; } onPick(b.dataset.e, b); p.remove(); };
 }
 
 /* ---------- profile popout ---------- */
@@ -925,13 +925,6 @@ function profilePop(id, x, y) {
   });
 }
 
-function proUpsell(reason) {
-  modal(`<div style="background:linear-gradient(135deg,#1e3a8a,#4338ca,#7c3aed);padding:28px 20px;text-align:center;border-radius:12px 12px 0 0" class="shine"><div style="font-size:48px">💎</div><h2 style="margin:6px 0">Desbloquea con Zpercord Pro</h2><p style="margin:0;color:#dbe6ff">${esc(reason)}</p></div>
-    <div class="mb"><div class="perks" style="grid-template-columns:1fr 1fr;margin:0">${perkList().slice(0, 4).map(p => `<div class="perk"><span class="pi">${p[0]}</span><div><b>${p[1]}</b></div></div>`).join("")}</div></div>
-    <div class="mf"><button class="btn ghost" data-close>Ahora no</button><button class="btn pro" data-go>Obtener Pro</button></div>`, o => {
-    $("[data-close]", o).onclick = () => o.remove(); $("[data-go]", o).onclick = () => { o.remove(); openSettings("pro"); };
-  });
-}
 function perkList() {
   return [["🖼️", "Avatar animado y anillo Pro", "Destaca con un avatar con gradiente animado."],
   ["📁", "Subidas de 500 MB", "En lugar de 10 MB."], ["😎", "Emojis en todas partes", "Usa emojis personalizados de cualquier servidor."],
@@ -1158,7 +1151,7 @@ function checkout(plan) {
 }
 function boostServer(id) {
   const total = (isPro() ? PRO.boosts : 0) + (S.extraBoosts || 0); const used = Object.values(S.myBoosts).reduce((a, b) => a + b, 0);
-  if (total - used <= 0) { if (!isPro()) return proUpsell("Pro incluye 2 mejoras de servidor para subir de nivel tus servidores."); return toast("No te quedan mejoras. Compra más en Ajustes → Mejoras.", "err"); }
+  if (total - used <= 0) { return toast("No te quedan mejoras. Mejora en tu perfil para más.", "err"); }
   const s = S.servers.find(x => x.id === id); const before = boostLevel(s);
   s.boosts++; S.myBoosts[id] = (S.myBoosts[id] || 0) + 1;
   const first = s.channels.find(c => c.type === "text"); if (first) (s.messages[first.id] ||= []).push(msg("zbot", `🚀 **${me().name}** acaba de mejorar el servidor!${boostLevel(s) > before ? ` **${s.name}** ha alcanzado el **Nivel ${boostLevel(s)}**! 🎉` : ""}`));
@@ -1202,10 +1195,8 @@ function leaveVoice() { UI.voice = null; UI.stream = null; UI.video = false; bee
 
 function sendMessage(text, attachment) {
   const s = server(), ch = channel(s);
-  const limit = isPro() ? PRO.msgLimit : PRO.freeMsgLimit;
-  if (text.length > limit) { if (!isPro()) proUpsell(`Tu mensaje tiene ${text.length} caracteres. Con Pro puedes enviar hasta 4000.`); else toast("Mensaje demasiado largo", "err"); return false; }
+  if (text.length > MSG_LIMIT) { toast("Mensaje demasiado largo", "err"); return false; }
   if (s && /@(everyone|here)/.test(text) && !can(s, "MENTION_ALL", "me", ch)) toast("No tienes permiso para mencionar a @everyone; no se notificará.", "err");
-  if (!isPro()) { const m = text.match(/:([a-z0-9_]+):/gi) || []; for (const t of m) { const e = findEmoji(t.slice(1, -1)); if (e && (!s || e.server.id !== s.id)) { proUpsell("Usa emojis de otros servidores en cualquier parte con Zpercord Pro."); return false; } } }
   if (text.startsWith("/") && handleCommand(text)) return true;
   const m = msg("me", text, Date.now(), UI.replyTo ? { replyTo: UI.replyTo } : {});
   if (attachment) { m.attachment = attachment.meta; if (attachment.url) UI.blobs[m.id] = attachment.url; }
@@ -1330,7 +1321,7 @@ document.addEventListener("click", e => {
     case "toggleVideo": UI.video = !UI.video; render(); break;
     case "toggleStream": if (UI.stream) { UI.stream = null; render(); break; } { const s = server(UI.voice.server); if (!can(s, "STREAM", "me", channel(s, UI.voice.channel))) { toast("No tienes permiso para transmitir", "err"); break; }
       modal(`<div class="mh"><h2>🖥️ Compartir pantalla</h2><p>Elige la calidad de la transmisión.</p></div><div class="mb">${[["720p", "30 FPS", false], ["1080p", "60 FPS", true], ["1440p", "60 FPS", true], ["4K", "60 FPS", true]].map(q => `<div class="radio" data-q="${q[0]} ${q[1]}" data-pro="${q[2] ? 1 : ""}"><span class="ri">📺</span><div style="flex:1"><b>${q[0]}</b><small>${q[1]}</small></div>${q[2] ? '<span class="tag pro">PRO</span>' : ""}</div>`).join("")}</div>`, o => {
-        $$("[data-q]", o).forEach(b => b.onclick = () => { if (b.dataset.pro && !isPro()) { proUpsell("Transmite en 1080p, 1440p o 4K a 60 FPS con Zpercord Pro."); return; } UI.stream = b.dataset.q; o.remove(); render(); toast("Transmitiendo en " + UI.stream); });
+        $$("[data-q]", o).forEach(b => b.onclick = () => { UI.stream = b.dataset.q; o.remove(); render(); toast("Transmitiendo en " + UI.stream); });
       }); break; }
     case "call": { const id2 = S.cur.dm; msgList().push(msg("me", "📞 Ha iniciado una llamada.")); save(); render(); setTimeout(() => { msgList().push(msg(id2, "Ahora no puedo, ¿luego? 🙏")); save(); render(); }, 2000); break; }
     case "toggleMembers": UI.memberList = !UI.memberList; render(); break;
@@ -1343,7 +1334,7 @@ document.addEventListener("click", e => {
     case "gift": if (S.cur.dm) { if (user(S.cur.dm).pro) toast(user(S.cur.dm).name + " ya tiene Pro"); else giftPro(S.cur.dm); } else openSettings("gift"); break;
     case "emojiPicker": emojiPicker(a, em => { const ta = $("#composer"); ta.value += em; ta.focus(); autoGrow(ta); }); break;
     case "quickReact": emojiPicker(a, em => react(id, em.startsWith(":") ? (findEmoji(em.slice(1, -1)) || {}).char || em : em)); break;
-    case "superReact": if (!isPro()) { proUpsell("Las súper reacciones animadas son exclusivas de Pro."); break; } emojiPicker(a, (em, b) => { const ch = em.startsWith(":") ? (findEmoji(em.slice(1, -1)) || {}).char || em : em; const r = a.getBoundingClientRect(); superBurst(r.left, r.top, ch); react(id, "super:" + ch); }, true); break;
+    case "superReact": emojiPicker(a, (em, b) => { const ch = em.startsWith(":") ? (findEmoji(em.slice(1, -1)) || {}).char || em : em; const r = a.getBoundingClientRect(); superBurst(r.left, r.top, ch); react(id, "super:" + ch); }, true); break;
     case "react": { const r = a.getBoundingClientRect(); if (a.dataset.e.startsWith("super:")) superBurst(r.left + 10, r.top, a.dataset.e.slice(6)); react(id, a.dataset.e); break; }
     case "reply": UI.replyTo = id; render(); break;
     case "cancelReply": UI.replyTo = null; render(); break;
@@ -1379,8 +1370,8 @@ document.addEventListener("input", e => { if (e.target.id === "composer") autoGr
 document.addEventListener("change", e => {
   if (e.target.id !== "file") return;
   const f = e.target.files[0]; if (!f) return;
-  const lim = isPro() ? PRO.upload : PRO.freeUpload;
-  if (f.size > lim) { if (!isPro()) proUpsell(`El archivo pesa ${size(f.size)}. El límite gratuito es 10 MB; con Pro, 500 MB.`); else toast("El archivo supera 500 MB", "err"); return; }
+  const lim = UPLOAD_LIMIT;
+  if (f.size > lim) { toast("El archivo supera " + size(lim), "err"); return; }
   const ta = $("#composer"); const text = ta ? ta.value.trim() : "";
   const image = f.type.startsWith("image/");
   sendMessage(text, { meta: { name: f.name, size: f.size, image }, url: image ? URL.createObjectURL(f) : null });
