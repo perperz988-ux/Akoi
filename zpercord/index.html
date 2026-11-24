@@ -38,7 +38,8 @@ input:focus,textarea:focus,select:focus{border-color:var(--blue)}
 /* ---------- server rail ---------- */
 .rail{background:var(--bg0);display:flex;flex-direction:column;align-items:center;gap:8px;padding:12px 0;overflow-y:auto;scrollbar-width:none}
 .rail::-webkit-scrollbar{display:none}
-.sicon{position:relative;width:48px;height:48px;border-radius:50%;display:grid;place-items:center;background:var(--bg3);font-weight:700;font-size:17px;transition:border-radius .18s,background .18s;flex:none;overflow:visible}
+.sicon{position:relative;width:48px;height:48px;border-radius:50%;display:grid;place-items:center;background:var(--bg3);font-weight:700;font-size:17px;transition:border-radius .18s,background .18s,transform .1s;flex:none;overflow:visible;cursor:pointer}
+.sicon:active{transform:scale(.95)}
 .sicon:hover,.sicon.active{border-radius:16px;background:var(--blue)}
 .sicon .pill{position:absolute;left:-16px;width:8px;border-radius:0 4px 4px 0;background:#fff;height:0;transition:height .18s}
 .sicon.unread .pill{height:8px}.sicon:hover .pill{height:20px}.sicon.active .pill{height:40px}
@@ -59,9 +60,9 @@ input:focus,textarea:focus,select:focus{border-color:var(--blue)}
 .cat{display:flex;align-items:center;gap:4px;margin:16px 0 4px;padding:0 4px;color:var(--muted);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;cursor:pointer;user-select:none}
 .cat:hover{color:var(--text)}.cat .grow{flex:1}.cat .plus{font-size:18px;line-height:1;opacity:.8}.cat .plus:hover{opacity:1}
 .cat .arr{transition:transform .15s;display:inline-block}.cat.collapsed .arr{transform:rotate(-90deg)}
-.chan{display:flex;align-items:center;gap:7px;padding:6px 8px;border-radius:6px;color:var(--muted);cursor:pointer;margin:1px 0;position:relative}
+.chan{display:flex;align-items:center;gap:7px;padding:6px 8px;border-radius:6px;color:var(--muted);cursor:pointer;margin:1px 0;position:relative;transition:all .1s}
 .chan:hover{background:var(--bg3);color:var(--text)}
-.chan.active{background:var(--bg4);color:#fff}
+.chan.active{background:var(--blue)!important;color:#fff;font-weight:600}
 .chan.unread{color:#fff;font-weight:600}
 .chan.unread::before{content:"";position:absolute;left:-8px;width:4px;height:8px;background:#fff;border-radius:0 4px 4px 0}
 .chan .ico{width:20px;text-align:center;opacity:.8;flex:none}
@@ -118,9 +119,9 @@ input:focus,textarea:focus,select:focus{border-color:var(--blue)}
 .welcome .big{width:68px;height:68px;border-radius:50%;background:var(--bg4);display:grid;place-items:center;font-size:34px;margin-bottom:10px}
 .welcome h1{margin:0 0 4px;font-size:28px}
 .welcome p{margin:0;color:var(--muted)}
-.msg{display:flex;gap:14px;padding:2px 16px 2px 16px;position:relative}
+.msg{display:flex;gap:14px;padding:2px 16px 2px 16px;position:relative;transition:background .08s}
 .msg.first{margin-top:14px}
-.msg:hover{background:#0b1730}
+.msg:hover{background:var(--bg3)}
 .msg.mention{background:#3b82f61a;box-shadow:inset 3px 0 var(--blue2)}
 .msg .gut{width:40px;flex:none;color:var(--dim);font-size:11px;text-align:right;padding-top:3px;opacity:0}
 .msg:hover .gut{opacity:1}
@@ -212,13 +213,15 @@ a{color:var(--blue2)}
 .levels{display:flex;justify-content:space-between;font-size:12px;color:var(--muted)}
 
 /* ---------- buttons ---------- */
-.btn{background:var(--blue);color:#fff;border-radius:6px;padding:9px 16px;font-weight:600}
-.btn:hover{background:var(--blue3)}
-.btn.sec{background:var(--bg4)}.btn.sec:hover{background:#26407a}
-.btn.danger{background:var(--red)}.btn.danger:hover{background:#b91c1c}
-.btn.pro{background:linear-gradient(90deg,var(--pro1),var(--pro2),var(--pro3))}
-.btn.ghost{background:none;color:var(--text)}.btn.ghost:hover{text-decoration:underline}
-.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn{background:var(--blue);color:#fff;border-radius:6px;padding:9px 16px;font-weight:600;transition:all .15s;cursor:pointer}
+.btn:hover:not(:disabled){background:var(--blue3);transform:translateY(-2px);box-shadow:0 4px 12px #5865f240}
+.btn:active:not(:disabled){transform:translateY(0)}
+.btn.sec{background:var(--bg4);color:var(--text)}.btn.sec:hover:not(:disabled){background:#40444b}
+.btn.danger{background:var(--red)}.btn.danger:hover:not(:disabled){background:#d93f3f;box-shadow:0 4px 12px #f0474740}
+.btn.pro{background:linear-gradient(90deg,#43b581,#5865f2,#9c27b0);box-shadow:0 4px 12px #5865f240}
+.btn.pro:hover{filter:brightness(1.1)}
+.btn.ghost{background:none;color:var(--text)}.btn.ghost:hover{background:var(--bg3);border-radius:6px;padding:9px 16px}
+.btn:disabled{opacity:.4;cursor:not-allowed}
 
 /* ---------- modals ---------- */
 .overlay{position:fixed;inset:0;background:#000b;display:grid;place-items:center;z-index:100;animation:fade .15s}
@@ -1134,12 +1137,19 @@ const serverTabs = {
   },
   emojis(c, s) {
     const ok = can(s, "MANAGE_SERVER"); const slots = emojiSlots(s);
-    c.innerHTML = `<h2>Emojis</h2><p style="color:var(--muted)">Añade emojis personalizados que cualquiera puede usar en este servidor. Los miembros con <b>Pro</b> pueden usarlos en cualquier parte. Ranuras: <b>${s.emojis.length}/${slots}</b> (más con mejoras).</p>
-      ${ok ? `<form data-f style="display:flex;gap:8px;flex-wrap:wrap"><input name="char" maxlength="4" placeholder="Emoji (ej. 🐉)" style="width:140px" required><input name="name" maxlength="32" placeholder="nombre_emoji" style="flex:1;min-width:140px" required><button class="btn">Subir emoji</button></form>` : ""}
-      <div style="margin-top:16px">${s.emojis.map((e, i) => `<div class="mrow"><span style="font-size:28px">${e.char}</span><code>:${esc(e.name)}:</code><span style="flex:1"></span>${ok ? `<button class="btn sec" data-del="${i}" style="padding:4px 12px">Eliminar</button>` : ""}</div>`).join("") || '<p style="color:var(--muted)">Aún no hay emojis.</p>'}</div>`;
+    const isFull = s.emojis.length >= slots;
+    c.innerHTML = `<h2>Emojis del servidor</h2>
+      <p style="color:var(--muted);margin-bottom:16px">Personaliza tu servidor con emojis únicos. Los miembros Pro pueden usarlos en cualquier servidor.</p>
+      <div style="background:var(--bg3);border-radius:10px;padding:14px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center">
+        <div><b>Ranuras de emoji</b> <span style="color:var(--muted);font-size:13px">${s.emojis.length}/${slots}</span></div>
+        ${slots < 250 ? `<span style="font-size:12px;color:var(--dim)">+${slots < 100 ? slots < 150 ? "50 con más mejoras" : "100 con más mejoras" : "50 con más mejoras"}</span>` : '<span style="color:var(--green);font-weight:600">✔ Máximo</span>'}
+      </div>
+      ${ok ? `<form data-f style="display:grid;gap:10px;margin-bottom:16px"><label class="l" style="margin:0">Crear nuevo emoji</label><div style="display:grid;grid-template-columns:120px 1fr auto;gap:8px"><input name="char" maxlength="4" placeholder="🌟" required title="Pegá un emoji o carácter"><input name="name" maxlength="32" placeholder="nombre_emoji (sin espacios)" required title="Nombre para usar :nombre_emoji:"><button class="btn" ${isFull ? "disabled" : ""} title="${isFull ? "No hay ranuras disponibles" : ""}">Añadir</button></div></form>` : ""}
+      <div><b style="display:block;margin-bottom:8px">Emojis (${s.emojis.length})</b>
+      ${s.emojis.length > 0 ? `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(60px,1fr));gap:6px">${s.emojis.map((e, i) => `<div style="background:var(--bg3);padding:8px;border-radius:8px;text-align:center;position:relative;cursor:pointer" title=":${e.name}:"><div style="font-size:28px;margin-bottom:4px">${e.char}</div><code style="font-size:11px;color:var(--muted)">${esc(e.name)}</code>${ok ? `<button class="btn sec" data-del="${i}" style="padding:2px 6px;font-size:11px;width:100%;margin-top:4px">✖</button>` : ""}</div>`).join("")}</div>` : '<p style="color:var(--muted);padding:14px;background:var(--bg1);border-radius:8px;text-align:center">Sin emojis personalizados aún. Crea uno para que todos disfruten.</p>'}</div>`;
     const f = $("[data-f]", c);
-    f && (f.onsubmit = e => { e.preventDefault(); if (s.emojis.length >= slots) return toast("Sin ranuras libres. ¡Mejora el servidor!", "err"); const n = f.name.value.trim().toLowerCase().replace(/[^a-z0-9_]/g, "_"); if (n.length < 2) return; s.emojis.push({ name: n, char: f.char.value.trim() }); save(); drawSettings(); });
-    $$("[data-del]", c).forEach(b => b.onclick = () => { s.emojis.splice(+b.dataset.del, 1); save(); drawSettings(); });
+    f && (f.onsubmit = e => { e.preventDefault(); if (s.emojis.length >= slots) return toast("Sin ranuras. ¡Mejora el servidor para más! 💎"); const n = f.name.value.trim().toLowerCase().replace(/[^a-z0-9_]/g, "_"); if (n.length < 2) return; s.emojis.push({ name: n, char: f.char.value.trim() }); f.reset(); save(); drawSettings(); toast("Emoji añadido ✔"); });
+    $$("[data-del]", c).forEach(b => b.onclick = () => { s.emojis.splice(+b.dataset.del, 1); save(); drawSettings(); toast("Emoji eliminado"); });
   },
   boost(c, s) {
     const lvl = boostLevel(s); const next = LEVELS[lvl + 1];
