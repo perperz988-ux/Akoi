@@ -369,69 +369,17 @@ const EMOJIS = "😀 😂 🤣 😊 😍 🥰 😎 🤔 😮 😢 😭 😡 🥳
 const PRO = { msgLimit: 4000, freeMsgLimit: 2000, upload: 500 * 1024 * 1024, freeUpload: 10 * 1024 * 1024, boosts: 2 };
 const LEVELS = [0, 2, 7, 14];
 
-/* ---------------- seed data ---------------- */
+/* ---------------- seed data - clean state like Discord -------- */
 function seed() {
   const users = {
-    me: { id: "me", name: "Tú", username: "tu_usuario", color: "#5865f2", status: "online", about: "¡Hola! Soy nuevo en Zpercord.", custom: "", pro: false, anim: false, bannerColor: "#7289da", themeA: "#5865f2", themeB: "#7289da", emojiAv: "" },
-    nova: { id: "nova", name: "Nova", username: "nova.dev", color: "#9c27b0", status: "online", about: "Programadora full-stack · café ☕", custom: "codeando 🚀", pro: true, anim: true, bannerColor: "#7b2cbf", themeA: "#5865f2", themeB: "#9c27b0" },
-    kai: { id: "kai", name: "Kai", username: "kai_plays", color: "#00bcd4", status: "idle", about: "Gamer de corazón 🎮", custom: "AFK un rato", pro: false },
-    luna: { id: "luna", name: "Luna", username: "lunita", color: "#e91e63", status: "dnd", about: "Artista digital 🎨", custom: "dibujando, no molestar", pro: true, anim: false, bannerColor: "#c2185b", themeA: "#e91e63", themeB: "#5865f2" },
-    max: { id: "max", name: "Max", username: "maxpower", color: "#ff9800", status: "online", about: "Fan del lo-fi", custom: "🎧 escuchando música", pro: false },
-    zbot: { id: "zbot", name: "Zbot", username: "zbot", color: "#7289da", status: "online", about: "Bot oficial. Escribe /ayuda", custom: "/ayuda", bot: true, emojiAv: "🤖" },
-    sofi: { id: "sofi", name: "Sofi", username: "sofi_m", color: "#43b581", status: "offline", about: "", custom: "", pro: false },
+    me: { id: "me", name: "Tú", username: "tu_usuario", color: rand(AVATAR_BG), status: "online", about: "", custom: "", pro: false, anim: false, bannerColor: "#5865f2", themeA: "#5865f2", themeB: "#7289da", emojiAv: "" },
   };
-  const s1 = makeServer("Zona Gamer", "🎮", "#5865f2", true);
-  const admin = { id: uid(), name: "Admin", color: "#f04747", hoist: true, perms: { ADMIN: 1 } };
-  const mod = { id: uid(), name: "Moderador", color: "#43b581", hoist: true, perms: { KICK: 1, MANAGE_CHANNELS: 1, MENTION_ALL: 1 } };
-  const vip = { id: uid(), name: "VIP", color: "#faa61a", hoist: true, perms: {} };
-  const bots = { id: uid(), name: "Bots", color: "#7289da", hoist: true, perms: {} };
-  s1.roles.splice(0, 0, admin, mod, vip, bots);
-  s1.members = [
-    { userId: "me", roles: [admin.id] }, { userId: "nova", roles: [mod.id, vip.id] }, { userId: "kai", roles: [vip.id] },
-    { userId: "luna", roles: [] }, { userId: "max", roles: [] }, { userId: "zbot", roles: [bots.id] }, { userId: "sofi", roles: [] },
-  ];
-  const info = { id: uid(), name: "Información", collapsed: false };
-  s1.categories.unshift(info);
-  s1.channels.unshift(
-    { id: uid(), name: "reglas", type: "announce", categoryId: info.id, topic: "Lee antes de escribir", private: false, roles: [] },
-    { id: uid(), name: "anuncios", type: "announce", categoryId: info.id, topic: "Novedades del servidor", private: false, roles: [] },
-  );
-  const texts = s1.categories.find(c => c.name === "Canales de texto");
-  s1.channels.push({ id: uid(), name: "staff", type: "text", categoryId: texts.id, topic: "Solo para el equipo", private: true, roles: [mod.id] });
-  s1.channels.push({ id: uid(), name: "clips-y-memes", type: "text", categoryId: texts.id, topic: "Lo mejor de la semana", private: false, roles: [] });
-  const vc = s1.categories.find(c => c.name === "Canales de voz");
-  s1.channels.push({ id: uid(), name: "Partida", type: "voice", categoryId: vc.id, private: false, roles: [] });
-  s1.boosts = 3; s1.emojis = [{ name: "zgg", char: "🏆" }, { name: "zpog", char: "😮" }];
-  const general = s1.channels.find(c => c.name === "general");
-  const rules = s1.channels.find(c => c.name === "reglas");
-  const now = Date.now();
-  s1.messages[rules.id] = [msg("zbot", "**Reglas de Zona Gamer**\n1. Respeta a todos.\n2. Nada de spam.\n3. Usa cada canal para su tema.\n4. ¡Diviértete! 🎮", now - 864e5 * 3)];
-  s1.messages[general.id] = [
-    msg("nova", "¡Bienvenidos a **Zona Gamer**! 💙", now - 36e5 * 5),
-    msg("kai", "¿Alguien para una partida esta noche?", now - 36e5 * 4),
-    msg("max", "Yo me apunto 🙌", now - 36e5 * 4 + 6e4),
-    msg("luna", "Acabo de terminar un dibujo nuevo ||es un dragón azul||", now - 36e5 * 2),
-    msg("zbot", "Escribe `/ayuda` para ver mis comandos.", now - 36e5),
-  ];
-  s1.messages[general.id][2].reactions = { "🙌": ["kai", "nova"], "🔥": ["luna"] };
-  s1.messages[general.id][3].reactions = { "❤️": ["nova", "max", "kai"] };
-
-  const s2 = makeServer("Estudio Pixel", "🎨", "#e91e63", true);
-  s2.members = [{ userId: "me", roles: [] }, { userId: "luna", roles: [] }, { userId: "nova", roles: [] }];
-  s2.ownerId = "luna";
-  s2.messages[s2.channels[0].id] = [msg("luna", "Este es mi espacio para compartir arte ✨ ¡pasen!", now - 864e5)];
-  const s3 = makeServer("Código Azul", "💻", "#00bcd4", true);
-  s3.members = [{ userId: "me", roles: [] }, { userId: "nova", roles: [] }, { userId: "max", roles: [] }, { userId: "zbot", roles: [] }];
-  s3.ownerId = "nova";
-  s3.messages[s3.channels[0].id] = [msg("nova", "```js\nconsole.log('hola Zpercord');\n```\nPrimer mensaje del server 😎", now - 72e5)];
-
   return {
-    users, servers: [s1, s2, s3],
-    dms: { nova: [msg("nova", "¡Ey! ¿Ya probaste Zpercord Pro? Tiene avatares animados 😍", now - 36e5 * 3)], kai: [msg("kai", "gg en la partida de ayer", now - 864e5)] },
-    dmOrder: ["nova", "kai"], friends: ["nova", "kai", "luna", "max", "sofi"],
-    pending: [{ id: "neo", name: "Neo" }],
+    users, servers: [],
+    dms: {}, dmOrder: [], friends: [],
+    pending: [],
     read: {}, myBoosts: {}, settings: { compact: false, sounds: true },
-    cur: { server: s1.id, channel: general.id, dm: null },
+    cur: { server: null, channel: null, dm: null },
   };
 }
 function makeServer(name, icon, color, withDefaults) {
@@ -576,6 +524,10 @@ const initials = n => n.split(/\s+/).map(w => w[0]).join("").slice(0, 3);
 
 function renderHomeSide() {
   let h = `<div class="shead" style="cursor:default"><input placeholder="Buscar o iniciar conversación" style="padding:5px 8px;font-size:13px" data-act="dmSearch"></div><div class="clist">`;
+  if (!S.servers.length) {
+    h += `<button class="homebtn" style="margin:40px 0 20px;text-align:center;font-weight:700;color:var(--blue)" data-act="newServer"><span style="font-size:28px">➕</span><div>Crear servidor</div></button>`;
+    h += `<button class="homebtn" style="margin:0 0 40px;text-align:center;color:var(--muted)" data-act="discover"><span style="font-size:28px">🧭</span><div>Explorar</div></button>`;
+  }
   h += `<button class="homebtn ${!S.cur.dm ? "active" : ""}" data-act="friends"><span class="ico">👥</span>Amigos</button>`;
   h += `<button class="homebtn" data-act="openSettings" data-tab="pro"><span class="ico">💎</span>Zpercord Pro</button>`;
   h += `<button class="homebtn" data-act="shop"><span class="ico">🛍️</span>Tienda</button>`;
@@ -596,6 +548,22 @@ function renderHomeMain() {
       <button class="ibtn" data-act="call" title="Llamada">📞</button><button class="ibtn" data-act="profile" data-id="${u.id}" title="Perfil">👤</button></div>
       <div class="msgs">${`<div class="welcome"><div style="display:inline-block;transform:scale(2);transform-origin:left top;margin-bottom:46px">${avatar(u, "", false)}</div><h1>${esc(u.name)}</h1><p style="font-size:18px;margin-bottom:8px">${esc(u.username || "")}</p><p>Este es el comienzo de tu historial de mensajes directos con <b>${esc(u.name)}</b>.</p></div>`}${renderMessages(msgList(), null)}</div>
       ${renderTyping()}${renderComposer(`Enviar mensaje a @${u.name}`, true, null)}`;
+  }
+  if (!S.servers.length) {
+    return `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;padding:40px;text-align:center">
+      <div style="font-size:120px;margin-bottom:20px">📭</div>
+      <h1 style="margin:0 0 8px;font-size:36px">Bienvenido a Zpercord</h1>
+      <p style="color:var(--muted);margin:0 0 32px;font-size:16px;max-width:400px">Crea tu primer servidor o únete a uno existente para comenzar a chatear.</p>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-bottom:40px">
+        <button class="btn" style="font-size:15px;padding:12px 24px" data-act="newServer">
+          <span style="font-size:18px">➕</span> Crear servidor
+        </button>
+        <button class="btn sec" style="font-size:15px;padding:12px 24px" data-act="discover">
+          <span style="font-size:18px">🧭</span> Explorar servidores
+        </button>
+      </div>
+      <div style="color:var(--muted);font-size:13px">O busca un servidor para unirte</div>
+    </div>`;
   }
   const tab = UI.homeTab;
   const fr = S.friends.map(user);
