@@ -1,0 +1,1449 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Zpercord</title>
+<style>
+:root{
+  --bg0:#060d1c;      /* server rail */
+  --bg1:#0a1528;      /* sidebars */
+  --bg2:#0f1d38;      /* chat */
+  --bg3:#16284c;      /* inputs / hover */
+  --bg4:#1d3361;      /* active */
+  --line:#1b2d52;
+  --text:#e4ecff;
+  --muted:#8ea3cc;
+  --dim:#5d729c;
+  --blue:#3b82f6;
+  --blue2:#60a5fa;
+  --blue3:#1d4ed8;
+  --green:#22c55e;
+  --yellow:#f59e0b;
+  --red:#ef4444;
+  --pro1:#38bdf8;
+  --pro2:#6366f1;
+  --pro3:#a855f7;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg0);color:var(--text);font:15px/1.4 "Segoe UI",system-ui,-apple-system,Roboto,sans-serif;overflow:hidden}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
+input,textarea,select{font:inherit;color:var(--text);background:var(--bg0);border:1px solid var(--line);border-radius:8px;padding:9px 11px;outline:none;width:100%}
+input:focus,textarea:focus,select:focus{border-color:var(--blue)}
+::-webkit-scrollbar{width:8px;height:8px}::-webkit-scrollbar-thumb{background:var(--bg4);border-radius:8px}::-webkit-scrollbar-track{background:transparent}
+.app{display:grid;grid-template-columns:72px 240px 1fr 240px;height:100vh;height:100dvh}
+.app.nomembers{grid-template-columns:72px 240px 1fr}
+.scrim{display:none}
+
+/* ---------- server rail ---------- */
+.rail{background:var(--bg0);display:flex;flex-direction:column;align-items:center;gap:8px;padding:12px 0;overflow-y:auto;scrollbar-width:none}
+.rail::-webkit-scrollbar{display:none}
+.sicon{position:relative;width:48px;height:48px;border-radius:50%;display:grid;place-items:center;background:var(--bg3);font-weight:700;font-size:17px;transition:border-radius .18s,background .18s;flex:none;overflow:visible}
+.sicon:hover,.sicon.active{border-radius:16px;background:var(--blue)}
+.sicon .pill{position:absolute;left:-16px;width:8px;border-radius:0 4px 4px 0;background:#fff;height:0;transition:height .18s}
+.sicon.unread .pill{height:8px}.sicon:hover .pill{height:20px}.sicon.active .pill{height:40px}
+.sicon .badge{position:absolute;right:-4px;bottom:-4px;background:var(--red);font-size:11px;min-width:18px;height:18px;border-radius:9px;display:grid;place-items:center;border:3px solid var(--bg0);padding:0 3px}
+.sicon.add{color:var(--green);font-size:26px;font-weight:400}.sicon.add:hover{background:var(--green);color:#fff}
+.sicon.boosted::after{content:"";position:absolute;inset:-3px;border-radius:inherit;border:2px solid var(--pro3);opacity:.8}
+.rail .sep{width:32px;height:2px;background:var(--line);border-radius:1px;flex:none}
+.tip{position:fixed;background:#020611;color:#fff;padding:6px 10px;border-radius:6px;font-size:13px;font-weight:600;pointer-events:none;z-index:999;white-space:nowrap;box-shadow:0 4px 14px #0008}
+
+/* ---------- channel sidebar ---------- */
+.side{background:var(--bg1);display:flex;flex-direction:column;min-width:0}
+.shead{height:48px;display:flex;align-items:center;padding:0 14px;font-weight:700;border-bottom:1px solid var(--line);gap:8px;cursor:pointer;flex:none}
+.shead:hover{background:var(--bg3)}
+.shead .name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sbanner{height:90px;background-size:cover;flex:none;position:relative}
+.sbanner .shead{position:absolute;inset:auto 0 0 0;border:0;background:linear-gradient(transparent,#0a1528ee)}
+.clist{flex:1;overflow-y:auto;padding:8px 8px 16px}
+.cat{display:flex;align-items:center;gap:4px;margin:16px 0 4px;padding:0 4px;color:var(--muted);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;cursor:pointer;user-select:none}
+.cat:hover{color:var(--text)}.cat .grow{flex:1}.cat .plus{font-size:18px;line-height:1;opacity:.8}.cat .plus:hover{opacity:1}
+.cat .arr{transition:transform .15s;display:inline-block}.cat.collapsed .arr{transform:rotate(-90deg)}
+.chan{display:flex;align-items:center;gap:7px;padding:6px 8px;border-radius:6px;color:var(--muted);cursor:pointer;margin:1px 0;position:relative}
+.chan:hover{background:var(--bg3);color:var(--text)}
+.chan.active{background:var(--bg4);color:#fff}
+.chan.unread{color:#fff;font-weight:600}
+.chan.unread::before{content:"";position:absolute;left:-8px;width:4px;height:8px;background:#fff;border-radius:0 4px 4px 0}
+.chan .ico{width:20px;text-align:center;opacity:.8;flex:none}
+.chan .nm{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chan .gear{opacity:0;font-size:13px}.chan:hover .gear,.chan.active .gear{opacity:.75}
+.chan .mbadge{background:var(--red);color:#fff;font-size:11px;border-radius:9px;padding:0 6px;font-weight:700}
+.vusers{margin:0 0 4px 34px}
+.vuser{display:flex;align-items:center;gap:7px;padding:3px 6px;border-radius:5px;color:var(--muted);font-size:14px}
+.vuser .av{width:22px;height:22px;font-size:10px}
+.vuser.speaking .av{box-shadow:0 0 0 2px var(--green)}
+.vuser .live{background:var(--red);color:#fff;font-size:10px;font-weight:800;border-radius:4px;padding:0 4px;margin-left:auto}
+
+.voicebar{background:var(--bg0);border-top:1px solid var(--line);padding:8px 10px;flex:none}
+.voicebar .st{color:var(--green);font-weight:700;font-size:13px}
+.voicebar .sub{color:var(--muted);font-size:12px}
+.voicebar .row{display:flex;gap:6px;margin-top:8px}
+.voicebar .row button{flex:1;background:var(--bg3);border-radius:6px;padding:6px 0;font-size:13px}
+.voicebar .row button:hover{background:var(--bg4)}
+.voicebar .row button.on{background:var(--blue)}
+.voicebar .row button.danger:hover{background:var(--red)}
+
+.userbar{height:56px;background:#071022;display:flex;align-items:center;gap:8px;padding:0 8px;flex:none}
+.userbar .who{flex:1;min-width:0;cursor:pointer;border-radius:6px;padding:4px;display:flex;align-items:center;gap:8px}
+.userbar .who:hover{background:var(--bg3)}
+.userbar .nm{font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.userbar .cs{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ibtn{width:32px;height:32px;border-radius:6px;display:grid;place-items:center;color:var(--muted);flex:none;position:relative}
+.ibtn:hover{background:var(--bg3);color:var(--text)}
+.ibtn.off{color:var(--red)}
+.ibtn.off::after{content:"";position:absolute;width:22px;height:2px;background:var(--red);transform:rotate(-45deg)}
+
+/* ---------- avatars ---------- */
+.av{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;font-weight:700;color:#fff;flex:none;position:relative;font-size:16px;user-select:none}
+.av.sm{width:32px;height:32px;font-size:13px}
+.av .dot{position:absolute;right:-2px;bottom:-2px;width:14px;height:14px;border-radius:50%;border:3px solid var(--bg1)}
+.av.sm .dot{width:12px;height:12px}
+.dot.online{background:var(--green)}.dot.idle{background:var(--yellow)}.dot.dnd{background:var(--red)}.dot.offline,.dot.invisible{background:#5b6b8a}
+.av.anim{animation:avspin 3s linear infinite;background-size:300% 300%!important}
+.av.anim::before{content:"";position:absolute;inset:-3px;border-radius:50%;border:2px solid transparent;background:conic-gradient(from var(--a,0deg),var(--pro1),var(--pro2),var(--pro3),var(--pro1)) border-box;-webkit-mask:linear-gradient(#000 0 0) padding-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;animation:ring 2s linear infinite}
+@property --a{syntax:"<angle>";inherits:false;initial-value:0deg}
+@keyframes ring{to{--a:360deg}}
+@keyframes avspin{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+
+/* ---------- main chat ---------- */
+.main{background:var(--bg2);display:flex;flex-direction:column;min-width:0;min-height:0}
+.mhead{height:48px;display:flex;align-items:center;gap:10px;padding:0 14px;border-bottom:1px solid var(--line);flex:none;box-shadow:0 1px 4px #0004}
+.mhead .ttl{font-weight:700;white-space:nowrap}
+.mhead .topic{color:var(--muted);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;border-left:1px solid var(--line);padding-left:10px}
+.mhead .hb{display:none}
+.viewas{background:var(--blue3);color:#fff;padding:6px 14px;font-size:13px;display:flex;gap:10px;align-items:center;flex:none}
+.viewas button{background:#fff2;border-radius:5px;padding:2px 10px;margin-left:auto}
+.msgs{flex:1;overflow-y:auto;padding:16px 0 8px;min-height:0}
+.welcome{padding:16px 16px 20px}
+.welcome .big{width:68px;height:68px;border-radius:50%;background:var(--bg4);display:grid;place-items:center;font-size:34px;margin-bottom:10px}
+.welcome h1{margin:0 0 4px;font-size:28px}
+.welcome p{margin:0;color:var(--muted)}
+.msg{display:flex;gap:14px;padding:2px 16px 2px 16px;position:relative}
+.msg.first{margin-top:14px}
+.msg:hover{background:#0b1730}
+.msg.mention{background:#3b82f61a;box-shadow:inset 3px 0 var(--blue2)}
+.msg .gut{width:40px;flex:none;color:var(--dim);font-size:11px;text-align:right;padding-top:3px;opacity:0}
+.msg:hover .gut{opacity:1}
+.msg .body{min-width:0;flex:1}
+.msg .meta{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.msg .author{font-weight:600;cursor:pointer}.msg .author:hover{text-decoration:underline}
+.msg .ts{color:var(--dim);font-size:12px}
+.msg .text{white-space:pre-wrap;word-wrap:break-word;overflow-wrap:anywhere}
+.msg .text .edited{color:var(--dim);font-size:11px}
+.msg .reply{font-size:13px;color:var(--muted);display:flex;gap:6px;align-items:center;margin-left:54px;margin-bottom:2px;overflow:hidden;white-space:nowrap}
+.msg .reply b{color:var(--text)}
+.tag{font-size:10px;font-weight:800;border-radius:4px;padding:1px 5px;background:var(--blue);color:#fff;letter-spacing:.02em;align-self:center}
+.tag.pro{background:linear-gradient(90deg,var(--pro1),var(--pro3))}
+.tag.bot{background:var(--blue3)}
+.mtools{position:absolute;right:16px;top:-14px;background:var(--bg1);border:1px solid var(--line);border-radius:8px;display:none;padding:2px;box-shadow:0 4px 12px #0006;z-index:5}
+.msg:hover .mtools{display:flex}
+.mtools button{width:30px;height:28px;border-radius:5px;font-size:15px}.mtools button:hover{background:var(--bg3)}
+.reacts{display:flex;gap:4px;flex-wrap:wrap;margin-top:4px}
+.react{background:var(--bg3);border:1px solid transparent;border-radius:8px;padding:1px 7px;font-size:14px;display:flex;gap:5px;align-items:center}
+.react.me{border-color:var(--blue);background:#3b82f62a}
+.react.super{background:linear-gradient(90deg,#38bdf833,#a855f733);border-color:var(--pro3)}
+.react b{font-size:12px;color:var(--muted)}
+.attach{margin-top:6px;background:var(--bg1);border:1px solid var(--line);border-radius:8px;padding:10px 12px;display:inline-flex;gap:10px;align-items:center;max-width:100%}
+.attach img{max-width:320px;max-height:240px;border-radius:6px;display:block}
+.attach .fi{font-size:28px}
+.attach .fn{color:var(--blue2);font-weight:600;word-break:break-all}
+.attach .fs{color:var(--dim);font-size:12px}
+code{background:#050b18;border-radius:4px;padding:1px 4px;font-family:Consolas,monospace;font-size:.9em}
+pre{background:#050b18;border:1px solid var(--line);border-radius:6px;padding:8px;white-space:pre-wrap;margin:4px 0;font-family:Consolas,monospace;font-size:.9em}
+.ment{background:#3b82f640;color:#bcd6ff;border-radius:4px;padding:0 3px;font-weight:600;cursor:pointer}
+.ment:hover{background:var(--blue);color:#fff}
+.spoil{background:#000;color:transparent;border-radius:4px;cursor:pointer;padding:0 2px}.spoil.shown{background:#fff1;color:inherit}
+a{color:var(--blue2)}
+.cemo{width:22px;height:22px;vertical-align:-5px;display:inline-grid;place-items:center;font-size:19px}
+.bigemoji .cemo,.bigemoji{font-size:40px;line-height:1.15}
+
+.composer{padding:0 16px 20px;flex:none;position:relative}
+.replybar{background:var(--bg1);border-radius:8px 8px 0 0;padding:7px 12px;font-size:13px;color:var(--muted);display:flex;justify-content:space-between}
+.cbox{background:var(--bg3);border-radius:10px;display:flex;align-items:flex-end;gap:4px;padding:4px 6px}
+.replybar+.cbox{border-radius:0 0 10px 10px}
+.cbox textarea{background:transparent;border:0;resize:none;max-height:200px;padding:10px 4px;line-height:1.4}
+.cbox .ibtn{height:40px;width:36px;font-size:19px}
+.counter{position:absolute;right:28px;bottom:2px;font-size:11px;color:var(--dim)}
+.counter.over{color:var(--red);font-weight:700}
+.typing{height:20px;font-size:13px;color:var(--muted);padding:0 18px;flex:none}
+.typing .dots span{display:inline-block;width:5px;height:5px;background:var(--muted);border-radius:50%;margin-right:2px;animation:bl 1.2s infinite}
+.typing .dots span:nth-child(2){animation-delay:.2s}.typing .dots span:nth-child(3){animation-delay:.4s}
+@keyframes bl{0%,80%,100%{opacity:.25}40%{opacity:1}}
+.noperm{background:var(--bg3);border-radius:10px;padding:13px 16px;color:var(--dim)}
+
+/* ---------- members ---------- */
+.members{background:var(--bg1);overflow-y:auto;padding:12px 8px}
+.mgroup{color:var(--muted);font-size:12px;font-weight:700;text-transform:uppercase;padding:14px 8px 4px;letter-spacing:.03em}
+.member{display:flex;gap:10px;align-items:center;padding:5px 8px;border-radius:6px;cursor:pointer}
+.member:hover{background:var(--bg3)}
+.member.offline{opacity:.45}
+.member .nm{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14px}
+.member .cs{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.member .crown{color:var(--yellow);font-size:12px}
+
+/* ---------- home ---------- */
+.homebtn{width:100%;display:flex;gap:10px;align-items:center;padding:9px 10px;border-radius:6px;color:var(--muted);font-weight:600}
+.homebtn:hover{background:var(--bg3);color:var(--text)}.homebtn.active{background:var(--bg4);color:#fff}
+.homebtn .ico{width:24px;text-align:center;font-size:18px}
+.dmhead{color:var(--muted);font-size:12px;font-weight:700;text-transform:uppercase;padding:16px 8px 6px;display:flex;justify-content:space-between}
+.friends{padding:16px 24px;overflow-y:auto}
+.friend{display:flex;gap:12px;align-items:center;padding:10px;border-top:1px solid var(--line);border-radius:6px;cursor:pointer}
+.friend:hover{background:var(--bg3)}
+.friend .acts{margin-left:auto;display:flex;gap:6px}
+.friend .acts button{width:36px;height:36px;border-radius:50%;background:var(--bg1)}
+.tabs{display:flex;gap:6px;align-items:center}
+.tabs button{padding:3px 10px;border-radius:5px;color:var(--muted);font-weight:600}
+.tabs button.active,.tabs button:hover{background:var(--bg4);color:#fff}
+.tabs button.green{background:var(--green);color:#fff}
+
+/* ---------- pro ---------- */
+.probanner{margin:8px;border-radius:12px;padding:14px;background:linear-gradient(135deg,#1e3a8a,#4338ca 60%,#7c3aed);position:relative;overflow:hidden}
+.probanner h3{margin:0 0 4px;font-size:17px}
+.probanner p{margin:0 0 10px;font-size:13px;color:#dbe6ff}
+.shine{position:relative;overflow:hidden}
+.shine::after{content:"";position:absolute;top:0;left:-60%;width:40%;height:100%;background:linear-gradient(100deg,transparent,#fff4,transparent);animation:shine 3s infinite}
+@keyframes shine{to{left:130%}}
+.perk{display:flex;gap:12px;align-items:flex-start;padding:10px;border-radius:10px;background:var(--bg1);border:1px solid var(--line)}
+.perk .pi{font-size:24px;width:34px;text-align:center}
+.perk b{display:block}.perk span{color:var(--muted);font-size:13px}
+.perks{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px;margin:14px 0}
+.boostbar{height:10px;border-radius:5px;background:var(--bg0);overflow:hidden;margin:10px 0}
+.boostbar div{height:100%;background:linear-gradient(90deg,var(--pro1),var(--pro3));transition:width .4s}
+.levels{display:flex;justify-content:space-between;font-size:12px;color:var(--muted)}
+
+/* ---------- buttons ---------- */
+.btn{background:var(--blue);color:#fff;border-radius:6px;padding:9px 16px;font-weight:600}
+.btn:hover{background:var(--blue3)}
+.btn.sec{background:var(--bg4)}.btn.sec:hover{background:#26407a}
+.btn.danger{background:var(--red)}.btn.danger:hover{background:#b91c1c}
+.btn.pro{background:linear-gradient(90deg,var(--pro1),var(--pro2),var(--pro3))}
+.btn.ghost{background:none;color:var(--text)}.btn.ghost:hover{text-decoration:underline}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+
+/* ---------- modals ---------- */
+.overlay{position:fixed;inset:0;background:#000b;display:grid;place-items:center;z-index:100;animation:fade .15s}
+@keyframes fade{from{opacity:0}}
+.modal{background:var(--bg2);border-radius:12px;width:min(460px,94vw);max-height:90vh;overflow:auto;box-shadow:0 10px 50px #000a;animation:pop .18s}
+@keyframes pop{from{transform:scale(.94);opacity:0}}
+.modal .mh{padding:20px 20px 6px;text-align:center}
+.modal .mh h2{margin:0 0 6px;font-size:22px}
+.modal .mh p{margin:0;color:var(--muted);font-size:14px}
+.modal .mb{padding:14px 20px}
+.modal .mf{padding:14px 20px;background:var(--bg1);display:flex;justify-content:flex-end;gap:8px;border-radius:0 0 12px 12px}
+label.l{display:block;font-size:12px;font-weight:700;text-transform:uppercase;color:var(--muted);margin:14px 0 6px;letter-spacing:.03em}
+.radio{display:flex;gap:12px;align-items:center;background:var(--bg1);padding:12px;border-radius:8px;margin-bottom:8px;cursor:pointer;border:1px solid transparent}
+.radio.sel{border-color:var(--blue);background:var(--bg3)}
+.radio .ri{font-size:22px;width:28px;text-align:center}
+.radio small{display:block;color:var(--muted)}
+.toggle{position:relative;width:42px;height:24px;flex:none}
+.toggle input{opacity:0;width:0;height:0;position:absolute}
+.toggle span{position:absolute;inset:0;background:#4b5a7a;border-radius:12px;transition:.15s;cursor:pointer}
+.toggle span::after{content:"";position:absolute;left:3px;top:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:.15s}
+.toggle input:checked+span{background:var(--blue)}
+.toggle input:checked+span::after{left:21px}
+.trow{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}
+.trow .tt{flex:1}.trow .tt small{display:block;color:var(--muted);font-size:13px}
+.swatches{display:flex;gap:6px;flex-wrap:wrap}
+.sw{width:30px;height:30px;border-radius:6px;cursor:pointer;border:2px solid transparent}
+.sw.sel{border-color:#fff}
+.emogrid{display:grid;grid-template-columns:repeat(8,1fr);gap:2px}
+.emogrid button{font-size:22px;padding:4px;border-radius:6px}.emogrid button:hover{background:var(--bg3)}
+.emogrid button.locked{opacity:.35;filter:grayscale(1)}
+
+/* ---------- full-screen settings ---------- */
+.settings{position:fixed;inset:0;background:var(--bg2);z-index:90;display:flex;animation:fade .15s}
+.settings .nav{width:min(260px,38vw);background:var(--bg1);padding:40px 8px 20px;overflow-y:auto;display:flex;flex-direction:column;align-items:flex-end}
+.settings .nav>div{width:200px;max-width:100%}
+.settings .nav h4{margin:14px 10px 4px;font-size:12px;color:var(--muted);text-transform:uppercase}
+.settings .nav button{display:block;width:100%;text-align:left;padding:7px 10px;border-radius:6px;color:var(--muted);margin:1px 0;font-weight:500}
+.settings .nav button:hover{background:var(--bg3);color:var(--text)}
+.settings .nav button.active{background:var(--bg4);color:#fff}
+.settings .nav button.red{color:var(--red)}
+.settings .nav button.prob{background:linear-gradient(90deg,#1e3a8a,#6d28d9);color:#fff}
+.settings .content{flex:1;overflow-y:auto;padding:40px 40px 80px;max-width:780px}
+.settings .content h2{margin:0 0 18px}
+.settings .close{position:fixed;right:24px;top:30px;width:38px;height:38px;border-radius:50%;border:2px solid var(--muted);color:var(--muted);font-size:18px;z-index:2}
+.settings .close:hover{color:#fff;border-color:#fff}
+.rolelist{display:flex;flex-direction:column;gap:4px}
+.roleitem{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:6px;background:var(--bg1);cursor:pointer;border:1px solid transparent}
+.roleitem:hover{background:var(--bg3)}.roleitem.sel{border-color:var(--blue)}
+.rdot{width:12px;height:12px;border-radius:50%;flex:none}
+.rolewrap{display:grid;grid-template-columns:200px 1fr;gap:20px}
+.chip{display:inline-flex;align-items:center;gap:5px;background:var(--bg1);border:1px solid var(--line);border-radius:5px;padding:2px 7px;font-size:12px;margin:2px;cursor:default}
+.chip button{color:var(--muted);font-size:12px}.chip button:hover{color:var(--red)}
+.mrow{display:flex;align-items:center;gap:10px;padding:10px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+
+/* ---------- profile popout ---------- */
+.pop{position:fixed;z-index:120;width:300px;background:var(--bg1);border-radius:12px;overflow:hidden;box-shadow:0 10px 40px #000c;animation:pop .14s}
+.pop .bn{height:64px}
+.pop .pav{margin:-36px 0 0 14px;border:6px solid var(--bg1);width:84px;height:84px;font-size:32px;border-radius:50%}
+.pop .pav .dot{width:20px;height:20px;border-width:4px}
+.pop .pb{padding:8px 14px 14px}
+.pop .pb .card{background:#050b18aa;border-radius:8px;padding:10px;margin-top:8px}
+.pop h3{margin:0;font-size:19px;display:flex;gap:6px;align-items:center}
+.pop .un{color:var(--muted);font-size:13px}
+.pop .sec{font-size:11px;font-weight:800;text-transform:uppercase;color:var(--muted);margin:10px 0 4px}
+.badges{display:flex;gap:4px;margin:-30px 10px 0 auto;justify-content:flex-end;height:30px;align-items:center}
+.badges span{background:#050b18cc;border-radius:6px;padding:2px 5px;font-size:14px}
+.ctx{position:fixed;z-index:130;background:#050b18;border:1px solid var(--line);border-radius:8px;padding:6px;min-width:190px;box-shadow:0 8px 30px #000c}
+.ctx button{display:block;width:100%;text-align:left;padding:7px 10px;border-radius:4px;font-size:14px}
+.ctx button:hover{background:var(--blue)}
+.ctx button.red{color:var(--red)}.ctx button.red:hover{background:var(--red);color:#fff}
+.ctx hr{border:0;border-top:1px solid var(--line);margin:4px}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--blue);color:#fff;padding:10px 18px;border-radius:8px;font-weight:600;z-index:200;box-shadow:0 6px 24px #0008;animation:pop .2s}
+.toast.pro{background:linear-gradient(90deg,var(--pro1),var(--pro3))}
+.toast.err{background:var(--red)}
+.burst{position:fixed;pointer-events:none;z-index:300;font-size:26px;animation:burst 1s ease-out forwards}
+@keyframes burst{to{transform:translate(var(--dx),var(--dy)) scale(1.6);opacity:0}}
+
+/* ---------- voice stage ---------- */
+.stage{flex:1;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;padding:16px;align-content:center;overflow:auto;background:#040914}
+.tile{aspect-ratio:16/9;background:var(--bg1);border-radius:10px;display:grid;place-items:center;position:relative;border:2px solid transparent}
+.tile.speaking{border-color:var(--green)}
+.tile .av{width:72px;height:72px;font-size:28px}
+.tile .lbl{position:absolute;left:8px;bottom:8px;background:#000a;border-radius:5px;padding:2px 8px;font-size:13px;font-weight:600}
+.tile.screen{background:linear-gradient(135deg,#0f2b5c,#1e1b4b);grid-column:1/-1;aspect-ratio:auto;min-height:220px}
+.tile.screen .q{position:absolute;right:8px;top:8px;background:#000a;border-radius:5px;padding:2px 8px;font-size:12px;font-weight:700}
+.stagebar{display:flex;justify-content:center;gap:10px;padding:12px;background:#040914}
+.stagebar button{width:52px;height:52px;border-radius:50%;background:var(--bg3);font-size:20px}
+.stagebar button:hover{background:var(--bg4)}
+.stagebar button.on{background:var(--blue)}.stagebar button.red{background:var(--red)}
+
+/* ---------- mobile ---------- */
+@media (max-width:900px){.app{grid-template-columns:72px 240px 1fr}.members{display:none}}
+@media (max-width:680px){
+  .app,.app.nomembers{grid-template-columns:1fr}
+  .rail,.side{position:fixed;top:0;bottom:0;z-index:50;transition:transform .2s}
+  .rail{left:0;width:72px}.side{left:72px;width:min(270px,calc(100vw - 72px))}
+  .app:not(.drawer) .rail{transform:translateX(-100%)}
+  .app:not(.drawer) .side{transform:translateX(calc(-100% - 72px))}
+  .mhead .hb{display:grid}
+  .app.drawer .scrim{display:block;position:fixed;inset:0;background:#0008;z-index:40}
+  .app:not(.drawer) .scrim{display:none}
+  .settings{flex-direction:column}.settings .nav{width:100%;padding:56px 8px 8px;flex-direction:row;overflow-x:auto;align-items:flex-start;flex:none}
+  .settings .nav>div{width:auto;display:flex;gap:4px;flex-wrap:nowrap}
+  .settings .nav h4{display:none}.settings .nav button{white-space:nowrap;width:auto}
+  .settings .content{padding:16px 16px 80px}
+  .settings .close{top:10px;right:12px}
+  .rolewrap{grid-template-columns:1fr}
+  .mtools{top:-30px}
+}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+"use strict";
+/* =========================================================
+   Zpercord — chat app with servers, channels, roles and Pro
+   All data lives in the browser (localStorage).
+   ========================================================= */
+const $ = (s, el = document) => el.querySelector(s);
+const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const rand = a => a[Math.floor(Math.random() * a.length)];
+const STORE = "zpercord.v1";
+
+const PERMS = [
+  ["ADMIN", "Administrador", "Todos los permisos y omite restricciones de canal."],
+  ["MANAGE_SERVER", "Gestionar servidor", "Cambiar nombre, icono, banner y emojis."],
+  ["MANAGE_CHANNELS", "Gestionar canales", "Crear, editar y eliminar canales y categorías."],
+  ["MANAGE_ROLES", "Gestionar roles", "Crear y editar roles inferiores."],
+  ["KICK", "Expulsar miembros", "Echar a miembros del servidor."],
+  ["VIEW", "Ver canales", "Ver los canales públicos."],
+  ["SEND", "Enviar mensajes", "Escribir en canales de texto."],
+  ["ATTACH", "Adjuntar archivos", "Subir archivos e imágenes."],
+  ["REACT", "Añadir reacciones", "Reaccionar a mensajes."],
+  ["MENTION_ALL", "Mencionar @everyone", "Notificar a todo el servidor."],
+  ["CONNECT", "Conectar a voz", "Unirse a canales de voz."],
+  ["STREAM", "Transmitir", "Compartir pantalla en canales de voz."],
+];
+const DEFAULT_EVERYONE = { VIEW: 1, SEND: 1, ATTACH: 1, REACT: 1, CONNECT: 1, STREAM: 1 };
+const COLORS = ["#3b82f6", "#60a5fa", "#06b6d4", "#14b8a6", "#22c55e", "#84cc16", "#eab308", "#f59e0b", "#f97316", "#ef4444", "#ec4899", "#a855f7", "#8b5cf6", "#6366f1", "#94a3b8", "#e4ecff"];
+const AVATAR_BG = ["#2563eb", "#1d4ed8", "#0891b2", "#4f46e5", "#7c3aed", "#0d9488", "#db2777", "#ea580c", "#16a34a", "#475569"];
+const EMOJIS = "😀 😂 🤣 😊 😍 🥰 😎 🤔 😮 😢 😭 😡 🥳 😴 🤯 🙃 👍 👎 👏 🙌 🙏 💪 👀 🔥 ✨ 💯 ❤️ 💙 💜 💔 ✅ ❌ ⭐ 🎉 🎮 🎧 🎵 🍕 🍔 ☕ 🌙 ☀️ 🌊 🚀 💎 🏆 🐱 🐶 🦊 🐸 👾 🤖 💀 👻 🫡".split(" ");
+const PRO = { msgLimit: 4000, freeMsgLimit: 2000, upload: 500 * 1024 * 1024, freeUpload: 10 * 1024 * 1024, boosts: 2 };
+const LEVELS = [0, 2, 7, 14];
+
+/* ---------------- seed data ---------------- */
+function seed() {
+  const users = {
+    me: { id: "me", name: "Tú", username: "tu_usuario", color: "#2563eb", status: "online", about: "¡Hola! Soy nuevo en Zpercord.", custom: "", pro: false, anim: false, bannerColor: "#1d4ed8", themeA: "#1e3a8a", themeB: "#6d28d9", emojiAv: "" },
+    nova: { id: "nova", name: "Nova", username: "nova.dev", color: "#7c3aed", status: "online", about: "Programadora full-stack · café ☕", custom: "codeando 🚀", pro: true, anim: true, bannerColor: "#6d28d9", themeA: "#4338ca", themeB: "#a21caf" },
+    kai: { id: "kai", name: "Kai", username: "kai_plays", color: "#0891b2", status: "idle", about: "Gamer de corazón 🎮", custom: "AFK un rato", pro: false },
+    luna: { id: "luna", name: "Luna", username: "lunita", color: "#db2777", status: "dnd", about: "Artista digital 🎨", custom: "dibujando, no molestar", pro: true, anim: false, bannerColor: "#be185d", themeA: "#831843", themeB: "#1e3a8a" },
+    max: { id: "max", name: "Max", username: "maxpower", color: "#ea580c", status: "online", about: "Fan del lo-fi", custom: "🎧 escuchando música", pro: false },
+    zbot: { id: "zbot", name: "Zbot", username: "zbot", color: "#1d4ed8", status: "online", about: "Bot oficial. Escribe /ayuda", custom: "/ayuda", bot: true, emojiAv: "🤖" },
+    sofi: { id: "sofi", name: "Sofi", username: "sofi_m", color: "#16a34a", status: "offline", about: "", custom: "", pro: false },
+  };
+  const s1 = makeServer("Zona Gamer", "🎮", "#2563eb", true);
+  const admin = { id: uid(), name: "Admin", color: "#ef4444", hoist: true, perms: { ADMIN: 1 } };
+  const mod = { id: uid(), name: "Moderador", color: "#22c55e", hoist: true, perms: { KICK: 1, MANAGE_CHANNELS: 1, MENTION_ALL: 1 } };
+  const vip = { id: uid(), name: "VIP", color: "#f59e0b", hoist: true, perms: {} };
+  const bots = { id: uid(), name: "Bots", color: "#60a5fa", hoist: true, perms: {} };
+  s1.roles.splice(0, 0, admin, mod, vip, bots);
+  s1.members = [
+    { userId: "me", roles: [admin.id] }, { userId: "nova", roles: [mod.id, vip.id] }, { userId: "kai", roles: [vip.id] },
+    { userId: "luna", roles: [] }, { userId: "max", roles: [] }, { userId: "zbot", roles: [bots.id] }, { userId: "sofi", roles: [] },
+  ];
+  const info = { id: uid(), name: "Información", collapsed: false };
+  s1.categories.unshift(info);
+  s1.channels.unshift(
+    { id: uid(), name: "reglas", type: "announce", categoryId: info.id, topic: "Lee antes de escribir", private: false, roles: [] },
+    { id: uid(), name: "anuncios", type: "announce", categoryId: info.id, topic: "Novedades del servidor", private: false, roles: [] },
+  );
+  const texts = s1.categories.find(c => c.name === "Canales de texto");
+  s1.channels.push({ id: uid(), name: "staff", type: "text", categoryId: texts.id, topic: "Solo para el equipo", private: true, roles: [mod.id] });
+  s1.channels.push({ id: uid(), name: "clips-y-memes", type: "text", categoryId: texts.id, topic: "Lo mejor de la semana", private: false, roles: [] });
+  const vc = s1.categories.find(c => c.name === "Canales de voz");
+  s1.channels.push({ id: uid(), name: "Partida", type: "voice", categoryId: vc.id, private: false, roles: [] });
+  s1.boosts = 3; s1.emojis = [{ name: "zgg", char: "🏆" }, { name: "zpog", char: "😮" }];
+  const general = s1.channels.find(c => c.name === "general");
+  const rules = s1.channels.find(c => c.name === "reglas");
+  const now = Date.now();
+  s1.messages[rules.id] = [msg("zbot", "**Reglas de Zona Gamer**\n1. Respeta a todos.\n2. Nada de spam.\n3. Usa cada canal para su tema.\n4. ¡Diviértete! 🎮", now - 864e5 * 3)];
+  s1.messages[general.id] = [
+    msg("nova", "¡Bienvenidos a **Zona Gamer**! 💙", now - 36e5 * 5),
+    msg("kai", "¿Alguien para una partida esta noche?", now - 36e5 * 4),
+    msg("max", "Yo me apunto 🙌", now - 36e5 * 4 + 6e4),
+    msg("luna", "Acabo de terminar un dibujo nuevo ||es un dragón azul||", now - 36e5 * 2),
+    msg("zbot", "Escribe `/ayuda` para ver mis comandos.", now - 36e5),
+  ];
+  s1.messages[general.id][2].reactions = { "🙌": ["kai", "nova"], "🔥": ["luna"] };
+  s1.messages[general.id][3].reactions = { "❤️": ["nova", "max", "kai"] };
+
+  const s2 = makeServer("Estudio Pixel", "🎨", "#db2777", true);
+  s2.members = [{ userId: "me", roles: [] }, { userId: "luna", roles: [] }, { userId: "nova", roles: [] }];
+  s2.ownerId = "luna";
+  s2.messages[s2.channels[0].id] = [msg("luna", "Este es mi espacio para compartir arte ✨ ¡pasen!", now - 864e5)];
+  const s3 = makeServer("Código Azul", "💻", "#0891b2", true);
+  s3.members = [{ userId: "me", roles: [] }, { userId: "nova", roles: [] }, { userId: "max", roles: [] }, { userId: "zbot", roles: [] }];
+  s3.ownerId = "nova";
+  s3.messages[s3.channels[0].id] = [msg("nova", "```js\nconsole.log('hola Zpercord');\n```\nPrimer mensaje del server 😎", now - 72e5)];
+
+  return {
+    users, servers: [s1, s2, s3],
+    dms: { nova: [msg("nova", "¡Ey! ¿Ya probaste Zpercord Pro? Tiene avatares animados 😍", now - 36e5 * 3)], kai: [msg("kai", "gg en la partida de ayer", now - 864e5)] },
+    dmOrder: ["nova", "kai"], friends: ["nova", "kai", "luna", "max", "sofi"],
+    pending: [{ id: "neo", name: "Neo" }],
+    read: {}, myBoosts: {}, settings: { compact: false, sounds: true },
+    cur: { server: s1.id, channel: general.id, dm: null },
+  };
+}
+function makeServer(name, icon, color, withDefaults) {
+  const s = { id: uid(), name, icon, color, ownerId: "me", banner: "", boosts: 0, roles: [{ id: "everyone", name: "@everyone", color: "", hoist: false, perms: { ...DEFAULT_EVERYONE } }], members: [{ userId: "me", roles: [] }], categories: [], channels: [], emojis: [], messages: {}, desc: "" };
+  if (withDefaults) {
+    const t = { id: uid(), name: "Canales de texto" }, v = { id: uid(), name: "Canales de voz" };
+    s.categories.push(t, v);
+    s.channels.push({ id: uid(), name: "general", type: "text", categoryId: t.id, topic: "", private: false, roles: [] });
+    s.channels.push({ id: uid(), name: "General", type: "voice", categoryId: v.id, private: false, roles: [] });
+  }
+  return s;
+}
+function msg(authorId, content, ts = Date.now(), extra = {}) { return { id: uid(), authorId, content, ts, reactions: {}, ...extra }; }
+
+/* ---------------- state ---------------- */
+let S;
+try { S = JSON.parse(localStorage.getItem(STORE)); } catch (e) { S = null; }
+if (!S || !S.users || !S.servers) S = seed();
+const UI = { voice: null, muted: false, deaf: false, stream: null, video: false, replyTo: null, viewAs: null, homeTab: "online", typing: {}, editing: null, memberList: true, speaking: {}, blobs: {} };
+let saveT;
+function save() { clearTimeout(saveT); saveT = setTimeout(() => { try { localStorage.setItem(STORE, JSON.stringify(S)); } catch (e) { } }, 150); }
+
+const me = () => S.users.me;
+const user = id => S.users[id] || { id, name: "Usuario desconocido", color: "#475569", status: "offline" };
+const server = (id = S.cur.server) => S.servers.find(s => s.id === id);
+const channel = (s = server(), id = S.cur.channel) => s && s.channels.find(c => c.id === id);
+const member = (s, userId) => s.members.find(m => m.userId === userId);
+const isPro = (u = me()) => !!u.pro;
+
+/* ---------------- permissions ---------------- */
+function rolesOf(s, userId) {
+  if (userId === "me" && UI.viewAs && UI.viewAs.server === s.id) return ["everyone", ...(UI.viewAs.role === "everyone" ? [] : [UI.viewAs.role])];
+  const m = member(s, userId); return ["everyone", ...(m ? m.roles : [])];
+}
+function can(s, perm, userId = "me", ch = null) {
+  if (!s) return true;
+  const viewing = userId === "me" && UI.viewAs && UI.viewAs.server === s.id;
+  if (s.ownerId === userId && !viewing) return true;
+  const rs = rolesOf(s, userId).map(r => s.roles.find(x => x.id === r)).filter(Boolean);
+  if (rs.some(r => r.perms.ADMIN)) return true;
+  if (ch && ch.private && !rs.some(r => ch.roles.includes(r.id))) return false;
+  if (ch && ch.type === "announce" && perm === "SEND" && !rs.some(r => r.perms.MANAGE_CHANNELS)) return false;
+  return rs.some(r => r.perms[perm]);
+}
+function topRole(s, userId, needColor) {
+  const rs = rolesOf(s, userId);
+  for (const r of s.roles) if (r.id !== "everyone" && rs.includes(r.id) && (!needColor || r.color)) return r;
+  return null;
+}
+function nameColor(s, userId) { if (!s) return ""; const r = topRole(s, userId, true); return r ? r.color : ""; }
+function visibleChannels(s) { return s.channels.filter(c => can(s, "VIEW", "me", c)); }
+function boostLevel(s) { let l = 0; LEVELS.forEach((n, i) => { if (s.boosts >= n) l = i; }); return l; }
+function emojiSlots(s) { return [50, 100, 150, 250][boostLevel(s)]; }
+
+/* ---------------- avatar ---------------- */
+function avatar(u, cls = "", status = true) {
+  const pro = u.pro && u.anim;
+  const bg = pro ? `background:linear-gradient(135deg,${u.themeA || u.color},${u.themeB || u.color},${u.color})` : `background:${u.color}`;
+  const inner = u.emojiAv ? `<span style="font-size:1.15em">${esc(u.emojiAv)}</span>` : esc((u.name || "?").slice(0, 1).toUpperCase());
+  const st = status ? `<span class="dot ${u.status === "invisible" ? "offline" : u.status}"></span>` : "";
+  return `<div class="av ${cls} ${pro ? "anim" : ""}" style="${bg}" data-user="${u.id}">${inner}${st}</div>`;
+}
+
+/* ---------------- formatting ---------------- */
+function fmt(text, s) {
+  const codeBlocks = [];
+  let t = esc(text).replace(/```(?:\w+\n)?([\s\S]*?)```/g, (_, c) => { codeBlocks.push(`<pre>${c.replace(/^\n/, "")}</pre>`); return `\u0000${codeBlocks.length - 1}\u0000`; });
+  const inline = [];
+  t = t.replace(/`([^`\n]+)`/g, (_, c) => { inline.push(`<code>${c}</code>`); return `\u0001${inline.length - 1}\u0001`; });
+  t = t.replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/__(.+?)__/g, "<u>$1</u>").replace(/\*(.+?)\*/g, "<i>$1</i>").replace(/~~(.+?)~~/g, "<s>$1</s>")
+    .replace(/\|\|(.+?)\|\|/g, '<span class="spoil">$1</span>')
+    .replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener">$1</a>')
+    .replace(/^&gt; (.*)$/gm, '<span style="border-left:4px solid var(--dim);padding-left:8px;display:inline-block">$1</span>');
+  t = t.replace(/@(everyone|here)\b/g, '<span class="ment">@$1</span>');
+  t = t.replace(/@([\w.À-ſ]+)/g, (m, n) => {
+    const u = Object.values(S.users).find(u => u.name.toLowerCase() === n.toLowerCase() || u.username === n);
+    if (u) return `<span class="ment" data-user="${u.id}">@${esc(u.name)}</span>`;
+    if (s) { const r = s.roles.find(r => r.name.toLowerCase() === n.toLowerCase()); if (r) return `<span class="ment" style="color:${r.color};background:${r.color}33">@${esc(r.name)}</span>`; }
+    return m;
+  });
+  t = t.replace(/:([a-z0-9_]{2,32}):/gi, (m, n) => { const e = findEmoji(n); return e ? `<span class="cemo" title=":${n}:">${e.char}</span>` : m; });
+  t = t.replace(/\u0001(\d+)\u0001/g, (_, i) => inline[i]).replace(/\u0000(\d+)\u0000/g, (_, i) => codeBlocks[i]);
+  return t;
+}
+function findEmoji(n) { for (const s of S.servers) { const e = s.emojis.find(e => e.name === n); if (e) return { ...e, server: s }; } return null; }
+function isMention(m, s) {
+  if (m.authorId === "me") return false;
+  const c = m.content.toLowerCase();
+  if (c.includes("@everyone") || c.includes("@here") || c.includes("@" + me().name.toLowerCase()) || c.includes("@" + me().username)) return true;
+  if (s) return rolesOf(s, "me").some(r => { const ro = s.roles.find(x => x.id === r); return ro && r !== "everyone" && c.includes("@" + ro.name.toLowerCase()); });
+  return false;
+}
+function time(ts) { const d = new Date(ts), n = new Date(); const hm = d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }); if (d.toDateString() === n.toDateString()) return "Hoy a las " + hm; const y = new Date(n - 864e5); if (d.toDateString() === y.toDateString()) return "Ayer a las " + hm; return d.toLocaleDateString() + " " + hm; }
+function size(b) { if (b < 1024) return b + " B"; if (b < 1048576) return (b / 1024).toFixed(1) + " KB"; return (b / 1048576).toFixed(1) + " MB"; }
+
+/* ---------------- messages store ---------------- */
+function msgList(ctx = S.cur) {
+  if (ctx.dm) return S.dms[ctx.dm] || (S.dms[ctx.dm] = []);
+  const s = server(ctx.server); if (!s) return [];
+  return s.messages[ctx.channel] || (s.messages[ctx.channel] = []);
+}
+const keyOf = ctx => ctx.dm ? "dm:" + ctx.dm : ctx.server + ":" + ctx.channel;
+function unreadCount(ctx) { const k = keyOf(ctx), last = S.read[k] || 0; return msgList(ctx).filter(m => m.ts > last && m.authorId !== "me").length; }
+function markRead() { if (S.cur.dm || S.cur.channel) { S.read[keyOf(S.cur)] = Date.now(); save(); } }
+function serverUnread(s) { let u = false, m = 0; for (const c of visibleChannels(s)) { if (c.type === "voice") continue; const ctx = { server: s.id, channel: c.id }; const k = keyOf(ctx); const last = S.read[k] || 0; const list = s.messages[c.id] || []; for (const x of list) if (x.ts > last && x.authorId !== "me") { u = true; if (isMention(x, s)) m++; } } return { u, m }; }
+
+/* =========================================================
+   RENDER
+   ========================================================= */
+const root = $("#root");
+function render() {
+  const s = server(); const home = !s;
+  const ch = home ? null : channel(s);
+  const showMembers = !home && UI.memberList && !(ch && ch.type === "voice");
+  root.innerHTML = `<div class="app ${showMembers ? "" : "nomembers"} ${UI.drawer ? "drawer" : ""}">
+    <div class="scrim" data-act="closeDrawer"></div>
+    ${renderRail()}
+    <div class="side">${home ? renderHomeSide() : renderServerSide(s)}${renderVoiceBar()}${renderUserBar()}</div>
+    <div class="main">${home ? renderHomeMain() : renderServerMain(s, ch)}</div>
+    ${showMembers ? `<div class="members">${renderMembers(s)}</div>` : ""}
+  </div>`;
+  const box = $(".msgs"); if (box) box.scrollTop = box.scrollHeight;
+  const ta = $("#composer"); if (ta && window.innerWidth > 680) { ta.focus(); autoGrow(ta); }
+  markRead();
+}
+
+function renderRail() {
+  let dmU = 0; for (const id of S.dmOrder) dmU += unreadCount({ dm: id });
+  let h = `<button class="sicon ${!server() ? "active" : ""}" data-act="home" data-tip="Mensajes directos" style="${!server() ? "" : ""}"><span class="pill"></span>
+    <svg width="28" height="28" viewBox="0 0 32 32"><path fill="#fff" d="M6 7h20l-13 12h13v6H6l13-12H6z"/></svg>${dmU ? `<span class="badge">${dmU}</span>` : ""}</button>`;
+  for (const id of S.dmOrder) { const n = unreadCount({ dm: id }); if (n) { const u = user(id); h += `<button class="sicon" data-act="openDm" data-id="${id}" data-tip="${esc(u.name)}" style="background:${u.color}">${esc(u.name[0])}<span class="badge">${n}</span></button>`; } }
+  h += `<div class="sep"></div>`;
+  for (const s of S.servers) {
+    const { u, m } = serverUnread(s); const act = server() && server().id === s.id;
+    h += `<button class="sicon ${act ? "active" : ""} ${u ? "unread" : ""} ${boostLevel(s) > 0 ? "boosted" : ""}" data-act="server" data-id="${s.id}" data-tip="${esc(s.name)}" data-ctx="server" style="${act ? "" : `background:${s.color}`}"><span class="pill"></span>${s.icon ? `<span style="font-size:22px">${esc(s.icon)}</span>` : esc(initials(s.name))}${m ? `<span class="badge">${m}</span>` : ""}</button>`;
+  }
+  h += `<button class="sicon add" data-act="newServer" data-tip="Añadir un servidor">+</button>`;
+  h += `<button class="sicon" data-act="discover" data-tip="Explorar servidores" style="color:var(--blue2);font-size:20px">🧭</button>`;
+  return `<nav class="rail">${h}</nav>`;
+}
+const initials = n => n.split(/\s+/).map(w => w[0]).join("").slice(0, 3);
+
+function renderHomeSide() {
+  let h = `<div class="shead" style="cursor:default"><input placeholder="Buscar o iniciar conversación" style="padding:5px 8px;font-size:13px" data-act="dmSearch"></div><div class="clist">`;
+  h += `<button class="homebtn ${!S.cur.dm ? "active" : ""}" data-act="friends"><span class="ico">👥</span>Amigos</button>`;
+  h += `<button class="homebtn" data-act="openSettings" data-tab="pro"><span class="ico">💎</span>Zpercord Pro</button>`;
+  h += `<button class="homebtn" data-act="shop"><span class="ico">🛍️</span>Tienda</button>`;
+  h += `<div class="dmhead"><span>Mensajes directos</span><button data-act="newDm" title="Crear MD">＋</button></div>`;
+  for (const id of S.dmOrder) {
+    const u = user(id), n = unreadCount({ dm: id });
+    h += `<div class="member" data-act="openDm" data-id="${id}" style="${S.cur.dm === id ? "background:var(--bg4)" : ""}">${avatar(u, "sm")}<div style="min-width:0;flex:1"><div class="nm" style="${n ? "color:#fff" : ""}">${esc(u.name)}</div>${u.custom ? `<div class="cs">${esc(u.custom)}</div>` : ""}</div>${n ? `<span style="background:var(--red);color:#fff;padding:0 6px;border-radius:9px;font-size:11px">${n}</span>` : ""}</div>`;
+  }
+  h += `</div>`;
+  if (!isPro()) h += `<div class="probanner shine"><h3>💎 Zpercord Pro</h3><p>Avatar animado, 500 MB de subida, emojis en todas partes y 2 mejoras de servidor.</p><button class="btn" style="background:#fff;color:#1e3a8a" data-act="openSettings" data-tab="pro">Ver Pro</button></div>`;
+  return h;
+}
+
+function renderHomeMain() {
+  if (S.cur.dm) {
+    const u = user(S.cur.dm);
+    return `<div class="mhead"><button class="ibtn hb" data-act="openDrawer">☰</button>${avatar(u, "sm")}<span class="ttl">${esc(u.name)}</span><span class="topic">${esc(u.custom || "")}</span>
+      <button class="ibtn" data-act="call" title="Llamada">📞</button><button class="ibtn" data-act="profile" data-id="${u.id}" title="Perfil">👤</button></div>
+      <div class="msgs">${`<div class="welcome"><div style="display:inline-block;transform:scale(2);transform-origin:left top;margin-bottom:46px">${avatar(u, "", false)}</div><h1>${esc(u.name)}</h1><p style="font-size:18px;margin-bottom:8px">${esc(u.username || "")}</p><p>Este es el comienzo de tu historial de mensajes directos con <b>${esc(u.name)}</b>.</p></div>`}${renderMessages(msgList(), null)}</div>
+      ${renderTyping()}${renderComposer(`Enviar mensaje a @${u.name}`, true, null)}`;
+  }
+  const tab = UI.homeTab;
+  const fr = S.friends.map(user);
+  let list = tab === "online" ? fr.filter(u => u.status !== "offline") : tab === "all" ? fr : [];
+  let h = `<div class="mhead"><button class="ibtn hb" data-act="openDrawer">☰</button><span class="ttl">👥 Amigos</span>
+    <div class="tabs" style="margin-left:10px;overflow-x:auto">
+      <button data-act="homeTab" data-id="online" class="${tab === "online" ? "active" : ""}">En línea</button>
+      <button data-act="homeTab" data-id="all" class="${tab === "all" ? "active" : ""}">Todos</button>
+      <button data-act="homeTab" data-id="pending" class="${tab === "pending" ? "active" : ""}">Pendiente${S.pending.length ? ` (${S.pending.length})` : ""}</button>
+      <button data-act="homeTab" data-id="add" class="green">Añadir amigo</button></div></div><div class="friends">`;
+  if (tab === "add") {
+    h += `<h3 style="margin:0 0 4px">AÑADIR AMIGO</h3><p style="color:var(--muted);margin:0 0 12px">Puedes añadir amigos con su nombre de usuario de Zpercord.</p>
+      <form data-form="addFriend" style="display:flex;gap:8px"><input name="n" placeholder="Escribe un nombre de usuario" required><button class="btn" style="white-space:nowrap">Enviar solicitud</button></form>`;
+  } else if (tab === "pending") {
+    h += `<div class="mgroup">Pendiente — ${S.pending.length}</div>`;
+    for (const p of S.pending) h += `<div class="friend"><div class="av" style="background:#475569">${esc(p.name[0])}</div><div><b>${esc(p.name)}</b><div style="color:var(--muted);font-size:12px">Solicitud de amistad entrante</div></div><div class="acts"><button data-act="acceptFriend" data-id="${p.id}" title="Aceptar">✔️</button><button data-act="rejectFriend" data-id="${p.id}" title="Rechazar">✖️</button></div></div>`;
+    if (!S.pending.length) h += `<p style="color:var(--muted);text-align:center;margin-top:40px">No hay solicitudes pendientes.</p>`;
+  } else {
+    h += `<div class="mgroup">${tab === "online" ? "En línea" : "Todos los amigos"} — ${list.length}</div>`;
+    for (const u of list) h += `<div class="friend" data-act="openDm" data-id="${u.id}">${avatar(u)}<div><b>${esc(u.name)}</b> ${u.pro ? '<span class="tag pro">PRO</span>' : ""}<div style="color:var(--muted);font-size:13px">${esc(u.custom || statusName(u.status))}</div></div><div class="acts"><button title="Mensaje">💬</button><button data-act="profile" data-id="${u.id}" title="Perfil">⋮</button></div></div>`;
+  }
+  return h + `</div>`;
+}
+const statusName = s => ({ online: "En línea", idle: "Ausente", dnd: "No molestar", offline: "Desconectado", invisible: "Invisible" }[s] || s);
+
+function renderServerSide(s) {
+  const lvl = boostLevel(s);
+  const head = `<div class="shead" data-act="serverMenu"><span class="name">${esc(s.name)}</span>${lvl ? `<span title="Nivel ${lvl}" style="color:var(--pro3)">💎${lvl}</span>` : ""}<span>▾</span></div>`;
+  let h = s.banner && lvl >= 2 ? `<div class="sbanner" style="background:${s.banner}">${head}</div>` : head;
+  h += `<div class="clist">`;
+  if (UI.viewAs && UI.viewAs.server === s.id) h += `<div style="font-size:12px;color:var(--blue2);padding:4px">👁️ Vista como rol</div>`;
+  const vis = visibleChannels(s);
+  const groups = [{ id: null, name: null }, ...s.categories];
+  for (const cat of groups) {
+    const chs = vis.filter(c => (c.categoryId || null) === cat.id);
+    if (cat.id === null && !chs.length) continue;
+    if (cat.id) h += `<div class="cat ${cat.collapsed ? "collapsed" : ""}" data-act="toggleCat" data-id="${cat.id}" data-ctx="cat"><span class="arr">▾</span><span class="grow">${esc(cat.name)}</span>${can(s, "MANAGE_CHANNELS") ? `<span class="plus" data-act="newChannel" data-cat="${cat.id}" title="Crear canal">+</span>` : ""}</div>`;
+    for (const c of chs) {
+      const active = c.id === S.cur.channel;
+      if (cat.collapsed && !active && !(c.type === "voice" && UI.voice && UI.voice.channel === c.id)) continue;
+      const ctx = { server: s.id, channel: c.id };
+      const un = c.type !== "voice" && unreadCount(ctx) > 0;
+      const mentions = c.type !== "voice" ? msgList(ctx).filter(m => m.ts > (S.read[keyOf(ctx)] || 0) && isMention(m, s)).length : 0;
+      const ico = c.type === "voice" ? "🔊" : c.type === "announce" ? "📢" : "#";
+      h += `<div class="chan ${active ? "active" : ""} ${un && !active ? "unread" : ""}" data-act="channel" data-id="${c.id}" data-ctx="chan"><span class="ico">${ico}</span><span class="nm">${esc(c.name)}</span>${c.private ? '<span title="Privado" style="font-size:11px">🔒</span>' : ""}${mentions && !active ? `<span class="mbadge">${mentions}</span>` : ""}${can(s, "MANAGE_CHANNELS") ? `<span class="gear" data-act="editChannel" data-id="${c.id}" title="Editar canal">⚙️</span>` : ""}</div>`;
+      if (c.type === "voice") {
+        const ppl = voiceUsers(s, c);
+        if (ppl.length) h += `<div class="vusers">${ppl.map(id => { const u = user(id); return `<div class="vuser ${UI.speaking[id] ? "speaking" : ""}">${avatar(u, "", false)}<span>${esc(u.name)}</span>${id === "me" && UI.muted ? "🔇" : ""}${id === "me" && UI.stream ? '<span class="live">EN VIVO</span>' : ""}</div>`; }).join("")}</div>`;
+      }
+    }
+  }
+  if (can(s, "MANAGE_CHANNELS")) h += `<button class="homebtn" style="margin-top:12px;font-size:13px" data-act="newChannel"><span class="ico">＋</span>Crear canal</button>`;
+  return h + `</div>`;
+}
+function voiceUsers(s, c) {
+  const ids = [];
+  if (!s.voiceSeed) s.voiceSeed = {};
+  if (!(c.id in s.voiceSeed)) { const pool = s.members.map(m => m.userId).filter(id => id !== "me" && user(id).status === "online" && !user(id).bot); s.voiceSeed[c.id] = c.name === "General" && pool.length ? pool.slice(0, 2) : []; }
+  ids.push(...s.voiceSeed[c.id]);
+  if (UI.voice && UI.voice.channel === c.id) ids.push("me");
+  return ids;
+}
+
+function renderServerMain(s, ch) {
+  const bar = UI.viewAs && UI.viewAs.server === s.id ? `<div class="viewas">👁️ Viendo el servidor como <b>${esc((s.roles.find(r => r.id === UI.viewAs.role) || {}).name || "")}</b><button data-act="exitViewAs">Salir</button></div>` : "";
+  if (!ch) return `<div class="mhead"><button class="ibtn hb" data-act="openDrawer">☰</button><span class="ttl">${esc(s.name)}</span></div>${bar}<div class="welcome" style="margin:auto;text-align:center"><div class="big" style="margin:0 auto 10px">🫥</div><h1>Sin canales</h1><p>No hay canales que puedas ver aquí.</p>${can(s, "MANAGE_CHANNELS") ? '<br><button class="btn" data-act="newChannel">Crear canal</button>' : ""}</div>`;
+  if (ch.type === "voice") return renderVoiceStage(s, ch, bar);
+  const ico = ch.type === "announce" ? "📢" : "#";
+  let h = `<div class="mhead"><button class="ibtn hb" data-act="openDrawer">☰</button><span class="ttl"><span style="color:var(--dim)">${ico}</span> ${esc(ch.name)}</span><span class="topic">${esc(ch.topic || "")}</span>
+    <button class="ibtn" data-act="pins" title="Mensajes fijados">📌</button>
+    <button class="ibtn" data-act="toggleMembers" title="Lista de miembros" style="${UI.memberList ? "color:#fff" : ""}">👥</button>
+    <button class="ibtn" data-act="search" title="Buscar">🔍</button></div>${bar}`;
+  h += `<div class="msgs"><div class="welcome"><div class="big">${ico}</div><h1>¡Te damos la bienvenida a ${ico === "#" ? "#" : ""}${esc(ch.name)}!</h1><p>Este es el comienzo del canal <b>${esc(ch.name)}</b>. ${esc(ch.topic || "")}</p></div>${renderMessages(msgList(), s)}</div>`;
+  h += renderTyping();
+  h += can(s, "SEND", "me", ch) ? renderComposer(`Enviar mensaje a ${ico}${ch.name}`, can(s, "ATTACH", "me", ch), s) : `<div class="composer"><div class="noperm">🔒 No tienes permiso para enviar mensajes en este canal.</div></div>`;
+  return h;
+}
+
+function renderMessages(list, s) {
+  let h = "", prev = null;
+  for (const m of list) {
+    const u = user(m.authorId);
+    const grouped = prev && prev.authorId === m.authorId && m.ts - prev.ts < 5 * 60e3 && !m.replyTo;
+    const col = s ? nameColor(s, m.authorId) : "";
+    const ment = isMention(m, s);
+    const only = /^(\p{Extended_Pictographic}|️|‍|\s|:[a-z0-9_]+:)+$/u.test(m.content) && m.content.length < 30;
+    let reply = "";
+    if (m.replyTo) { const r = list.find(x => x.id === m.replyTo); reply = `<div class="reply">↱ ${r ? `<b style="color:${(s && nameColor(s, r.authorId)) || "inherit"}">@${esc(user(r.authorId).name)}</b> ${esc(r.content.slice(0, 80))}` : "<i>Mensaje original eliminado</i>"}</div>`; }
+    const tags = `${u.bot ? '<span class="tag bot">✔ BOT</span>' : ""}${u.pro ? '<span class="tag pro" title="Suscriptor de Zpercord Pro">💎 PRO</span>' : ""}`;
+    const editing = UI.editing === m.id;
+    const textHtml = editing ? `<textarea class="editbox" data-id="${m.id}" style="margin-top:4px">${esc(m.content)}</textarea><div style="font-size:12px;color:var(--muted)">escape para <a href="#" data-act="cancelEdit">cancelar</a> · enter para <a href="#" data-act="saveEdit" data-id="${m.id}">guardar</a></div>` :
+      `<div class="text ${only ? "bigemoji" : ""}">${fmt(m.content, s)}${m.edited ? ' <span class="edited">(editado)</span>' : ""}</div>`;
+    let att = "";
+    if (m.attachment) { const a = m.attachment; const url = UI.blobs[m.id]; att = `<div class="attach">${url && a.image ? `<img src="${url}" alt="${esc(a.name)}">` : `<span class="fi">${a.image ? "🖼️" : "📄"}</span><div><div class="fn">${esc(a.name)}</div><div class="fs">${size(a.size)}</div></div>`}</div>`; }
+    const reacts = Object.entries(m.reactions || {}).filter(([, v]) => v.length).map(([e, v]) => { const sup = e.startsWith("super:"); const em = sup ? e.slice(6) : e; return `<button class="react ${v.includes("me") ? "me" : ""} ${sup ? "super" : ""}" data-act="react" data-id="${m.id}" data-e="${esc(e)}" title="${v.map(i => user(i).name).join(", ")}">${em}<b>${v.length}</b></button>`; }).join("");
+    const mine = m.authorId === "me";
+    const tools = `<div class="mtools"><button data-act="quickReact" data-id="${m.id}" title="Reaccionar">😀</button><button data-act="superReact" data-id="${m.id}" title="Súper reacción (Pro)">💥</button><button data-act="reply" data-id="${m.id}" title="Responder">↩️</button>${mine ? `<button data-act="edit" data-id="${m.id}" title="Editar">✏️</button>` : ""}<button data-act="pin" data-id="${m.id}" title="${m.pinned ? "Desfijar" : "Fijar"}">📌</button>${mine || (s && can(s, "MANAGE_CHANNELS")) ? `<button data-act="delMsg" data-id="${m.id}" title="Eliminar">🗑️</button>` : ""}</div>`;
+    h += reply;
+    if (grouped && !reply) h += `<div class="msg ${ment ? "mention" : ""}" data-ctx="msg" data-id="${m.id}"><div class="gut">${new Date(m.ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</div><div class="body">${textHtml}${att}${reacts ? `<div class="reacts">${reacts}</div>` : ""}</div>${tools}</div>`;
+    else h += `<div class="msg first ${ment ? "mention" : ""}" data-ctx="msg" data-id="${m.id}">${avatar(u, "", false)}<div class="body"><div class="meta"><span class="author" data-user="${u.id}" style="color:${col || "var(--text)"}">${esc(u.name)}</span>${tags}<span class="ts">${time(m.ts)}</span>${m.pinned ? '<span class="ts">📌</span>' : ""}</div>${textHtml}${att}${reacts ? `<div class="reacts">${reacts}</div>` : ""}</div>${tools}</div>`;
+    prev = m;
+  }
+  return h;
+}
+function renderTyping() {
+  const k = keyOf(S.cur); const t = UI.typing[k];
+  return `<div class="typing">${t ? `<span class="dots"><span></span><span></span><span></span></span> <b>${esc(user(t).name)}</b> está escribiendo...` : ""}</div>`;
+}
+function renderComposer(ph, attach, s) {
+  const limit = isPro() ? PRO.msgLimit : PRO.freeMsgLimit;
+  const r = UI.replyTo ? msgList().find(m => m.id === UI.replyTo) : null;
+  return `<div class="composer">${r ? `<div class="replybar"><span>Respondiendo a <b>${esc(user(r.authorId).name)}</b></span><button data-act="cancelReply">✖</button></div>` : ""}
+    <div class="cbox">${attach ? `<button class="ibtn" data-act="attach" title="Subir archivo (${isPro() ? "500 MB" : "10 MB"})">⊕</button>` : ""}<textarea id="composer" rows="1" placeholder="${esc(ph)}" maxlength="${limit + 500}"></textarea>
+    <button class="ibtn" data-act="gift" title="Regalar Pro">🎁</button><button class="ibtn" data-act="emojiPicker" title="Emoji">😊</button></div>
+    <div class="counter" id="counter"></div><input type="file" id="file" hidden></div>`;
+}
+
+function renderMembers(s) {
+  const groups = new Map();
+  const hoisted = s.roles.filter(r => r.hoist && r.id !== "everyone");
+  for (const r of hoisted) groups.set(r.id, { name: r.name, list: [] });
+  groups.set("online", { name: "En línea", list: [] }); groups.set("offline", { name: "Desconectado", list: [] });
+  for (const m of s.members) {
+    const u = user(m.userId);
+    if (u.status === "offline" || u.status === "invisible") { groups.get("offline").list.push(u); continue; }
+    const r = hoisted.find(r => m.roles.includes(r.id));
+    groups.get(r ? r.id : "online").list.push(u);
+  }
+  let h = "";
+  for (const [, g] of groups) {
+    if (!g.list.length) continue;
+    h += `<div class="mgroup">${esc(g.name)} — ${g.list.length}</div>`;
+    for (const u of g.list) h += `<div class="member ${u.status === "offline" ? "offline" : ""}" data-user="${u.id}" data-ctx="member">${avatar(u, "sm")}<div style="min-width:0"><div class="nm" style="color:${nameColor(s, u.id) || "var(--text)"}">${esc(u.name)} ${s.ownerId === u.id ? '<span class="crown" title="Propietario">👑</span>' : ""}${u.bot ? ' <span class="tag bot">BOT</span>' : ""}</div>${u.custom ? `<div class="cs">${esc(u.custom)}</div>` : ""}</div></div>`;
+  }
+  return h;
+}
+
+function renderVoiceBar() {
+  if (!UI.voice) return "";
+  const s = server(UI.voice.server), c = s && channel(s, UI.voice.channel);
+  if (!c) { UI.voice = null; return ""; }
+  return `<div class="voicebar"><div style="display:flex;align-items:center;gap:8px"><div style="flex:1"><div class="st">📶 Voz conectada</div><div class="sub">${esc(c.name)} / ${esc(s.name)}</div></div><button class="ibtn" data-act="leaveVoice" title="Desconectar">📵</button></div>
+    <div class="row"><button class="${UI.video ? "on" : ""}" data-act="toggleVideo">📷 Cámara</button><button class="${UI.stream ? "on" : ""}" data-act="toggleStream">🖥️ ${UI.stream ? UI.stream : "Pantalla"}</button></div></div>`;
+}
+function renderUserBar() {
+  const u = me();
+  return `<div class="userbar"><div class="who" data-act="statusMenu">${avatar(u, "sm")}<div style="min-width:0"><div class="nm">${esc(u.name)}</div><div class="cs">${esc(u.custom || statusName(u.status))}</div></div></div>
+    <button class="ibtn ${UI.muted ? "off" : ""}" data-act="mute" title="Silenciar">🎙️</button><button class="ibtn ${UI.deaf ? "off" : ""}" data-act="deafen" title="Ensordecer">🎧</button><button class="ibtn" data-act="openSettings" title="Ajustes de usuario">⚙️</button></div>`;
+}
+function renderVoiceStage(s, c, bar) {
+  const ppl = voiceUsers(s, c); const joined = UI.voice && UI.voice.channel === c.id;
+  let tiles = "";
+  if (joined && UI.stream) tiles += `<div class="tile screen"><div style="text-align:center"><div style="font-size:48px">🖥️</div><b>Estás transmitiendo tu pantalla</b><div style="color:var(--muted);font-size:13px">Calidad ${UI.stream}</div></div><span class="q">${UI.stream}${isPro() ? " · PRO" : ""}</span><span class="lbl">🔴 ${esc(me().name)}</span></div>`;
+  for (const id of ppl) { const u = user(id); tiles += `<div class="tile ${UI.speaking[id] ? "speaking" : ""}" style="${id === "me" && UI.video ? "background:linear-gradient(135deg,#1e3a8a,#0f172a)" : ""}">${id === "me" && UI.video ? '<div style="font-size:40px">📷</div>' : avatar(u, "", false)}<span class="lbl">${esc(u.name)}${id === "me" && UI.muted ? " 🔇" : ""}</span></div>`; }
+  return `<div class="mhead"><button class="ibtn hb" data-act="openDrawer">☰</button><span class="ttl">🔊 ${esc(c.name)}</span><span class="topic">Canal de voz</span></div>${bar}
+    ${ppl.length || joined ? `<div class="stage">${tiles}</div>` : `<div class="stage"><div style="text-align:center;grid-column:1/-1"><div style="font-size:56px">🔊</div><h2>${esc(c.name)}</h2><p style="color:var(--muted)">No hay nadie aquí todavía.</p></div></div>`}
+    <div class="stagebar">${joined ? `<button class="${UI.video ? "on" : ""}" data-act="toggleVideo" title="Cámara">📷</button><button class="${UI.stream ? "on" : ""}" data-act="toggleStream" title="Compartir pantalla">🖥️</button><button class="${UI.muted ? "red" : ""}" data-act="mute" title="Micrófono">🎙️</button><button class="red" data-act="leaveVoice" title="Salir">📵</button>` :
+      `<button class="btn" style="width:auto;border-radius:8px;padding:0 24px;background:var(--green)" data-act="joinVoice" data-id="${c.id}">Unirse a la voz</button>`}</div>`;
+}
+
+/* =========================================================
+   MODALS / POPUPS
+   ========================================================= */
+function closeAll() { $$(".overlay,body > .pop,.ctx,.tip").forEach(e => e.remove()); }
+function modal(html, onMount, opts = {}) {
+  closeAll();
+  const o = document.createElement("div"); o.className = "overlay";
+  o.innerHTML = `<div class="modal" style="${opts.wide ? "width:min(640px,94vw)" : ""}">${html}</div>`;
+  o.addEventListener("mousedown", e => { if (e.target === o) o.remove(); });
+  document.body.appendChild(o);
+  onMount && onMount(o);
+  const f = $("input:not([type=hidden]):not([type=file]),textarea", o); f && setTimeout(() => f.focus(), 30);
+  return o;
+}
+function toast(t, cls = "") { const e = document.createElement("div"); e.className = "toast " + cls; e.textContent = t; document.body.appendChild(e); setTimeout(() => e.remove(), 2600); }
+function confirmBox(title, text, btn, fn) {
+  modal(`<div class="mh"><h2>${esc(title)}</h2><p>${text}</p></div><div class="mf"><button class="btn ghost" data-close>Cancelar</button><button class="btn danger" data-ok>${esc(btn)}</button></div>`, o => {
+    $("[data-close]", o).onclick = () => o.remove(); $("[data-ok]", o).onclick = () => { o.remove(); fn(); };
+  });
+}
+function ctxMenu(x, y, items) {
+  closeAll();
+  const c = document.createElement("div"); c.className = "ctx";
+  c.innerHTML = items.map((it, i) => it === "-" ? "<hr>" : `<button data-i="${i}" class="${it.red ? "red" : ""}">${it.label}</button>`).join("");
+  document.body.appendChild(c);
+  const r = c.getBoundingClientRect();
+  c.style.left = Math.min(x, innerWidth - r.width - 8) + "px"; c.style.top = Math.min(y, innerHeight - r.height - 8) + "px";
+  c.onclick = e => { const b = e.target.closest("button"); if (!b) return; c.remove(); items[+b.dataset.i].fn(); };
+}
+
+function newServerModal() {
+  let step = 0;
+  const templates = [["🛠️", "Crear mi propio servidor", "custom"], ["🎮", "Gaming", "Gaming"], ["📚", "Club de estudio", "Estudio"], ["🎨", "Artistas y creadores", "Arte"], ["👪", "Amigos", "Amigos"]];
+  const draw = o => {
+    if (step === 0) {
+      $(".modal", o).innerHTML = `<div class="mh"><h2>Crea tu servidor</h2><p>Tu servidor es donde tú y tus amigos pasáis el rato. Crea el tuyo y empieza a hablar.</p></div><div class="mb">${templates.map(t => `<div class="radio" data-t="${t[2]}"><span class="ri">${t[0]}</span><div style="flex:1"><b>${t[1]}</b></div><span>›</span></div>`).join("")}
+        <div style="text-align:center;margin-top:14px"><p style="color:var(--muted);margin:0 0 8px">¿Ya tienes una invitación?</p><button class="btn sec" data-join style="width:100%">Unirse a un servidor</button></div></div>`;
+      $$("[data-t]", o).forEach(b => b.onclick = () => { step = 1; o.tpl = b.dataset.t; draw(o); });
+      $("[data-join]", o).onclick = () => joinServerModal();
+    } else {
+      $(".modal", o).innerHTML = `<div class="mh"><h2>Personaliza tu servidor</h2><p>Dale personalidad con un nombre y un icono. Siempre podrás cambiarlos luego.</p></div>
+        <form class="mb" data-f><div style="display:flex;justify-content:center"><div id="prev" class="sicon" style="width:80px;height:80px;font-size:34px;background:#2563eb">🌀</div></div>
+        <label class="l">Icono (emoji, opcional)</label><input name="icon" maxlength="4" placeholder="🌀" value="🌀">
+        <label class="l">Color</label><div class="swatches">${COLORS.slice(0, 14).map((c, i) => `<div class="sw ${i === 0 ? "sel" : ""}" data-c="${c}" style="background:${c}"></div>`).join("")}</div>
+        <label class="l">Nombre del servidor</label><input name="name" required maxlength="60" value="Servidor de ${esc(me().name)}">
+        <p style="font-size:12px;color:var(--dim)">Al crear un servidor, aceptas las normas de la comunidad de Zpercord.</p></form>
+        <div class="mf" style="justify-content:space-between"><button class="btn ghost" data-back>Atrás</button><button class="btn" data-create>Crear</button></div>`;
+      let col = COLORS[0];
+      const prev = $("#prev", o), f = $("[data-f]", o);
+      f.icon.oninput = () => prev.textContent = f.icon.value || initials(f.name.value);
+      $$(".sw", o).forEach(sw => sw.onclick = () => { $$(".sw", o).forEach(x => x.classList.remove("sel")); sw.classList.add("sel"); col = sw.dataset.c; prev.style.background = col; });
+      $("[data-back]", o).onclick = () => { step = 0; draw(o); };
+      const go = () => {
+        const name = f.name.value.trim(); if (!name) return f.name.focus();
+        const s = makeServer(name, f.icon.value.trim(), col, true);
+        if (o.tpl === "Gaming") { const t = s.categories[0]; s.channels.push({ id: uid(), name: "clips", type: "text", categoryId: t.id, topic: "", private: false, roles: [] }, { id: uid(), name: "buscar-grupo", type: "text", categoryId: t.id, topic: "", private: false, roles: [] }); s.channels.push({ id: uid(), name: "Escuadrón", type: "voice", categoryId: s.categories[1].id, private: false, roles: [] }); }
+        if (o.tpl === "Estudio") { const t = s.categories[0]; s.channels.push({ id: uid(), name: "deberes", type: "text", categoryId: t.id, topic: "", private: false, roles: [] }, { id: uid(), name: "recursos", type: "text", categoryId: t.id, topic: "", private: false, roles: [] }); s.channels.push({ id: uid(), name: "Sala de estudio", type: "voice", categoryId: s.categories[1].id, private: false, roles: [] }); }
+        if (o.tpl === "Arte") { const t = s.categories[0]; s.channels.push({ id: uid(), name: "mis-obras", type: "text", categoryId: t.id, topic: "", private: false, roles: [] }, { id: uid(), name: "inspiración", type: "text", categoryId: t.id, topic: "", private: false, roles: [] }); }
+        if (o.tpl !== "custom") s.roles.unshift({ id: uid(), name: "Miembro", color: "#60a5fa", hoist: false, perms: {} });
+        s.messages[s.channels[0].id] = [msg("zbot", `¡Bienvenido a **${name}**! 🎉\nEste es tu nuevo servidor. Crea canales, roles e invita a tus amigos.`)];
+        s.members.push({ userId: "zbot", roles: [] });
+        S.servers.push(s); S.cur = { server: s.id, channel: s.channels[0].id, dm: null }; save(); o.remove(); render(); toast("Servidor creado ✨");
+      };
+      $("[data-create]", o).onclick = go; f.onsubmit = e => { e.preventDefault(); go(); };
+    }
+  };
+  modal("", draw);
+}
+function joinServerModal() {
+  modal(`<div class="mh"><h2>Unirse a un servidor</h2><p>Introduce una invitación para unirte a un servidor existente.</p></div><form class="mb" data-f><label class="l">Enlace de invitación *</label><input name="code" placeholder="zpercord.gg/abc123" required><p style="font-size:12px;color:var(--muted)">Ejemplos: <code>zpercord.gg/lofi</code>, <code>zpercord.gg/retro</code></p></form><div class="mf"><button class="btn ghost" data-close>Cancelar</button><button class="btn" data-ok>Unirse</button></div>`, o => {
+    $("[data-close]", o).onclick = () => o.remove();
+    const go = () => {
+      const code = o.querySelector("[name=code]").value.trim().split("/").pop(); if (!code) return;
+      const existing = S.servers.find(s => s.invite === code);
+      if (existing) { S.cur = { server: existing.id, channel: visibleChannels(existing)[0]?.id, dm: null }; o.remove(); render(); return; }
+      const nm = code.charAt(0).toUpperCase() + code.slice(1);
+      const s = makeServer(nm + " Hub", "🌐", rand(COLORS.slice(0, 13)), true);
+      s.invite = code; s.ownerId = "max"; s.members.push({ userId: "max", roles: [] }, { userId: "kai", roles: [] });
+      s.messages[s.channels[0].id] = [msg("max", `¡Bienvenido/a a ${nm} Hub, @${me().name}! 👋`)];
+      S.servers.push(s); S.cur = { server: s.id, channel: s.channels[0].id, dm: null }; save(); o.remove(); render(); toast("Te uniste a " + s.name);
+    };
+    $("[data-ok]", o).onclick = go; $("[data-f]", o).onsubmit = e => { e.preventDefault(); go(); };
+  });
+}
+function discoverModal() {
+  const list = [["lofi", "🎧", "Lofi Café", "Música para estudiar y relajarse", 12840], ["retro", "👾", "Retro Arcade", "Juegos clásicos y emulación", 5320], ["devs", "💻", "Devs en Español", "Programación, ayuda y proyectos", 22109], ["anime", "🌸", "Anime Club", "Temporadas, mangas y fanarts", 40122], ["astro", "🔭", "Astronomía", "El universo en tu bolsillo", 3011]];
+  modal(`<div class="mh"><h2>🧭 Explorar servidores</h2><p>Descubre comunidades públicas en Zpercord.</p></div><div class="mb">${list.map(l => `<div class="radio" data-code="${l[0]}"><span class="ri">${l[1]}</span><div style="flex:1"><b>${l[2]}</b><small>${l[3]} · ${l[4].toLocaleString()} miembros</small></div><button class="btn" style="padding:6px 12px">Unirse</button></div>`).join("")}</div>`, o => {
+    $$("[data-code]", o).forEach(b => b.onclick = () => {
+      const [code, icon, name] = list.find(l => l[0] === b.dataset.code);
+      let s = S.servers.find(x => x.invite === code);
+      if (!s) { s = makeServer(name, icon, rand(COLORS.slice(0, 13)), true); s.invite = code; s.ownerId = "nova"; s.members.push({ userId: "nova", roles: [] }, { userId: "luna", roles: [] }, { userId: "max", roles: [] }); s.messages[s.channels[0].id] = [msg("nova", `¡Bienvenidos a ${name}! ${icon}`)]; S.servers.push(s); toast("Te uniste a " + name); }
+      S.cur = { server: s.id, channel: s.channels[0].id, dm: null }; save(); o.remove(); render();
+    });
+  });
+}
+
+function channelModal(catId, editId) {
+  const s = server(); const ch = editId ? s.channels.find(c => c.id === editId) : null;
+  let type = ch ? ch.type : "text"; let priv = ch ? ch.private : false; let roles = ch ? [...ch.roles] : [];
+  const roleOpts = s.roles.filter(r => r.id !== "everyone");
+  modal(`<div class="mh"><h2>${ch ? "Editar canal" : "Crear canal"}</h2>${catId && !ch ? `<p>en ${esc((s.categories.find(c => c.id === catId) || {}).name || "")}</p>` : ""}</div><form class="mb" data-f>
+    <label class="l">Tipo de canal</label>
+    ${[["text", "#", "Texto", "Envía mensajes, imágenes, GIF, emojis y bromas"], ["voice", "🔊", "Voz", "Pasa el rato con voz, vídeo y compartir pantalla"], ["announce", "📢", "Anuncios", "Solo el staff puede publicar"]].map(t => `<div class="radio ${type === t[0] ? "sel" : ""}" data-type="${t[0]}"><span class="ri">${t[1]}</span><div><b>${t[2]}</b><small>${t[3]}</small></div></div>`).join("")}
+    <label class="l">Nombre del canal</label><input name="name" required maxlength="50" value="${ch ? esc(ch.name) : ""}" placeholder="nuevo-canal">
+    <div data-topicwrap><label class="l">Tema</label><input name="topic" maxlength="200" value="${ch ? esc(ch.topic || "") : ""}" placeholder="¿De qué va este canal?"></div>
+    <label class="l">Categoría</label><select name="cat"><option value="">Sin categoría</option>${s.categories.map(c => `<option value="${c.id}" ${(ch ? ch.categoryId : catId) === c.id ? "selected" : ""}>${esc(c.name)}</option>`).join("")}</select>
+    <div class="trow"><div class="tt"><b>🔒 Canal privado</b><small>Solo los roles seleccionados podrán ver este canal.</small></div><label class="toggle"><input type="checkbox" name="priv" ${priv ? "checked" : ""}><span></span></label></div>
+    <div data-roles style="${priv ? "" : "display:none"}"><label class="l">Roles con acceso</label>${roleOpts.length ? roleOpts.map(r => `<label class="trow" style="cursor:pointer"><span class="rdot" style="background:${r.color || "#94a3b8"}"></span><span class="tt">${esc(r.name)}</span><input type="checkbox" value="${r.id}" ${roles.includes(r.id) ? "checked" : ""} style="width:auto"></label>`).join("") : '<p style="color:var(--muted)">No hay roles. Crea roles en Ajustes del servidor.</p>'}</div>
+  </form><div class="mf">${ch ? '<button class="btn danger" data-del style="margin-right:auto">Eliminar</button>' : ""}<button class="btn ghost" data-close>Cancelar</button><button class="btn" data-ok>${ch ? "Guardar" : "Crear canal"}</button></div>`, o => {
+    const f = $("[data-f]", o);
+    const sync = () => { $("[data-topicwrap]", o).style.display = type === "voice" ? "none" : ""; };
+    sync();
+    $$("[data-type]", o).forEach(r => r.onclick = () => { type = r.dataset.type; $$("[data-type]", o).forEach(x => x.classList.toggle("sel", x === r)); sync(); });
+    f.priv.onchange = () => $("[data-roles]", o).style.display = f.priv.checked ? "" : "none";
+    $("[data-close]", o).onclick = () => o.remove();
+    if (ch) $("[data-del]", o).onclick = () => confirmBox("Eliminar canal", `¿Seguro que quieres eliminar <b>#${esc(ch.name)}</b>? No se puede deshacer.`, "Eliminar canal", () => {
+      s.channels = s.channels.filter(c => c.id !== ch.id); delete s.messages[ch.id];
+      if (S.cur.channel === ch.id) S.cur.channel = (visibleChannels(s).find(c => c.type !== "voice") || {}).id;
+      if (UI.voice && UI.voice.channel === ch.id) UI.voice = null;
+      save(); render(); toast("Canal eliminado");
+    });
+    const go = () => {
+      let name = f.name.value.trim(); if (!name) return f.name.focus();
+      if (type !== "voice") name = name.toLowerCase().replace(/\s+/g, "-");
+      const data = { name, type, topic: f.topic.value.trim(), categoryId: f.cat.value || null, private: f.priv.checked, roles: $$("[data-roles] input:checked", o).map(i => i.value) };
+      if (ch) Object.assign(ch, data); else { const c = { id: uid(), ...data }; s.channels.push(c); if (type !== "voice") { S.cur.channel = c.id; s.messages[c.id] = []; } }
+      save(); o.remove(); render(); toast(ch ? "Canal actualizado" : "Canal creado");
+    };
+    $("[data-ok]", o).onclick = go; f.onsubmit = e => { e.preventDefault(); go(); };
+  });
+}
+function categoryModal(editId) {
+  const s = server(), cat = editId && s.categories.find(c => c.id === editId);
+  modal(`<div class="mh"><h2>${cat ? "Editar categoría" : "Crear categoría"}</h2></div><form class="mb" data-f><label class="l">Nombre de la categoría</label><input name="name" required maxlength="40" value="${cat ? esc(cat.name) : ""}" placeholder="Nueva categoría"></form><div class="mf">${cat ? '<button class="btn danger" data-del style="margin-right:auto">Eliminar</button>' : ""}<button class="btn ghost" data-close>Cancelar</button><button class="btn" data-ok>${cat ? "Guardar" : "Crear categoría"}</button></div>`, o => {
+    const f = $("[data-f]", o); $("[data-close]", o).onclick = () => o.remove();
+    if (cat) $("[data-del]", o).onclick = () => { s.channels.forEach(c => { if (c.categoryId === cat.id) c.categoryId = null; }); s.categories = s.categories.filter(c => c !== cat); save(); o.remove(); render(); };
+    const go = () => { const n = f.name.value.trim(); if (!n) return; if (cat) cat.name = n; else s.categories.push({ id: uid(), name: n }); save(); o.remove(); render(); };
+    $("[data-ok]", o).onclick = go; f.onsubmit = e => { e.preventDefault(); go(); };
+  });
+}
+function inviteModal() {
+  const s = server(); if (!s.invite) { s.invite = Math.random().toString(36).slice(2, 9); save(); }
+  const link = `https://zpercord.gg/${s.vanity && boostLevel(s) >= 3 ? s.vanity : s.invite}`;
+  modal(`<div class="mh"><h2>Invita amigos a ${esc(s.name)}</h2></div><div class="mb"><label class="l">Envía este enlace a tus amigos</label><div style="display:flex;gap:8px"><input readonly value="${link}"><button class="btn" data-copy>Copiar</button></div><p style="font-size:12px;color:var(--muted)">Tu enlace de invitación caduca en 7 días.${boostLevel(s) >= 3 ? "" : " Llega al nivel 3 de mejoras para una URL personalizada."}</p>
+    <label class="l">O invita a un amigo directamente</label>${S.friends.map(user).map(u => `<div class="mrow">${avatar(u, "sm")}<span style="flex:1">${esc(u.name)}</span>${member(s, u.id) ? '<span style="color:var(--muted);font-size:13px">Ya es miembro</span>' : `<button class="btn sec" data-inv="${u.id}" style="padding:5px 14px">Invitar</button>`}</div>`).join("")}</div>`, o => {
+    $("[data-copy]", o).onclick = () => { navigator.clipboard?.writeText(link).catch(() => { }); $("[data-copy]", o).textContent = "¡Copiado!"; };
+    $$("[data-inv]", o).forEach(b => b.onclick = () => {
+      const id = b.dataset.inv; s.members.push({ userId: id, roles: [] }); b.outerHTML = '<span style="color:var(--green);font-size:13px">✔ Se unió</span>';
+      const first = s.channels.find(c => c.type === "text"); if (first) (s.messages[first.id] ||= []).push(msg(id, rand(["¡Hola a todos! 👋", "Gracias por la invitación 💙", "¡Qué buen servidor!"])));
+      save(); render();
+    });
+  });
+}
+
+/* ---------- emoji picker ---------- */
+function emojiPicker(anchor, onPick, superMode) {
+  closeAll();
+  const p = document.createElement("div"); p.className = "pop"; p.style.width = "340px";
+  const custom = S.servers.flatMap(s => s.emojis.map(e => ({ ...e, s })));
+  const cur = server();
+  p.innerHTML = `<div class="pb" style="padding-top:12px">${superMode ? '<div style="font-weight:700;margin-bottom:6px">💥 Súper reacción <span class="tag pro">PRO</span></div>' : ""}<input placeholder="Buscar emoji" data-q style="margin-bottom:8px">
+    <div style="max-height:260px;overflow-y:auto">${custom.length ? `<div class="sec">Emojis de servidores ${isPro() ? "" : "· 🔒 Pro para usar fuera de su servidor"}</div><div class="emogrid">${custom.map(e => { const lock = !isPro() && (!cur || cur.id !== e.s.id); return `<button data-e=":${e.name}:" data-n="${e.name}" class="${lock ? "locked" : ""}" data-lock="${lock ? 1 : ""}" title=":${e.name}: (${esc(e.s.name)})">${e.char}</button>`; }).join("")}</div>` : ""}
+    <div class="sec">Emojis</div><div class="emogrid">${EMOJIS.map(e => `<button data-e="${e}" data-n="${e}">${e}</button>`).join("")}</div></div></div>`;
+  document.body.appendChild(p);
+  const r = anchor.getBoundingClientRect(); const pr = p.getBoundingClientRect();
+  p.style.left = Math.max(8, Math.min(r.right - pr.width, innerWidth - pr.width - 8)) + "px"; p.style.top = Math.max(8, r.top - pr.height - 8) + "px";
+  $("[data-q]", p).oninput = e => { const q = e.target.value.toLowerCase(); $$("[data-e]", p).forEach(b => b.style.display = !q || b.dataset.n.includes(q) ? "" : "none"); };
+  p.onclick = e => { const b = e.target.closest("[data-e]"); if (!b) return; if (b.dataset.lock) { p.remove(); proUpsell("Usa emojis personalizados en cualquier servidor con Zpercord Pro."); return; } onPick(b.dataset.e, b); p.remove(); };
+}
+
+/* ---------- profile popout ---------- */
+function profilePop(id, x, y) {
+  closeAll();
+  const u = user(id), s = server();
+  const p = document.createElement("div"); p.className = "pop";
+  const theme = u.pro && u.themeA ? `background:linear-gradient(180deg,${u.themeA},${u.themeB})` : "";
+  const roles = s && member(s, id) ? member(s, id).roles.map(r => s.roles.find(x => x.id === r)).filter(Boolean) : [];
+  const badges = [u.pro ? "💎" : "", u.bot ? "🤖" : "", s && s.ownerId === id ? "👑" : "", id === "me" && Object.values(S.myBoosts).some(n => n) ? "🚀" : ""].filter(Boolean);
+  p.innerHTML = `<div style="${theme}"><div class="bn" style="background:${u.pro && u.bannerColor ? u.bannerColor : u.color}"></div>
+    ${avatar(u, "pav")}<div class="badges">${badges.map(b => `<span>${b}</span>`).join("")}</div>
+    <div class="pb"><div class="card"><h3>${esc(u.name)} ${u.pro ? '<span class="tag pro">PRO</span>' : ""}</h3><div class="un">${esc(u.username || "")}</div>
+    ${u.custom ? `<div style="margin-top:6px;font-size:14px">${esc(u.custom)}</div>` : ""}
+    <hr style="border:0;border-top:1px solid var(--line);margin:10px 0">
+    ${u.about ? `<div class="sec">Sobre mí</div><div style="font-size:14px;white-space:pre-wrap">${esc(u.about)}</div>` : ""}
+    <div class="sec">Miembro de Zpercord desde</div><div style="font-size:14px">${new Date(Date.now() - (id.length * 7e9)).toLocaleDateString()}</div>
+    ${s && member(s, id) ? `<div class="sec">Roles</div><div>${roles.map(r => `<span class="chip"><span class="rdot" style="background:${r.color || "#94a3b8"}"></span>${esc(r.name)}${can(s, "MANAGE_ROLES") ? `<button data-rmrole="${r.id}">✖</button>` : ""}</span>`).join("")}${can(s, "MANAGE_ROLES") ? '<span class="chip" style="cursor:pointer" data-addrole>＋</span>' : ""}${!roles.length && !can(s, "MANAGE_ROLES") ? '<span style="color:var(--muted);font-size:13px">Sin roles</span>' : ""}</div>` : ""}
+    ${id !== "me" ? `<input placeholder="Mensaje a @${esc(u.name)}" data-dm style="margin-top:12px">` : `<button class="btn" style="width:100%;margin-top:12px" data-edit>Editar perfil</button>`}
+    </div></div></div>`;
+  document.body.appendChild(p);
+  const pr = p.getBoundingClientRect();
+  p.style.left = Math.max(8, Math.min(x, innerWidth - pr.width - 8)) + "px"; p.style.top = Math.max(8, Math.min(y, innerHeight - pr.height - 8)) + "px";
+  const dm = $("[data-dm]", p); dm && dm.addEventListener("keydown", e => { if (e.key === "Enter" && dm.value.trim()) { openDm(id); sendMessage(dm.value.trim()); p.remove(); } });
+  const ed = $("[data-edit]", p); ed && (ed.onclick = () => { p.remove(); openSettings("profile"); });
+  $$("[data-rmrole]", p).forEach(b => b.onclick = () => { const m = member(s, id); m.roles = m.roles.filter(r => r !== b.dataset.rmrole); save(); render(); profilePop(id, x, y); });
+  const ar = $("[data-addrole]", p); ar && (ar.onclick = e => {
+    const m = member(s, id); const opts = s.roles.filter(r => r.id !== "everyone" && !m.roles.includes(r.id));
+    if (!opts.length) return toast("No hay más roles para asignar");
+    ctxMenu(e.clientX, e.clientY, opts.map(r => ({ label: `<span class="rdot" style="display:inline-block;background:${r.color || "#94a3b8"}"></span> ${esc(r.name)}`, fn: () => { m.roles.push(r.id); save(); render(); profilePop(id, x, y); } })));
+  });
+}
+
+function proUpsell(reason) {
+  modal(`<div style="background:linear-gradient(135deg,#1e3a8a,#4338ca,#7c3aed);padding:28px 20px;text-align:center;border-radius:12px 12px 0 0" class="shine"><div style="font-size:48px">💎</div><h2 style="margin:6px 0">Desbloquea con Zpercord Pro</h2><p style="margin:0;color:#dbe6ff">${esc(reason)}</p></div>
+    <div class="mb"><div class="perks" style="grid-template-columns:1fr 1fr;margin:0">${perkList().slice(0, 4).map(p => `<div class="perk"><span class="pi">${p[0]}</span><div><b>${p[1]}</b></div></div>`).join("")}</div></div>
+    <div class="mf"><button class="btn ghost" data-close>Ahora no</button><button class="btn pro" data-go>Obtener Pro</button></div>`, o => {
+    $("[data-close]", o).onclick = () => o.remove(); $("[data-go]", o).onclick = () => { o.remove(); openSettings("pro"); };
+  });
+}
+function perkList() {
+  return [["🖼️", "Avatar animado y anillo Pro", "Destaca con un avatar con gradiente animado."],
+  ["📁", "Subidas de 500 MB", "En lugar de 10 MB."], ["😎", "Emojis en todas partes", "Usa emojis personalizados de cualquier servidor."],
+  ["🚀", "2 mejoras de servidor", "Sube de nivel tus servidores favoritos."], ["✍️", "Mensajes de 4000 caracteres", "Escribe el doble."],
+  ["🎨", "Temas de perfil", "Banner y colores de perfil personalizados."], ["📺", "Streaming HD", "Comparte pantalla en 1080p/4K a 60 FPS."],
+  ["💥", "Súper reacciones", "Reacciones animadas que explotan."], ["💎", "Insignia Pro", "Muestra tu apoyo en tu perfil."]];
+}
+
+/* =========================================================
+   SETTINGS (user + server)
+   ========================================================= */
+function openSettings(tab = "profile") { UI.settings = { kind: "user", tab }; drawSettings(); }
+function openServerSettings(tab = "overview") { UI.settings = { kind: "server", tab, role: null }; drawSettings(); }
+function drawSettings() {
+  closeAll(); $(".settings")?.remove();
+  const st = UI.settings; if (!st) return;
+  const el = document.createElement("div"); el.className = "settings";
+  const s = server();
+  const nav = st.kind === "user" ?
+    [["h", "Ajustes de usuario"], ["profile", "Mi cuenta y perfil"], ["privacy", "Privacidad y seguridad"], ["h", "Ajustes de facturación"], ["pro", "💎 Zpercord Pro", "prob"], ["boosts", "🚀 Mejoras de servidor"], ["gift", "🎁 Inventario de regalos"], ["h", "Ajustes de la app"], ["appearance", "Apariencia"], ["voice", "Voz y vídeo"], ["notifs", "Notificaciones"], ["h", ""], ["reset", "Restablecer datos", "red"], ["logout", "Cerrar sesión", "red"]] :
+    [["h", esc(s.name)], ["overview", "Vista general"], ["roles", "Roles"], ["emojis", "Emojis"], ["boost", "💎 Estado de mejoras"], ["h", "Gestión de usuarios"], ["members", "Miembros"], ["invites", "Invitaciones"], ["h", ""], ...(s.ownerId === "me" ? [["delete", "Eliminar servidor", "red"]] : [["leave", "Abandonar servidor", "red"]])];
+  el.innerHTML = `<div class="nav"><div>${nav.map(n => n[0] === "h" ? `<h4>${n[1]}</h4>` : `<button data-tab="${n[0]}" class="${st.tab === n[0] ? "active" : ""} ${n[2] || ""}">${n[1]}</button>`).join("")}</div></div><div class="content"></div><button class="close" title="Cerrar (Esc)">✕</button>`;
+  document.body.appendChild(el);
+  $(".close", el).onclick = closeSettings;
+  $$("[data-tab]", el).forEach(b => b.onclick = () => {
+    const t = b.dataset.tab;
+    if (t === "logout") return toast("Esto es una demo: tu sesión está guardada en este navegador.");
+    if (t === "reset") return confirmBox("Restablecer datos", "Se borrarán todos tus servidores, mensajes y ajustes.", "Restablecer", () => { try { localStorage.removeItem(STORE); } catch (e) { } S = seed(); closeSettings(); });
+    if (t === "delete") return confirmBox("Eliminar '" + s.name + "'", "¿Seguro? Esta acción no se puede deshacer.", "Eliminar servidor", () => { S.servers = S.servers.filter(x => x !== s); S.cur = { server: null, channel: null, dm: null }; closeSettings(); });
+    if (t === "leave") return confirmBox("Abandonar '" + s.name + "'", "No podrás volver a menos que te inviten de nuevo.", "Abandonar", () => { S.servers = S.servers.filter(x => x !== s); S.cur = { server: null, channel: null, dm: null }; closeSettings(); });
+    st.tab = t; drawSettings();
+  });
+  const c = $(".content", el);
+  (st.kind === "user" ? userTabs : serverTabs)[st.tab](c, s);
+}
+function closeSettings() { UI.settings = null; $(".settings")?.remove(); save(); render(); }
+
+const userTabs = {
+  profile(c) {
+    const u = me();
+    c.innerHTML = `<h2>Perfiles</h2>
+      <div style="display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:24px" class="pgrid">
+      <form data-f>
+        <label class="l">Nombre visible</label><input name="name" maxlength="32" value="${esc(u.name)}">
+        <label class="l">Nombre de usuario</label><input name="username" maxlength="32" value="${esc(u.username)}">
+        <label class="l">Emoji de avatar (opcional)</label><input name="emojiAv" maxlength="4" value="${esc(u.emojiAv || "")}" placeholder="Usa tu inicial">
+        <label class="l">Color del avatar</label><div class="swatches" data-sw="color">${AVATAR_BG.map(c => `<div class="sw ${u.color === c ? "sel" : ""}" data-c="${c}" style="background:${c}"></div>`).join("")}</div>
+        <label class="l">Estado personalizado</label><input name="custom" maxlength="60" value="${esc(u.custom || "")}" placeholder="¿Qué estás haciendo?">
+        <label class="l">Sobre mí</label><textarea name="about" rows="3" maxlength="190">${esc(u.about || "")}</textarea>
+        <div style="margin-top:22px;padding:16px;border-radius:10px;border:1px solid var(--pro2);background:#4338ca22">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><b>💎 Personalización Pro</b>${isPro() ? '<span class="tag pro">ACTIVO</span>' : '<button type="button" class="btn pro" data-getpro style="padding:5px 12px">Desbloquear</button>'}</div>
+          <fieldset ${isPro() ? "" : "disabled"} style="border:0;padding:0;margin:0;${isPro() ? "" : "opacity:.5"}">
+          <div class="trow"><div class="tt"><b>Avatar animado</b><small>Gradiente animado con anillo brillante.</small></div><label class="toggle"><input type="checkbox" name="anim" ${u.anim ? "checked" : ""}><span></span></label></div>
+          <label class="l">Color del banner</label><div class="swatches" data-sw="bannerColor">${COLORS.map(c => `<div class="sw ${u.bannerColor === c ? "sel" : ""}" data-c="${c}" style="background:${c}"></div>`).join("")}</div>
+          <label class="l">Tema del perfil (principal / acento)</label><div style="display:flex;gap:8px"><input type="color" name="themeA" value="${u.themeA || "#1e3a8a"}" style="height:40px;padding:2px"><input type="color" name="themeB" value="${u.themeB || "#6d28d9"}" style="height:40px;padding:2px"></div>
+          </fieldset></div>
+        <div style="margin-top:20px;display:flex;gap:8px"><button class="btn">Guardar cambios</button></div>
+      </form>
+      <div><label class="l">Vista previa</label><div data-preview style="position:relative"></div></div></div>
+      <style>@media(max-width:900px){.pgrid{grid-template-columns:1fr!important}}</style>`;
+    const f = $("[data-f]", c); const tmp = { color: u.color, bannerColor: u.bannerColor };
+    const prev = () => {
+      const d = { ...u, ...tmp, name: f.name.value || u.name, username: f.username.value, custom: f.custom.value, about: f.about.value, emojiAv: f.emojiAv.value.trim(), anim: f.anim.checked, themeA: f.themeA.value, themeB: f.themeB.value };
+      const theme = d.pro ? `background:linear-gradient(180deg,${d.themeA},${d.themeB})` : "background:var(--bg1)";
+      $("[data-preview]", c).innerHTML = `<div class="pop" style="position:static;width:100%;${theme}"><div class="bn" style="background:${d.pro ? d.bannerColor : d.color}"></div>${avatar(d, "pav")}<div class="pb"><div class="card"><h3>${esc(d.name)} ${d.pro ? '<span class="tag pro">PRO</span>' : ""}</h3><div class="un">${esc(d.username)}</div>${d.custom ? `<div style="margin-top:6px">${esc(d.custom)}</div>` : ""}<div class="sec">Sobre mí</div><div style="font-size:14px;white-space:pre-wrap">${esc(d.about)}</div></div></div></div>`;
+      return d;
+    };
+    $$("[data-sw]", c).forEach(g => g.onclick = e => { const sw = e.target.closest(".sw"); if (!sw) return; $$(".sw", g).forEach(x => x.classList.remove("sel")); sw.classList.add("sel"); tmp[g.dataset.sw] = sw.dataset.c; prev(); });
+    f.oninput = prev; prev();
+    const gp = $("[data-getpro]", c); gp && (gp.onclick = () => { UI.settings.tab = "pro"; drawSettings(); });
+    f.onsubmit = e => { e.preventDefault(); const d = prev(); Object.assign(u, { name: d.name.trim() || "Tú", username: d.username.trim() || "tu_usuario", custom: d.custom, about: d.about, emojiAv: d.emojiAv, color: tmp.color }); if (isPro()) Object.assign(u, { anim: d.anim, bannerColor: tmp.bannerColor, themeA: d.themeA, themeB: d.themeB }); save(); render(); toast("Perfil guardado ✔"); };
+  },
+  privacy(c) {
+    c.innerHTML = `<h2>Privacidad y seguridad</h2>${[["Mensajes directos de miembros del servidor", "Permitir MD de personas en tus servidores.", 1], ["Filtro de contenido explícito", "Escanear imágenes en MD.", 1], ["Solicitudes de amistad de todos", "Cualquiera puede enviarte solicitudes.", 1], ["Mostrar actividad actual", "Muestra lo que juegas o escuchas.", 0]].map(t => `<div class="trow"><div class="tt"><b>${t[0]}</b><small>${t[1]}</small></div><label class="toggle"><input type="checkbox" ${t[2] ? "checked" : ""}><span></span></label></div>`).join("")}`;
+  },
+  pro(c) {
+    const pro = isPro();
+    c.innerHTML = `<div style="border-radius:14px;padding:30px;background:linear-gradient(135deg,#0c1f4d,#1e3a8a 40%,#4338ca 70%,#7c3aed);position:relative;overflow:hidden" class="shine">
+      <div style="font-size:13px;font-weight:800;letter-spacing:.1em;color:#bfdbfe">ZPERCORD</div><h1 style="margin:2px 0 8px;font-size:40px">💎 Pro</h1>
+      <p style="max-width:460px;color:#dbe6ff;margin:0 0 18px">Desbloquea ventajas para tu perfil, tus mensajes y tus servidores favoritos.</p>
+      ${pro ? `<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><span class="tag pro" style="font-size:13px;padding:5px 10px">✔ SUSCRIPCIÓN ACTIVA</span><span style="color:#dbe6ff">Plan ${S.proPlan === "year" ? "anual" : "mensual"} · Se renueva el ${new Date(Date.now() + (S.proPlan === "year" ? 365 : 30) * 864e5).toLocaleDateString()}</span><button class="btn sec" data-cancel>Cancelar suscripción</button></div>` :
+        `<div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn" style="background:#fff;color:#1e3a8a" data-sub="month">Suscribirse · 9,99 €/mes</button><button class="btn pro" data-sub="year">Anual · 99,99 €/año (−16%)</button></div>`}
+    </div>
+    <h3 style="margin-top:28px">Lo que incluye Pro</h3><div class="perks">${perkList().map(p => `<div class="perk"><span class="pi">${p[0]}</span><div><b>${p[1]}</b><span>${p[2]}</span></div></div>`).join("")}</div>
+    <h3>Comparativa</h3><table style="width:100%;border-collapse:collapse;font-size:14px">${[["", "Gratis", "Pro"], ["Tamaño de subida", "10 MB", "500 MB"], ["Longitud de mensaje", "2000", "4000"], ["Emojis entre servidores", "✖", "✔"], ["Avatar animado", "✖", "✔"], ["Temas de perfil y banner", "✖", "✔"], ["Calidad de stream", "720p 30fps", "4K 60fps"], ["Súper reacciones", "✖", "∞"], ["Mejoras de servidor incluidas", "0", "2"]].map((r, i) => `<tr style="border-bottom:1px solid var(--line)">${r.map((x, j) => `<td style="padding:9px;${i === 0 ? "font-weight:800;color:var(--muted)" : ""};${j === 2 && i ? "color:var(--blue2);font-weight:700" : ""}">${x}</td>`).join("")}</tr>`).join("")}</table>
+    <p style="color:var(--dim);font-size:12px;margin-top:16px">Demo: no se realiza ningún cobro real.</p>`;
+    $$("[data-sub]", c).forEach(b => b.onclick = () => checkout(b.dataset.sub));
+    const cc = $("[data-cancel]", c); cc && (cc.onclick = () => confirmBox("Cancelar Pro", "Perderás el avatar animado, las mejoras de servidor y otras ventajas.", "Cancelar Pro", () => {
+      me().pro = false; me().anim = false;
+      for (const [sid, n] of Object.entries(S.myBoosts)) { const s = S.servers.find(x => x.id === sid); if (s) s.boosts = Math.max(0, s.boosts - n); }
+      S.myBoosts = {}; save(); render(); drawSettings(); toast("Suscripción cancelada");
+    }));
+  },
+  boosts(c) {
+    const total = (isPro() ? PRO.boosts : 0) + (S.extraBoosts || 0); const used = Object.values(S.myBoosts).reduce((a, b) => a + b, 0);
+    c.innerHTML = `<h2>🚀 Mejoras de servidor</h2><p style="color:var(--muted)">Tienes <b style="color:#fff">${total - used}</b> de ${total} mejoras disponibles. ${isPro() ? "Pro incluye 2 mejoras." : "Consigue Pro para obtener 2 mejoras gratis."}</p>
+      <button class="btn pro" data-buy>Comprar una mejora · 4,99 €</button>
+      <h3 style="margin-top:24px">Tus servidores</h3>${S.servers.map(s => `<div class="mrow"><div class="sicon" style="background:${s.color};width:40px;height:40px">${esc(s.icon || initials(s.name))}</div><div style="flex:1"><b>${esc(s.name)}</b><div style="font-size:12px;color:var(--muted)">Nivel ${boostLevel(s)} · ${s.boosts} mejoras${S.myBoosts[s.id] ? ` · ${S.myBoosts[s.id]} tuyas` : ""}</div></div>
+        ${S.myBoosts[s.id] ? `<button class="btn sec" data-unboost="${s.id}" style="padding:5px 12px">Quitar</button>` : ""}<button class="btn" data-boost="${s.id}" style="padding:5px 12px" ${total - used > 0 ? "" : "disabled"}>Mejorar</button></div>`).join("")}`;
+    $("[data-buy]", c).onclick = () => { S.extraBoosts = (S.extraBoosts || 0) + 1; save(); drawSettings(); toast("¡Mejora comprada! 🚀", "pro"); };
+    $$("[data-boost]", c).forEach(b => b.onclick = () => { boostServer(b.dataset.boost); drawSettings(); });
+    $$("[data-unboost]", c).forEach(b => b.onclick = () => { const s = S.servers.find(x => x.id === b.dataset.unboost); S.myBoosts[s.id]--; s.boosts--; save(); drawSettings(); });
+  },
+  gift(c) {
+    c.innerHTML = `<h2>🎁 Inventario de regalos</h2><p style="color:var(--muted)">Regala Zpercord Pro a un amigo. Aparecerá en vuestro MD.</p>${S.friends.map(user).map(u => `<div class="mrow">${avatar(u, "sm")}<span style="flex:1">${esc(u.name)} ${u.pro ? '<span class="tag pro">PRO</span>' : ""}</span><button class="btn pro" data-g="${u.id}" style="padding:5px 12px" ${u.pro ? "disabled" : ""}>Regalar 1 mes</button></div>`).join("")}`;
+    $$("[data-g]", c).forEach(b => b.onclick = () => giftPro(b.dataset.g));
+  },
+  appearance(c) {
+    c.innerHTML = `<h2>Apariencia</h2><label class="l">Tema</label><div class="radio sel"><span class="ri">🌌</span><div><b>Azul medianoche</b><small>El tema por defecto de Zpercord.</small></div></div>
+      <div class="trow"><div class="tt"><b>Mostrar lista de miembros</b><small>Panel derecho en los canales de texto.</small></div><label class="toggle"><input type="checkbox" data-ml ${UI.memberList ? "checked" : ""}><span></span></label></div>
+      <label class="l">Vista previa de mensajes</label><div style="background:var(--bg2);border-radius:8px;padding:6px 0;border:1px solid var(--line)">${renderMessages([msg("nova", "¡Mira qué bonito se ve Zpercord en azul! 💙"), msg("me", "Totalmente de acuerdo **:zgg:**")], server() || S.servers[0])}</div>`;
+    $("[data-ml]", c).onchange = e => { UI.memberList = e.target.checked; };
+  },
+  voice(c) {
+    c.innerHTML = `<h2>Voz y vídeo</h2><label class="l">Dispositivo de entrada</label><select><option>Predeterminado</option></select><label class="l">Volumen de entrada</label><input type="range" style="padding:0">
+      <label class="l">Calidad de transmisión</label><select data-q>${["720p 30fps", "1080p 60fps", "1440p 60fps", "4K 60fps"].map((q, i) => `<option ${i && !isPro() ? "disabled" : ""}>${q}${i && !isPro() ? " (Pro)" : ""}</option>`).join("")}</select>
+      <div class="trow"><div class="tt"><b>Supresión de ruido</b><small>Elimina el ruido de fondo de tu micrófono.</small></div><label class="toggle"><input type="checkbox" checked><span></span></label></div>
+      <div class="trow"><div class="tt"><b>Cancelación de eco</b></div><label class="toggle"><input type="checkbox" checked><span></span></label></div>`;
+  },
+  notifs(c) {
+    c.innerHTML = `<h2>Notificaciones</h2><div class="trow"><div class="tt"><b>Sonidos</b><small>Reproducir un sonido al recibir mensajes.</small></div><label class="toggle"><input type="checkbox" data-snd ${S.settings.sounds ? "checked" : ""}><span></span></label></div>`;
+    $("[data-snd]", c).onchange = e => { S.settings.sounds = e.target.checked; save(); };
+  },
+};
+
+const serverTabs = {
+  overview(c, s) {
+    const ok = can(s, "MANAGE_SERVER"); const lvl = boostLevel(s);
+    c.innerHTML = `<h2>Vista general del servidor</h2><form data-f><fieldset ${ok ? "" : "disabled"} style="border:0;padding:0;margin:0">
+      <div style="display:flex;gap:20px;align-items:center;flex-wrap:wrap"><div class="sicon" style="width:90px;height:90px;font-size:38px;background:${s.color}" data-prev>${esc(s.icon || initials(s.name))}</div>
+      <div style="flex:1;min-width:200px"><label class="l" style="margin-top:0">Nombre del servidor</label><input name="name" maxlength="60" value="${esc(s.name)}"><label class="l">Icono (emoji)</label><input name="icon" maxlength="4" value="${esc(s.icon || "")}"></div></div>
+      <label class="l">Color</label><div class="swatches">${COLORS.slice(0, 14).map(x => `<div class="sw ${s.color === x ? "sel" : ""}" data-c="${x}" style="background:${x}"></div>`).join("")}</div>
+      <label class="l">Descripción</label><textarea name="desc" rows="2">${esc(s.desc || "")}</textarea>
+      <label class="l">Banner del servidor ${lvl >= 2 ? "" : '<span class="tag pro">NIVEL 2</span>'}</label><div class="swatches" data-ban style="${lvl >= 2 ? "" : "opacity:.4;pointer-events:none"}">${["linear-gradient(135deg,#1e3a8a,#3b82f6)", "linear-gradient(135deg,#0f172a,#6366f1)", "linear-gradient(135deg,#312e81,#db2777)", "linear-gradient(135deg,#064e3b,#22d3ee)", "linear-gradient(135deg,#7c2d12,#f59e0b)"].map(b => `<div class="sw ${s.banner === b ? "sel" : ""}" data-b="${b}" style="background:${b};width:70px;height:40px"></div>`).join("")}</div>
+      <label class="l">URL personalizada ${lvl >= 3 ? "" : '<span class="tag pro">NIVEL 3</span>'}</label><div style="display:flex;align-items:center;gap:6px"><span style="color:var(--muted)">zpercord.gg/</span><input name="vanity" ${lvl >= 3 ? "" : "disabled"} value="${esc(s.vanity || "")}"></div>
+      <div style="margin-top:20px">${ok ? '<button class="btn">Guardar cambios</button>' : '<p style="color:var(--muted)">No tienes permiso para gestionar el servidor.</p>'}</div></fieldset></form>`;
+    const f = $("[data-f]", c); let color = s.color, banner = s.banner;
+    $$(".swatches:not([data-ban]) .sw", c).forEach(sw => sw.onclick = () => { $$(".swatches:not([data-ban]) .sw", c).forEach(x => x.classList.remove("sel")); sw.classList.add("sel"); color = sw.dataset.c; $("[data-prev]", c).style.background = color; });
+    $$("[data-ban] .sw", c).forEach(sw => sw.onclick = () => { $$("[data-ban] .sw", c).forEach(x => x.classList.remove("sel")); sw.classList.add("sel"); banner = sw.dataset.b; });
+    f.icon.oninput = () => $("[data-prev]", c).textContent = f.icon.value || initials(f.name.value);
+    f.onsubmit = e => { e.preventDefault(); Object.assign(s, { name: f.name.value.trim() || s.name, icon: f.icon.value.trim(), color, desc: f.desc.value, banner, vanity: f.vanity.value.trim().replace(/[^\w-]/g, "") }); save(); render(); drawSettings(); toast("Cambios guardados ✔"); };
+  },
+  roles(c, s) {
+    const st = UI.settings; const ok = can(s, "MANAGE_ROLES");
+    if (!st.role) st.role = s.roles[0].id;
+    const r = s.roles.find(x => x.id === st.role) || s.roles[s.roles.length - 1];
+    const count = id => id === "everyone" ? s.members.length : s.members.filter(m => m.roles.includes(id)).length;
+    c.innerHTML = `<h2>Roles</h2><p style="color:var(--muted);margin-top:-8px">Usa roles para agrupar a los miembros y asignar permisos. El orden importa: el rol más alto define el color del nombre.</p>
+      <div class="rolewrap"><div><div class="rolelist">${s.roles.map((x, i) => `<div class="roleitem ${x.id === r.id ? "sel" : ""}" data-r="${x.id}"><span class="rdot" style="background:${x.color || "#94a3b8"}"></span><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(x.name)}</span><span style="color:var(--dim);font-size:12px">${count(x.id)}</span>${x.id !== "everyone" && ok ? `<span data-up="${i}" title="Subir" style="cursor:pointer">▲</span><span data-down="${i}" title="Bajar" style="cursor:pointer">▼</span>` : ""}</div>`).join("")}</div>
+      ${ok ? '<button class="btn" style="width:100%;margin-top:10px" data-new>＋ Crear rol</button>' : ""}</div>
+      <div><form data-f><fieldset ${ok ? "" : "disabled"} style="border:0;padding:0;margin:0">
+        <label class="l" style="margin-top:0">Nombre del rol</label><input name="name" value="${esc(r.name)}" ${r.id === "everyone" ? "disabled" : ""} maxlength="32">
+        ${r.id !== "everyone" ? `<label class="l">Color del rol</label><div class="swatches">${COLORS.map(x => `<div class="sw ${r.color === x ? "sel" : ""}" data-c="${x}" style="background:${x}"></div>`).join("")}<input type="color" name="color" value="${r.color || "#94a3b8"}" style="width:40px;height:30px;padding:0;border:0"></div>
+        <div class="trow"><div class="tt"><b>Mostrar por separado</b><small>Agrupa a sus miembros en la lista de la derecha.</small></div><label class="toggle"><input type="checkbox" name="hoist" ${r.hoist ? "checked" : ""}><span></span></label></div>` : ""}
+        <label class="l">Permisos</label>${PERMS.map(p => `<div class="trow"><div class="tt"><b>${p[1]}</b><small>${p[2]}</small></div><label class="toggle"><input type="checkbox" data-p="${p[0]}" ${r.perms[p[0]] ? "checked" : ""}><span></span></label></div>`).join("")}
+        ${r.id !== "everyone" ? `<label class="l">Miembros con este rol</label><div>${s.members.filter(m => m.roles.includes(r.id)).map(m => `<span class="chip">${esc(user(m.userId).name)}${ok ? `<button type="button" data-rm="${m.userId}">✖</button>` : ""}</span>`).join("") || '<span style="color:var(--muted);font-size:13px">Nadie todavía</span>'}${ok ? `<select data-addm style="width:auto;padding:3px 6px;font-size:13px;margin-left:4px"><option value="">＋ Añadir miembro</option>${s.members.filter(m => !m.roles.includes(r.id)).map(m => `<option value="${m.userId}">${esc(user(m.userId).name)}</option>`).join("")}</select>` : ""}</div>` : ""}
+        <div style="margin-top:20px;display:flex;gap:8px;flex-wrap:wrap">${ok ? '<button class="btn">Guardar cambios</button>' : ""}<button type="button" class="btn sec" data-viewas>👁️ Ver servidor como este rol</button>${ok && r.id !== "everyone" ? '<button type="button" class="btn danger" data-del>Eliminar rol</button>' : ""}</div>
+      </fieldset></form></div></div>`;
+    $$("[data-r]", c).forEach(b => b.onclick = e => { if (e.target.dataset.up || e.target.dataset.down) return; st.role = b.dataset.r; drawSettings(); });
+    $$("[data-up]", c).forEach(b => b.onclick = () => { const i = +b.dataset.up; if (i > 0) { [s.roles[i - 1], s.roles[i]] = [s.roles[i], s.roles[i - 1]]; save(); drawSettings(); } });
+    $$("[data-down]", c).forEach(b => b.onclick = () => { const i = +b.dataset.down; if (i < s.roles.length - 2) { [s.roles[i + 1], s.roles[i]] = [s.roles[i], s.roles[i + 1]]; save(); drawSettings(); } });
+    const nb = $("[data-new]", c); nb && (nb.onclick = () => { const nr = { id: uid(), name: "nuevo rol", color: rand(COLORS), hoist: false, perms: {} }; s.roles.splice(s.roles.length - 1, 0, nr); st.role = nr.id; save(); drawSettings(); });
+    const f = $("[data-f]", c); let color = r.color;
+    $$(".sw", c).forEach(sw => sw.onclick = () => { $$(".sw", c).forEach(x => x.classList.remove("sel")); sw.classList.add("sel"); color = sw.dataset.c; f.color.value = color; });
+    if (f.color) f.color.oninput = () => { color = f.color.value; $$(".sw", c).forEach(x => x.classList.remove("sel")); };
+    $$("[data-rm]", c).forEach(b => b.onclick = () => { const m = member(s, b.dataset.rm); m.roles = m.roles.filter(x => x !== r.id); save(); drawSettings(); });
+    const am = $("[data-addm]", c); am && (am.onchange = () => { if (!am.value) return; member(s, am.value).roles.push(r.id); save(); drawSettings(); });
+    f.onsubmit = e => { e.preventDefault(); if (r.id !== "everyone") { r.name = f.name.value.trim() || r.name; r.color = color; r.hoist = f.hoist.checked; } r.perms = {}; $$("[data-p]", c).forEach(i => { if (i.checked) r.perms[i.dataset.p] = 1; }); save(); render(); drawSettings(); toast("Rol guardado ✔"); };
+    $("[data-viewas]", c).onclick = () => { UI.viewAs = { server: s.id, role: r.id }; const v = visibleChannels(s).find(x => x.type !== "voice"); S.cur.channel = v ? v.id : null; closeSettings(); };
+    const d = $("[data-del]", c); d && (d.onclick = () => confirmBox("Eliminar rol", `¿Eliminar el rol <b>${esc(r.name)}</b>?`, "Eliminar", () => { s.roles = s.roles.filter(x => x !== r); s.members.forEach(m => m.roles = m.roles.filter(x => x !== r.id)); s.channels.forEach(ch => ch.roles = ch.roles.filter(x => x !== r.id)); st.role = null; save(); render(); drawSettings(); }));
+  },
+  emojis(c, s) {
+    const ok = can(s, "MANAGE_SERVER"); const slots = emojiSlots(s);
+    c.innerHTML = `<h2>Emojis</h2><p style="color:var(--muted)">Añade emojis personalizados que cualquiera puede usar en este servidor. Los miembros con <b>Pro</b> pueden usarlos en cualquier parte. Ranuras: <b>${s.emojis.length}/${slots}</b> (más con mejoras).</p>
+      ${ok ? `<form data-f style="display:flex;gap:8px;flex-wrap:wrap"><input name="char" maxlength="4" placeholder="Emoji (ej. 🐉)" style="width:140px" required><input name="name" maxlength="32" placeholder="nombre_emoji" style="flex:1;min-width:140px" required><button class="btn">Subir emoji</button></form>` : ""}
+      <div style="margin-top:16px">${s.emojis.map((e, i) => `<div class="mrow"><span style="font-size:28px">${e.char}</span><code>:${esc(e.name)}:</code><span style="flex:1"></span>${ok ? `<button class="btn sec" data-del="${i}" style="padding:4px 12px">Eliminar</button>` : ""}</div>`).join("") || '<p style="color:var(--muted)">Aún no hay emojis.</p>'}</div>`;
+    const f = $("[data-f]", c);
+    f && (f.onsubmit = e => { e.preventDefault(); if (s.emojis.length >= slots) return toast("Sin ranuras libres. ¡Mejora el servidor!", "err"); const n = f.name.value.trim().toLowerCase().replace(/[^a-z0-9_]/g, "_"); if (n.length < 2) return; s.emojis.push({ name: n, char: f.char.value.trim() }); save(); drawSettings(); });
+    $$("[data-del]", c).forEach(b => b.onclick = () => { s.emojis.splice(+b.dataset.del, 1); save(); drawSettings(); });
+  },
+  boost(c, s) {
+    const lvl = boostLevel(s); const next = LEVELS[lvl + 1];
+    c.innerHTML = `<div style="border-radius:14px;padding:24px;background:linear-gradient(135deg,#1e1b4b,#4338ca,#a21caf)" class="shine"><h2 style="margin:0">💎 ${esc(s.name)}</h2><p style="color:#e0e7ff;margin:6px 0 0">Nivel ${lvl} · ${s.boosts} mejoras ${next ? `· faltan ${next - s.boosts} para el nivel ${lvl + 1}` : "· ¡nivel máximo!"}</p>
+      <div class="boostbar"><div style="width:${Math.min(100, s.boosts / 14 * 100)}%"></div></div><div class="levels"><span>Inicio</span><span>Nivel 1 (2)</span><span>Nivel 2 (7)</span><span>Nivel 3 (14)</span></div>
+      <button class="btn" style="background:#fff;color:#4338ca;margin-top:14px" data-boost>🚀 Mejorar este servidor</button></div>
+      <div class="perks">${[[1, "😀", "100 ranuras de emoji", "Audio 128 kbps, icono animado"], [2, "🖼️", "Banner del servidor", "150 emojis, stream 1080p"], [3, "🔗", "URL personalizada", "250 emojis, subidas de 100 MB para todos"]].map(p => `<div class="perk" style="${lvl >= p[0] ? "border-color:var(--pro3)" : "opacity:.6"}"><span class="pi">${p[1]}</span><div><b>Nivel ${p[0]}: ${p[2]} ${lvl >= p[0] ? "✔" : "🔒"}</b><span>${p[3]}</span></div></div>`).join("")}</div>`;
+    $("[data-boost]", c).onclick = () => { boostServer(s.id); drawSettings(); };
+  },
+  members(c, s) {
+    const okK = can(s, "KICK"), okR = can(s, "MANAGE_ROLES");
+    c.innerHTML = `<h2>Miembros del servidor — ${s.members.length}</h2><input placeholder="Buscar miembros" data-q style="margin-bottom:10px"><div data-list>${s.members.map(m => { const u = user(m.userId); return `<div class="mrow" data-n="${esc(u.name.toLowerCase())}">${avatar(u, "sm")}<div style="flex:1;min-width:120px"><b style="color:${nameColor(s, u.id) || "inherit"}">${esc(u.name)}</b> ${s.ownerId === u.id ? "👑" : ""}<div style="font-size:12px;color:var(--muted)">${esc(u.username || "")}</div></div>
+      <div style="flex:2;min-width:160px">${m.roles.map(r => s.roles.find(x => x.id === r)).filter(Boolean).map(r => `<span class="chip"><span class="rdot" style="background:${r.color || "#94a3b8"}"></span>${esc(r.name)}${okR ? `<button data-rr="${m.userId}|${r.id}">✖</button>` : ""}</span>`).join("")}${okR ? `<select data-ar="${m.userId}" style="width:auto;padding:2px 6px;font-size:12px"><option value="">＋</option>${s.roles.filter(r => r.id !== "everyone" && !m.roles.includes(r.id)).map(r => `<option value="${r.id}">${esc(r.name)}</option>`).join("")}</select>` : ""}</div>
+      ${okK && u.id !== "me" && s.ownerId !== u.id ? `<button class="btn danger" data-kick="${u.id}" style="padding:4px 12px">Expulsar</button>` : ""}</div>`; }).join("")}</div>`;
+    $("[data-q]", c).oninput = e => $$("[data-n]", c).forEach(r => r.style.display = r.dataset.n.includes(e.target.value.toLowerCase()) ? "" : "none");
+    $$("[data-rr]", c).forEach(b => b.onclick = () => { const [u, r] = b.dataset.rr.split("|"); const m = member(s, u); m.roles = m.roles.filter(x => x !== r); save(); drawSettings(); });
+    $$("[data-ar]", c).forEach(sel => sel.onchange = () => { if (sel.value) { member(s, sel.dataset.ar).roles.push(sel.value); save(); drawSettings(); } });
+    $$("[data-kick]", c).forEach(b => b.onclick = () => confirmBox("Expulsar a " + user(b.dataset.kick).name, "Podrá volver a unirse con una nueva invitación.", "Expulsar", () => { s.members = s.members.filter(m => m.userId !== b.dataset.kick); save(); render(); drawSettings(); toast("Miembro expulsado"); }));
+  },
+  invites(c, s) {
+    if (!s.invite) { s.invite = Math.random().toString(36).slice(2, 9); save(); }
+    c.innerHTML = `<h2>Invitaciones</h2><div class="mrow"><code>zpercord.gg/${s.invite}</code><span style="flex:1"></span><span style="color:var(--muted);font-size:13px">Creada por ${esc(me().name)} · usos ilimitados</span><button class="btn sec" data-new style="padding:4px 12px">Regenerar</button></div>${s.vanity && boostLevel(s) >= 3 ? `<div class="mrow"><code>zpercord.gg/${esc(s.vanity)}</code><span class="tag pro">URL PERSONALIZADA</span></div>` : ""}`;
+    $("[data-new]", c).onclick = () => { s.invite = Math.random().toString(36).slice(2, 9); save(); drawSettings(); };
+  },
+};
+
+function checkout(plan) {
+  modal(`<div class="mh"><h2>💎 Zpercord Pro ${plan === "year" ? "anual" : "mensual"}</h2><p>${plan === "year" ? "99,99 € al año" : "9,99 € al mes"} · Demo, sin cobro real</p></div><div class="mb">
+    <div class="radio sel"><span class="ri">💳</span><div><b>Método de pago de demostración</b><small>No se cobrará nada: es un simulador.</small></div></div>
+    <div class="trow"><div class="tt">Subtotal</div><b>${plan === "year" ? "99,99 €" : "9,99 €"}</b></div></div>
+    <div class="mf"><button class="btn ghost" data-close>Cancelar</button><button class="btn pro" data-ok>Activar Pro</button></div>`, o => {
+    $("[data-close]", o).onclick = () => o.remove();
+    $("[data-ok]", o).onclick = () => {
+      me().pro = true; me().anim = true; S.proPlan = plan; save(); o.remove(); render(); if (UI.settings) drawSettings();
+      confetti(); toast("¡Bienvenido a Zpercord Pro! 💎", "pro");
+    };
+  });
+}
+function boostServer(id) {
+  const total = (isPro() ? PRO.boosts : 0) + (S.extraBoosts || 0); const used = Object.values(S.myBoosts).reduce((a, b) => a + b, 0);
+  if (total - used <= 0) { if (!isPro()) return proUpsell("Pro incluye 2 mejoras de servidor para subir de nivel tus servidores."); return toast("No te quedan mejoras. Compra más en Ajustes → Mejoras.", "err"); }
+  const s = S.servers.find(x => x.id === id); const before = boostLevel(s);
+  s.boosts++; S.myBoosts[id] = (S.myBoosts[id] || 0) + 1;
+  const first = s.channels.find(c => c.type === "text"); if (first) (s.messages[first.id] ||= []).push(msg("zbot", `🚀 **${me().name}** acaba de mejorar el servidor!${boostLevel(s) > before ? ` **${s.name}** ha alcanzado el **Nivel ${boostLevel(s)}**! 🎉` : ""}`));
+  save(); render(); confetti(); toast(`Has mejorado ${s.name} 🚀`, "pro");
+}
+function giftPro(id) {
+  const u = user(id); u.pro = true; u.anim = true; u.themeA = u.themeA || "#1e3a8a"; u.themeB = u.themeB || "#7c3aed"; u.bannerColor = u.bannerColor || u.color;
+  if (!S.dmOrder.includes(id)) S.dmOrder.unshift(id);
+  (S.dms[id] ||= []).push(msg("me", "🎁 ¡Te he regalado **1 mes de Zpercord Pro**! 💎"));
+  save(); toast(`Regalaste Pro a ${u.name} 🎁`, "pro"); confetti();
+  setTimeout(() => { S.dms[id].push(msg(id, rand(["¡¡GRACIAS!! 😭💙", "¿En serio? ¡Eres lo mejor! 💎", "Wooow, mi avatar ahora brilla ✨"]))); save(); render(); }, 1800);
+  if (UI.settings) drawSettings(); else render();
+}
+function confetti() {
+  const cols = ["💎", "✨", "💙", "🚀", "⭐"];
+  for (let i = 0; i < 26; i++) { const e = document.createElement("div"); e.className = "burst"; e.textContent = rand(cols); e.style.left = innerWidth / 2 + "px"; e.style.top = innerHeight / 2 + "px"; e.style.setProperty("--dx", (Math.random() - .5) * 700 + "px"); e.style.setProperty("--dy", (Math.random() - .5) * 600 + "px"); document.body.appendChild(e); setTimeout(() => e.remove(), 1000); }
+}
+
+/* =========================================================
+   ACTIONS
+   ========================================================= */
+function openServer(id) {
+  const s = server(id); if (UI.viewAs && UI.viewAs.server !== id) UI.viewAs = null;
+  const last = s.lastChannel && s.channels.find(c => c.id === s.lastChannel && can(s, "VIEW", "me", c) && c.type !== "voice");
+  const ch = last || visibleChannels(s).find(c => c.type !== "voice");
+  S.cur = { server: id, channel: ch ? ch.id : null, dm: null }; UI.replyTo = null; UI.drawer = false; save(); render();
+}
+function openChannel(id) {
+  const s = server(), c = channel(s, id);
+  if (c.type === "voice") { if (!UI.voice || UI.voice.channel !== id) joinVoice(id); }
+  else s.lastChannel = id;
+  S.cur.channel = id; UI.replyTo = null; UI.editing = null; UI.drawer = false; save(); render();
+}
+function openDm(id) { if (!S.dmOrder.includes(id)) S.dmOrder.unshift(id); S.cur = { server: null, channel: null, dm: id }; UI.drawer = false; save(); render(); }
+function joinVoice(id) {
+  const s = server(), c = channel(s, id);
+  if (!can(s, "CONNECT", "me", c)) return toast("No tienes permiso para conectar", "err");
+  UI.voice = { server: s.id, channel: id }; UI.stream = null; UI.video = false; beep(660, .08); toast("Conectado a " + c.name);
+}
+function leaveVoice() { UI.voice = null; UI.stream = null; UI.video = false; beep(330, .08); render(); }
+
+function sendMessage(text, attachment) {
+  const s = server(), ch = channel(s);
+  const limit = isPro() ? PRO.msgLimit : PRO.freeMsgLimit;
+  if (text.length > limit) { if (!isPro()) proUpsell(`Tu mensaje tiene ${text.length} caracteres. Con Pro puedes enviar hasta 4000.`); else toast("Mensaje demasiado largo", "err"); return false; }
+  if (s && /@(everyone|here)/.test(text) && !can(s, "MENTION_ALL", "me", ch)) toast("No tienes permiso para mencionar a @everyone; no se notificará.", "err");
+  if (!isPro()) { const m = text.match(/:([a-z0-9_]+):/gi) || []; for (const t of m) { const e = findEmoji(t.slice(1, -1)); if (e && (!s || e.server.id !== s.id)) { proUpsell("Usa emojis de otros servidores en cualquier parte con Zpercord Pro."); return false; } } }
+  if (text.startsWith("/") && handleCommand(text)) return true;
+  const m = msg("me", text, Date.now(), UI.replyTo ? { replyTo: UI.replyTo } : {});
+  if (attachment) { m.attachment = attachment.meta; if (attachment.url) UI.blobs[m.id] = attachment.url; }
+  msgList().push(m); UI.replyTo = null; save(); render();
+  scheduleReply(text);
+  return true;
+}
+function handleCommand(text) {
+  const [cmd, ...rest] = text.slice(1).split(" "); const arg = rest.join(" ");
+  const push = (c) => { msgList().push(msg("me", text)); setTimeout(() => { msgList().push(msg("zbot", c)); save(); render(); }, 400); save(); render(); };
+  switch (cmd.toLowerCase()) {
+    case "ayuda": case "help": push("**Comandos de Zbot**\n`/dado` – tira un dado\n`/moneda` – cara o cruz\n`/8ball <pregunta>` – bola mágica\n`/abrazo @usuario` – manda un abrazo\n`/shrug` – ¯\\\\_(ツ)_/¯\n`/limpiar` – borra tus mensajes del canal\n\n**Formato:** `**negrita**`, `*cursiva*`, `__subrayado__`, `~~tachado~~`, `||spoiler||`, `` `código` ``"); return true;
+    case "dado": case "roll": push(`🎲 ${me().name} sacó un **${1 + Math.floor(Math.random() * 6)}**`); return true;
+    case "moneda": case "flip": push(`🪙 ¡**${rand(["Cara", "Cruz"])}**!`); return true;
+    case "8ball": push(`🎱 ${arg ? `"${arg}" → ` : ""}**${rand(["Sí, definitivamente", "Ni lo sueñes", "Pregunta más tarde", "Las señales dicen que sí", "Muy dudoso", "Sin duda"])}**`); return true;
+    case "abrazo": push(`🤗 **${me().name}** abraza a ${arg || "todo el mundo"}`); return true;
+    case "shrug": msgList().push(msg("me", (arg ? arg + " " : "") + "¯\\\\_(ツ)_/¯")); save(); render(); return true;
+    case "limpiar": { const l = msgList(); for (let i = l.length - 1; i >= 0; i--) if (l[i].authorId === "me") l.splice(i, 1); save(); render(); toast("Mensajes borrados"); return true; }
+  }
+  return false;
+}
+
+const REPLIES = {
+  hola: ["¡Hola! 👋", "¡Buenas! ¿Qué tal?", "Holaaa 💙"], gg: ["gg wp 🏆", "GG 🔥"],
+  juego: ["¿A qué jugamos? 🎮", "Yo me apunto a una partida"], pro: ["Pro mola mucho, el avatar animado es lo mejor 💎", "¡Las súper reacciones son geniales! 💥"],
+  "?": ["Buena pregunta 🤔", "Mmm, no estoy seguro", "Creo que sí"],
+  generic: ["jajaja 😂", "Totalmente", "¡Qué bueno!", "Interesante 👀", "+1", "No me lo esperaba", "😎", "Me encanta 💙", "¿En serio?", "Eso suena genial ✨"],
+};
+function scheduleReply(text) {
+  const ctx = { ...S.cur }; const s = server(ctx.server);
+  let pool;
+  if (ctx.dm) pool = [ctx.dm];
+  else { const ch = channel(s, ctx.channel); pool = s.members.map(m => m.userId).filter(id => id !== "me" && !user(id).bot && user(id).status !== "offline" && can(s, "VIEW", id, ch)); }
+  const mentioned = Object.values(S.users).find(u => u.id !== "me" && text.toLowerCase().includes("@" + u.name.toLowerCase()));
+  if (mentioned && pool.includes(mentioned.id)) pool = [mentioned.id];
+  if (!pool.length || (!ctx.dm && !mentioned && Math.random() < .3)) return;
+  const who = rand(pool); const t = text.toLowerCase();
+  let opts = REPLIES.generic;
+  for (const k of ["hola", "gg", "juego", "pro"]) if (t.includes(k)) opts = REPLIES[k];
+  if (t.endsWith("?")) opts = REPLIES["?"];
+  const k = keyOf(ctx);
+  setTimeout(() => { UI.typing[k] = who; if (keyOf(S.cur) === k) refreshTyping(); }, 600);
+  setTimeout(() => {
+    delete UI.typing[k];
+    const list = ctx.dm ? (S.dms[ctx.dm] ||= []) : (s.messages[ctx.channel] ||= []);
+    const reply = msg(who, rand(opts));
+    if (Math.random() < .3 && list.length) { const last = list[list.length - 1]; if (last.authorId === "me") (last.reactions[rand(["👍", "😂", "🔥", "💙"])] ||= []).push(who); }
+    list.push(reply); save();
+    if (keyOf(S.cur) === k) { const ta = $("#composer"); const val = ta ? ta.value : ""; render(); const t2 = $("#composer"); if (t2) t2.value = val; }
+    else { render(); ping(); }
+  }, 1800 + Math.random() * 1500);
+}
+function refreshTyping() { const t = $(".typing"); if (t) t.outerHTML = renderTyping(); }
+function ambient() {
+  const s = rand(S.servers); const chs = visibleChannels(s).filter(c => c.type === "text");
+  if (!chs.length) return;
+  const c = rand(chs); const pool = s.members.map(m => m.userId).filter(id => id !== "me" && user(id).status === "online" && !user(id).bot && can(s, "VIEW", id, c));
+  if (!pool.length) return;
+  const lines = ["¿Alguien conectado? 👀", "Acabo de ver algo increíble", "Buenos días a todos ☀️", "¿Qué tal vuestro día?", "Recomendadme música 🎧", "¿Partida en un rato? 🎮", "@" + me().name + " ¿estás por aquí?", "jajaja el meme de antes 😂"];
+  (s.messages[c.id] ||= []).push(msg(rand(pool), rand(lines))); save();
+  const ta = $("#composer"); const val = ta ? ta.value : ""; const focus = document.activeElement === ta;
+  if (!UI.settings && !$(".overlay") && !$(".pop") && !UI.editing) { render(); const t2 = $("#composer"); if (t2) { t2.value = val; if (focus) t2.focus(); } }
+  if (!(S.cur.server === s.id && S.cur.channel === c.id)) ping();
+}
+let actx;
+function beep(f = 880, d = .06) { if (!S.settings.sounds) return; try { actx ||= new (window.AudioContext || window.webkitAudioContext)(); const o = actx.createOscillator(), g = actx.createGain(); o.frequency.value = f; o.type = "sine"; g.gain.setValueAtTime(.06, actx.currentTime); g.gain.exponentialRampToValueAtTime(.0001, actx.currentTime + d * 3); o.connect(g).connect(actx.destination); o.start(); o.stop(actx.currentTime + d * 3); } catch (e) { } }
+const ping = () => { beep(880, .05); setTimeout(() => beep(1320, .05), 90); };
+
+function react(mid, e) {
+  const m = msgList().find(x => x.id === mid); if (!m) return;
+  const s = server(); if (s && !can(s, "REACT", "me", channel(s))) return toast("No tienes permiso para reaccionar", "err");
+  const arr = (m.reactions[e] ||= []); const i = arr.indexOf("me");
+  if (i >= 0) arr.splice(i, 1); else arr.push("me");
+  if (!arr.length) delete m.reactions[e];
+  save(); render();
+}
+function superBurst(x, y, e) { for (let i = 0; i < 14; i++) { const b = document.createElement("div"); b.className = "burst"; b.textContent = e; b.style.left = x + "px"; b.style.top = y + "px"; b.style.setProperty("--dx", (Math.random() - .5) * 260 + "px"); b.style.setProperty("--dy", (Math.random() - .5) * 260 + "px"); document.body.appendChild(b); setTimeout(() => b.remove(), 1000); } }
+
+function autoGrow(ta) { ta.style.height = "auto"; ta.style.height = Math.min(200, ta.scrollHeight) + "px"; const c = $("#counter"); if (!c) return; const lim = isPro() ? PRO.msgLimit : PRO.freeMsgLimit; const n = ta.value.length; c.textContent = n > lim - 300 ? `${n}/${lim}` : ""; c.className = "counter" + (n > lim ? " over" : ""); }
+
+/* ---------------- event delegation ---------------- */
+document.addEventListener("click", e => {
+  const t = e.target;
+  if (!t.closest(".pop") && !t.closest(".ctx") && !t.closest("[data-act=emojiPicker]") && !t.closest("[data-act=quickReact]") && !t.closest("[data-act=superReact]")) $$("body > .pop,.ctx").forEach(x => x.remove());
+  const sp = t.closest(".spoil"); if (sp) { sp.classList.add("shown"); return; }
+  const userEl = t.closest("[data-user]");
+  const a = t.closest("[data-act]");
+  if (userEl && (!a || (a.contains(userEl) && a.dataset.act !== "openDm")) && !t.closest(".settings") && !t.closest(".pop")) { e.preventDefault(); const r = userEl.getBoundingClientRect(); profilePop(userEl.dataset.user, r.right + 10, r.top); return; }
+  if (!a) return;
+  const act = a.dataset.act, id = a.dataset.id;
+  if (a.tagName === "A") e.preventDefault();
+  switch (act) {
+    case "home": S.cur = { server: null, channel: null, dm: S.cur.dm && !S.cur.server ? S.cur.dm : null }; UI.viewAs = null; save(); render(); break;
+    case "friends": S.cur.dm = null; render(); break;
+    case "homeTab": UI.homeTab = id; render(); break;
+    case "server": openServer(id); break;
+    case "channel": if (t.closest("[data-act=editChannel]")) break; openChannel(id); break;
+    case "editChannel": e.stopPropagation(); channelModal(null, id); break;
+    case "newChannel": e.stopPropagation(); channelModal(a.dataset.cat || null); break;
+    case "toggleCat": { if (t.closest(".plus")) break; const c = server().categories.find(c => c.id === id); c.collapsed = !c.collapsed; save(); render(); break; }
+    case "newServer": newServerModal(); break;
+    case "discover": discoverModal(); break;
+    case "serverMenu": { const s = server(), r = a.getBoundingClientRect(); const items = [{ label: "🚀 Mejora del servidor", fn: () => openServerSettings("boost") }, { label: "👋 Invitar gente", fn: inviteModal }];
+      if (can(s, "MANAGE_SERVER") || can(s, "MANAGE_ROLES") || can(s, "KICK")) items.push({ label: "⚙️ Ajustes del servidor", fn: () => openServerSettings("overview") });
+      items.push({ label: "🛡️ Roles", fn: () => openServerSettings("roles") });
+      if (can(s, "MANAGE_CHANNELS")) items.push({ label: "＋ Crear canal", fn: () => channelModal() }, { label: "📁 Crear categoría", fn: () => categoryModal() });
+      items.push({ label: "😀 Emojis", fn: () => openServerSettings("emojis") }, "-");
+      items.push(s.ownerId === "me" ? { label: "🗑️ Eliminar servidor", red: 1, fn: () => { openServerSettings("overview"); $("[data-tab=delete]")?.click(); } } : { label: "🚪 Abandonar servidor", red: 1, fn: () => { openServerSettings("overview"); $("[data-tab=leave]")?.click(); } });
+      ctxMenu(r.left + 8, r.bottom + 4, items); break; }
+    case "openDm": if (t.closest("[data-act=profile]")) break; openDm(id); break;
+    case "newDm": { const r = a.getBoundingClientRect(); ctxMenu(r.left, r.bottom, S.friends.map(fid => ({ label: esc(user(fid).name), fn: () => openDm(fid) }))); break; }
+    case "acceptFriend": { const p = S.pending.find(x => x.id === id); S.pending = S.pending.filter(x => x.id !== id); S.users[id] = { id, name: p.name, username: p.name.toLowerCase(), color: rand(AVATAR_BG), status: "online", about: "", custom: "" }; S.friends.push(id); S.dms[id] = [msg(id, "¡Gracias por aceptar! 😄")]; S.dmOrder.unshift(id); save(); render(); toast("Ahora eres amigo de " + p.name); break; }
+    case "rejectFriend": S.pending = S.pending.filter(x => x.id !== id); save(); render(); break;
+    case "profile": { e.stopPropagation(); const r = a.getBoundingClientRect(); profilePop(id, r.left - 310, r.top); break; }
+    case "openSettings": openSettings(a.dataset.tab || "profile"); break;
+    case "shop": modal(`<div class="mh"><h2>🛍️ Tienda</h2><p>Decoraciones de avatar y efectos de perfil.</p></div><div class="mb"><div class="perks" style="margin:0">${[["🪐", "Anillo orbital", "2,99 €"], ["🌊", "Efecto olas", "3,99 €"], ["⚡", "Marco eléctrico", "2,49 €"], ["🌌", "Fondo galaxia", "4,99 €"]].map(x => `<div class="perk"><span class="pi">${x[0]}</span><div><b>${x[1]}</b><span>${isPro() ? `<s>${x[2]}</s> −30% con Pro` : x[2]}</span></div></div>`).join("")}</div><p style="color:var(--dim);font-size:12px">Próximamente. Los miembros Pro tendrán descuento.</p></div>`); break;
+    case "statusMenu": { const r = a.getBoundingClientRect(); ctxMenu(r.left, r.top - 230, [...["online", "idle", "dnd", "invisible"].map(st => ({ label: `<span class="dot ${st === "invisible" ? "offline" : st}" style="display:inline-block;width:10px;height:10px;border-radius:50%;position:static;border:0"></span> ${statusName(st)}`, fn: () => { me().status = st; save(); render(); } })), "-", { label: "💬 Establecer estado personalizado", fn: customStatusModal }, { label: "👤 Ver perfil", fn: () => profilePop("me", r.left, r.top - 420) }]); break; }
+    case "mute": UI.muted = !UI.muted; beep(UI.muted ? 300 : 600); render(); break;
+    case "deafen": UI.deaf = !UI.deaf; UI.muted = UI.deaf || UI.muted; render(); break;
+    case "joinVoice": joinVoice(id); render(); break;
+    case "leaveVoice": leaveVoice(); break;
+    case "toggleVideo": UI.video = !UI.video; render(); break;
+    case "toggleStream": if (UI.stream) { UI.stream = null; render(); break; } { const s = server(UI.voice.server); if (!can(s, "STREAM", "me", channel(s, UI.voice.channel))) { toast("No tienes permiso para transmitir", "err"); break; }
+      modal(`<div class="mh"><h2>🖥️ Compartir pantalla</h2><p>Elige la calidad de la transmisión.</p></div><div class="mb">${[["720p", "30 FPS", false], ["1080p", "60 FPS", true], ["1440p", "60 FPS", true], ["4K", "60 FPS", true]].map(q => `<div class="radio" data-q="${q[0]} ${q[1]}" data-pro="${q[2] ? 1 : ""}"><span class="ri">📺</span><div style="flex:1"><b>${q[0]}</b><small>${q[1]}</small></div>${q[2] ? '<span class="tag pro">PRO</span>' : ""}</div>`).join("")}</div>`, o => {
+        $$("[data-q]", o).forEach(b => b.onclick = () => { if (b.dataset.pro && !isPro()) { proUpsell("Transmite en 1080p, 1440p o 4K a 60 FPS con Zpercord Pro."); return; } UI.stream = b.dataset.q; o.remove(); render(); toast("Transmitiendo en " + UI.stream); });
+      }); break; }
+    case "call": { const id2 = S.cur.dm; msgList().push(msg("me", "📞 Ha iniciado una llamada.")); save(); render(); setTimeout(() => { msgList().push(msg(id2, "Ahora no puedo, ¿luego? 🙏")); save(); render(); }, 2000); break; }
+    case "toggleMembers": UI.memberList = !UI.memberList; render(); break;
+    case "closeDrawer": UI.drawer = false; render(); break;
+    case "openDrawer": UI.drawer = true; render(); break;
+    case "exitViewAs": UI.viewAs = null; render(); break;
+    case "pins": { const pins = msgList().filter(m => m.pinned); modal(`<div class="mh"><h2>📌 Mensajes fijados</h2></div><div class="mb" style="background:var(--bg2)">${pins.length ? renderMessages(pins, server()) : '<p style="color:var(--muted);text-align:center">Este canal no tiene mensajes fijados todavía.</p>'}</div>`, null, { wide: 1 }); break; }
+    case "search": modal(`<div class="mh"><h2>🔍 Buscar</h2></div><div class="mb"><input placeholder="Buscar mensajes en este canal" data-q><div data-res style="margin-top:10px;max-height:50vh;overflow:auto"></div></div>`, o => { const s = server(); $("[data-q]", o).oninput = e => { const q = e.target.value.toLowerCase(); $("[data-res]", o).innerHTML = q ? renderMessages(msgList().filter(m => m.content.toLowerCase().includes(q)), s) || '<p style="color:var(--muted)">Sin resultados</p>' : ""; }; }, { wide: 1 }); break;
+    case "attach": { const s = server(); if (s && !can(s, "ATTACH", "me", channel(s))) { toast("No tienes permiso para adjuntar archivos", "err"); break; } $("#file").click(); break; }
+    case "gift": if (S.cur.dm) { if (user(S.cur.dm).pro) toast(user(S.cur.dm).name + " ya tiene Pro"); else giftPro(S.cur.dm); } else openSettings("gift"); break;
+    case "emojiPicker": emojiPicker(a, em => { const ta = $("#composer"); ta.value += em; ta.focus(); autoGrow(ta); }); break;
+    case "quickReact": emojiPicker(a, em => react(id, em.startsWith(":") ? (findEmoji(em.slice(1, -1)) || {}).char || em : em)); break;
+    case "superReact": if (!isPro()) { proUpsell("Las súper reacciones animadas son exclusivas de Pro."); break; } emojiPicker(a, (em, b) => { const ch = em.startsWith(":") ? (findEmoji(em.slice(1, -1)) || {}).char || em : em; const r = a.getBoundingClientRect(); superBurst(r.left, r.top, ch); react(id, "super:" + ch); }, true); break;
+    case "react": { const r = a.getBoundingClientRect(); if (a.dataset.e.startsWith("super:")) superBurst(r.left + 10, r.top, a.dataset.e.slice(6)); react(id, a.dataset.e); break; }
+    case "reply": UI.replyTo = id; render(); break;
+    case "cancelReply": UI.replyTo = null; render(); break;
+    case "edit": UI.editing = id; render(); { const eb = $(".editbox"); if (eb) { eb.focus(); eb.selectionStart = eb.value.length; } } break;
+    case "cancelEdit": UI.editing = null; render(); break;
+    case "saveEdit": saveEdit(id); break;
+    case "pin": { const m = msgList().find(x => x.id === id); m.pinned = !m.pinned; save(); render(); toast(m.pinned ? "Mensaje fijado 📌" : "Mensaje desfijado"); break; }
+    case "delMsg": { const m = msgList().find(x => x.id === id); confirmBox("Eliminar mensaje", "¿Seguro que quieres eliminar este mensaje?<br><br><i>" + esc(m.content.slice(0, 120)) + "</i>", "Eliminar", () => { const l = msgList(); l.splice(l.indexOf(m), 1); save(); render(); }); break; }
+  }
+});
+function saveEdit(id) { const eb = $(".editbox"); const m = msgList().find(x => x.id === id); if (eb && m) { const v = eb.value.trim(); if (!v) { const l = msgList(); l.splice(l.indexOf(m), 1); } else if (v !== m.content) { m.content = v; m.edited = true; } } UI.editing = null; save(); render(); }
+function customStatusModal() {
+  modal(`<div class="mh"><h2>Establecer estado personalizado</h2></div><form class="mb" data-f><label class="l">¿Qué está pasando, ${esc(me().name)}?</label><input name="s" maxlength="60" value="${esc(me().custom || "")}" placeholder="🎮 Jugando..."></form><div class="mf"><button class="btn ghost" data-clr>Borrar</button><button class="btn" data-ok>Guardar</button></div>`, o => {
+    const go = () => { me().custom = $("[name=s]", o).value.trim(); save(); o.remove(); render(); };
+    $("[data-ok]", o).onclick = go; $("[data-f]", o).onsubmit = e => { e.preventDefault(); go(); }; $("[data-clr]", o).onclick = () => { me().custom = ""; save(); o.remove(); render(); };
+  });
+}
+
+document.addEventListener("keydown", e => {
+  if (e.target.id === "composer") {
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); const v = e.target.value.trim(); if (v && sendMessage(v)) e.target.value = ""; return; }
+    if (e.key === "ArrowUp" && !e.target.value) { const l = msgList(); const mine = [...l].reverse().find(m => m.authorId === "me"); if (mine) { e.preventDefault(); UI.editing = mine.id; render(); const eb = $(".editbox"); eb && eb.focus(); } }
+    if (e.key === "Escape" && UI.replyTo) { UI.replyTo = null; render(); }
+  }
+  if (e.target.classList && e.target.classList.contains("editbox")) {
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); saveEdit(e.target.dataset.id); }
+    if (e.key === "Escape") { UI.editing = null; render(); }
+    return;
+  }
+  if (e.key === "Escape") { if ($(".overlay")) $$(".overlay").pop().remove(); else if ($("body > .pop,.ctx")) closeAll(); else if (UI.settings) closeSettings(); }
+});
+document.addEventListener("input", e => { if (e.target.id === "composer") autoGrow(e.target); if (e.target.dataset.act === "dmSearch") { const q = e.target.value.toLowerCase(); $$(".side [data-act=openDm]").forEach(el => el.style.display = el.textContent.toLowerCase().includes(q) ? "" : "none"); } });
+document.addEventListener("change", e => {
+  if (e.target.id !== "file") return;
+  const f = e.target.files[0]; if (!f) return;
+  const lim = isPro() ? PRO.upload : PRO.freeUpload;
+  if (f.size > lim) { if (!isPro()) proUpsell(`El archivo pesa ${size(f.size)}. El límite gratuito es 10 MB; con Pro, 500 MB.`); else toast("El archivo supera 500 MB", "err"); return; }
+  const ta = $("#composer"); const text = ta ? ta.value.trim() : "";
+  const image = f.type.startsWith("image/");
+  sendMessage(text, { meta: { name: f.name, size: f.size, image }, url: image ? URL.createObjectURL(f) : null });
+});
+document.addEventListener("submit", e => {
+  const f = e.target; if (f.dataset.form !== "addFriend") return; e.preventDefault();
+  const n = f.n.value.trim(); if (!n) return;
+  const id = "u_" + n.toLowerCase().replace(/\W/g, "");
+  if (S.friends.includes(id)) return toast("Ya sois amigos");
+  toast("Solicitud enviada a " + n);
+  setTimeout(() => { S.users[id] = { id, name: n, username: n.toLowerCase(), color: rand(AVATAR_BG), status: "online", about: "", custom: "" }; S.friends.push(id); S.dms[id] = [msg(id, "¡Hola! Acepté tu solicitud 😊")]; S.dmOrder.unshift(id); save(); render(); toast(n + " aceptó tu solicitud 🎉"); ping(); }, 2500);
+  f.reset();
+});
+document.addEventListener("contextmenu", e => {
+  const el = e.target.closest("[data-ctx]"); if (!el) return;
+  e.preventDefault(); const x = e.clientX, y = e.clientY;
+  const type = el.dataset.ctx, s = server();
+  if (type === "server") { const sid = el.dataset.id; ctxMenu(x, y, [{ label: "✔ Marcar como leído", fn: () => { const sv = server(sid); sv.channels.forEach(c => S.read[sid + ":" + c.id] = Date.now()); save(); render(); } }, { label: "👋 Invitar gente", fn: () => { openServer(sid); inviteModal(); } }, { label: "🚀 Mejorar servidor", fn: () => boostServer(sid) }, { label: "⚙️ Ajustes", fn: () => { openServer(sid); openServerSettings(); } }]); }
+  if (type === "chan") { const cid = el.dataset.id; const items = [{ label: "✔ Marcar como leído", fn: () => { S.read[s.id + ":" + cid] = Date.now(); save(); render(); } }, { label: "🔗 Copiar enlace", fn: () => { navigator.clipboard?.writeText("https://zpercord.gg/channels/" + cid).catch(() => { }); toast("Enlace copiado"); } }]; if (can(s, "MANAGE_CHANNELS")) items.push("-", { label: "⚙️ Editar canal", fn: () => channelModal(null, cid) }, { label: "🗑️ Eliminar canal", red: 1, fn: () => { channelModal(null, cid); $("[data-del]")?.click(); } }); ctxMenu(x, y, items); }
+  if (type === "cat" && can(s, "MANAGE_CHANNELS")) { const cid = el.dataset.id; ctxMenu(x, y, [{ label: "＋ Crear canal", fn: () => channelModal(cid) }, { label: "✏️ Editar categoría", fn: () => categoryModal(cid) }]); }
+  if (type === "msg") { const mid = el.dataset.id; const m = msgList().find(q => q.id === mid); if (!m) return; const items = [{ label: "😀 Añadir reacción", fn: () => emojiPicker(el, em => react(mid, em)) }, { label: "↩️ Responder", fn: () => { UI.replyTo = mid; render(); } }, { label: "📋 Copiar texto", fn: () => navigator.clipboard?.writeText(m.content).catch(() => { }) }, { label: m.pinned ? "📌 Desfijar" : "📌 Fijar", fn: () => { m.pinned = !m.pinned; save(); render(); } }]; if (m.authorId === "me") items.push({ label: "✏️ Editar", fn: () => { UI.editing = mid; render(); } }); if (m.authorId === "me" || (s && can(s, "MANAGE_CHANNELS"))) items.push("-", { label: "🗑️ Eliminar mensaje", red: 1, fn: () => { const l = msgList(); l.splice(l.indexOf(m), 1); save(); render(); } }); ctxMenu(x, y, items); }
+  if (type === "member" && s) { const uid2 = el.dataset.user; const u = user(uid2); const items = [{ label: "👤 Perfil", fn: () => profilePop(uid2, x - 300, y) }]; if (uid2 !== "me") items.push({ label: "💬 Mensaje", fn: () => openDm(uid2) }); if (can(s, "MANAGE_ROLES")) items.push({ label: "🛡️ Gestionar roles", fn: () => openServerSettings("members") }); if (can(s, "KICK") && uid2 !== "me" && s.ownerId !== uid2) items.push("-", { label: "🚪 Expulsar a " + esc(u.name), red: 1, fn: () => confirmBox("Expulsar a " + u.name, "¿Seguro?", "Expulsar", () => { s.members = s.members.filter(m => m.userId !== uid2); save(); render(); }) }); ctxMenu(x, y, items); }
+});
+/* tooltips for server rail */
+document.addEventListener("mouseover", e => {
+  const el = e.target.closest("[data-tip]"); $$(".tip").forEach(t => t.remove()); if (!el || matchMedia("(hover:none)").matches) return;
+  const r = el.getBoundingClientRect(); const t = document.createElement("div"); t.className = "tip"; t.textContent = el.dataset.tip; t.style.left = r.right + 14 + "px"; t.style.top = r.top + r.height / 2 - 14 + "px"; document.body.appendChild(t);
+});
+
+/* voice "speaking" simulation */
+setInterval(() => {
+  if (!UI.voice) return; const s = server(UI.voice.server); const c = s && channel(s, UI.voice.channel); if (!c) return;
+  const ppl = voiceUsers(s, c); const prev = JSON.stringify(UI.speaking); UI.speaking = {};
+  ppl.forEach(id => { if (id === "me" ? !UI.muted && Math.random() < .3 : Math.random() < .4) UI.speaking[id] = 1; });
+  if (JSON.stringify(UI.speaking) !== prev) { $$(".vuser,.tile").forEach(() => { }); const side = $(".clist"); if (side && !UI.settings) { const sc = side.scrollTop; const s2 = server(); if (s2) { side.outerHTML = renderServerSide(s2).replace(/^[\s\S]*?<div class="clist">/, '<div class="clist">'); const n = $(".clist"); if (n) n.scrollTop = sc; } }
+    const st = $(".stage"); const cur = channel(); if (st && cur && cur.type === "voice") { $$(".tile", st).forEach(t => { const lbl = t.querySelector(".lbl"); if (!lbl) return; const u = ppl.find(id => lbl.textContent.startsWith(user(id).name)); t.classList.toggle("speaking", !!(u && UI.speaking[u])); }); } }
+}, 900);
+setInterval(ambient, 45000);
+window.addEventListener("resize", () => { if (innerWidth > 680 && UI.drawer) { UI.drawer = false; render(); } });
+
+render();
+</script>
+</body>
+</html>
