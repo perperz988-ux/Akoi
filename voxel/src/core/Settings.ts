@@ -28,6 +28,7 @@ export interface Settings {
   touchSize: number;
   touchOpacity: number;
   layout: Record<string, ButtonLayout>;
+  layoutVersion: number;
   tapToPlace: boolean;
   holdToBreak: boolean;
   aimMode: 'crosshair' | 'touch';
@@ -48,17 +49,19 @@ export const PRESETS: Record<Preset, Partial<Settings>> = {
   ULTRA: { renderDistance: 12, lodDistance: 7, shadows: true, shadowSize: 2048, fancyLeaves: true, clouds: true, particles: 1, resolution: 1.25, antialias: true },
 };
 
+/** Bump when default button positions change so old saved layouts are reset. */
+const LAYOUT_VERSION = 3;
 export const DEFAULT_LAYOUT: Record<string, ButtonLayout> = {
   jump: { x: 0.92, y: 0.4, s: 1.05 },
   sneak: { x: 0.92, y: 0.64, s: 1.05 },
-  break: { x: 0.79, y: 0.84, s: 1 },
-  place: { x: 0.79, y: 0.63, s: 1 },
+  break: { x: 0.8, y: 0.7, s: 1.05 },
+  place: { x: 0.8, y: 0.5, s: 1.05 },
   interact: { x: 0.68, y: 0.84, s: 0.9 },
-  sprint: { x: 0.12, y: 0.4, s: 0.8 },
+  sprint: { x: 0.12, y: 0.3, s: 0.9 },
   fly: { x: 0.92, y: 0.18, s: 0.8 },
   drop: { x: 0.68, y: 0.66, s: 0.7 },
   view: { x: 0.79, y: 0.44, s: 0.7 },
-  action: { x: 0.81, y: 0.52, s: 1.05 },
+  action: { x: 0.68, y: 0.62, s: 1 },
   joy: { x: 0.15, y: 0.66, s: 1 },
 };
 
@@ -82,7 +85,7 @@ export function defaults(): Settings {
     ...PRESETS[preset],
     fov: 75, brightness: 0.35, viewBobbing: true, showFps: false, performanceMode: true, targetFps: 60,
     sensitivity: 1, invertY: false, padSensitivity: 1, padDeadzone: 0.15,
-    touchSize: 1, touchOpacity: 0.65, layout: JSON.parse(JSON.stringify(DEFAULT_LAYOUT)),
+    touchSize: 1, touchOpacity: 0.65, layout: JSON.parse(JSON.stringify(DEFAULT_LAYOUT)), layoutVersion: LAYOUT_VERSION,
     tapToPlace: true, holdToBreak: true, aimMode: 'crosshair', controlScheme: 'bedrock', autoJump: true, sneakToggle: true, leftHanded: false, haptics: true,
     masterVolume: 0.8, sfxVolume: 0.9, musicVolume: 0.5,
   } as Settings;
@@ -97,7 +100,8 @@ export function loadSettings(): Settings {
       const s = JSON.parse(raw);
       const out = { ...d, ...s };
       // layouts saved before the Bedrock-style controls get the new default positions
-      out.layout = s.layout && s.layout.action ? { ...JSON.parse(JSON.stringify(DEFAULT_LAYOUT)), ...s.layout } : JSON.parse(JSON.stringify(DEFAULT_LAYOUT));
+      out.layout = s.layout && s.layoutVersion === LAYOUT_VERSION ? { ...JSON.parse(JSON.stringify(DEFAULT_LAYOUT)), ...s.layout } : JSON.parse(JSON.stringify(DEFAULT_LAYOUT));
+      out.layoutVersion = LAYOUT_VERSION;
       if (out.controlScheme !== 'joystick') out.controlScheme = 'bedrock';
       return out;
     }

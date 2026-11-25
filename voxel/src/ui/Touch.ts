@@ -10,8 +10,8 @@ const BUTTONS: BtnDef[] = [
   { id: 'interact', icon: '', label: 'USE' }, { id: 'action', icon: ICON.action }, { id: 'sprint', icon: ICON.sprint }, { id: 'fly', icon: ICON.wing }, { id: 'drop', icon: ICON.drop }, { id: 'view', icon: ICON.eye },
 ];
 
-/** Buttons hidden in the Bedrock-style scheme (tap screen / action = use, hold = break, hotbar hold = drop). */
-const BEDROCK_HIDE = new Set(['break', 'place', 'sprint', 'interact', 'drop', 'view', 'fly']);
+/** Buttons hidden in the Bedrock-style scheme: it shows jump, sneak, sprint, break and place (tap screen = use, hold = break, hotbar hold = drop). */
+const BEDROCK_HIDE = new Set(['action', 'interact', 'drop', 'view', 'fly']);
 
 export class Touch {
   layer: HTMLDivElement;
@@ -108,7 +108,6 @@ export class Touch {
     this.layer.classList.toggle('bedrock', br);
     document.getElementById('hud')?.classList.toggle('bedrock', br);
     this.joy.classList.toggle('sq', br);
-    this.btns.get('action')!.classList.toggle('hidden', !br && !this.editing);
     if (br && !this.editing) for (const id of BEDROCK_HIDE) this.btns.get(id)!.classList.add('hidden');
     if (br) {
       const jb = this.joyBase();
