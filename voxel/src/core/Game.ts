@@ -24,6 +24,7 @@ export type GameState = 'menu' | 'loading' | 'play' | 'pause' | 'inventory' | 'd
 export interface Rules { daylightCycle: boolean; mobSpawning: boolean; keepInventory: boolean; difficulty: number; weatherCycle: boolean }
 export interface Target { x: number; y: number; z: number; nx: number; ny: number; nz: number; id: number; t: number }
 
+const DREAM_ZONES = ['Mistmeadow', 'Bloomwood', 'Crystal Spires'];
 const TGLASS = new Set(Object.values(COLOR_BLOCKS.tglass));
 export const DAY_LENGTH = 960; // seconds per full day/night cycle
 
@@ -257,7 +258,7 @@ export class Game {
     this.dim = dim;
     st.dim = dim;
     this.setState('loading');
-    this.ui.setLoading(0, dim === 1 ? 'Rising to Celestia…' : dim === 2 ? 'Descending into the Ashen Wastes…' : 'Returning home…');
+    this.ui.setLoading(0, dim === 1 ? 'Rising to Celestia…' : dim === 2 ? 'Descending into the Ashen Wastes…' : dim === 3 ? 'Drifting into Dreamhollow…' : 'Returning home…');
     await this.makeWorld(dim);
     if (dim === 0 && st.owPos) { p.setPos(st.owPos.x, st.owPos.y, st.owPos.z); this.loadingTarget = { x: p.x, z: p.z, fresh: false, arrive: false }; }
     else { const x = Math.floor(p.x) + 0.5, z = Math.floor(p.z) + 0.5; p.setPos(x, 90, z); this.loadingTarget = { x, z, fresh: false, arrive: true }; }
@@ -280,19 +281,19 @@ export class Game {
       spot = [x, y + 1, z];
     }
     if (!spot) {
-      const y = 70, mat = this.dim === 1 ? B.SKYSTONE : B.BASALT;
+      const y = 70, mat = this.dim === 1 ? B.SKYSTONE : this.dim === 3 ? BX.dreamstone : B.BASALT;
       for (let dx = -2; dx <= 2; dx++) for (let dz = -2; dz <= 2; dz++) { w.setBlock(bx + dx, y - 1, bz + dz, mat); for (let dy = 0; dy < 3; dy++) w.setBlock(bx + dx, y + dy, bz + dz, B.AIR); }
       spot = [bx, y, bz];
     }
     p.setPos(spot[0] + 0.5, spot[1], spot[2] + 0.5);
-    const rift = this.dim === 1 ? B.SKY_RIFT : B.ASH_RIFT;
+    const rift = this.dim === 1 ? B.SKY_RIFT : this.dim === 3 ? BX.dream_rift : B.ASH_RIFT;
     let placed = false;
     for (const [dx, dz] of [[2, 0], [-2, 0], [0, 2], [0, -2], [1, 1]]) {
       const x = spot[0] + dx, z = spot[2] + dz, y = spot[1];
       if (this.replaceable(w.getBlock(x, y, z)) && L_SOLID[w.getBlock(x, y - 1, z)]) { w.setBlock(x, y, z, rift); placed = true; break; }
     }
     if (!placed) { w.setBlock(spot[0] + 2, spot[1] - 1, spot[2], B.SKYSTONE); w.setBlock(spot[0] + 2, spot[1], spot[2], rift); }
-    this.ui.toast(this.dim === 1 ? 'Celestia — use the rift to return home' : 'Ashen Wastes — use the rift to return home');
+    this.ui.toast(this.dim === 1 ? 'Celestia — use the rift to return home' : this.dim === 3 ? 'Dreamhollow — use the rift to return home' : 'Ashen Wastes — use the rift to return home');
   }
 
   private finishLoading() {
@@ -564,13 +565,13 @@ export class Game {
     const camBlock = w.getBlock(Math.floor(cam.position.x), Math.floor(cam.position.y), Math.floor(cam.position.z));
     const underwater = camBlock === B.WATER;
     const biome = this.dim ? -1 : w.gen.column(Math.floor(p.x), Math.floor(p.z)).biome;
-    this.biome = this.dim === 1 ? 'Celestia' : this.dim === 2 ? 'Ashen Wastes' : BIOME_NAMES[biome];
+    this.biome = this.dim === 1 ? 'Celestia' : this.dim === 2 ? 'Ashen Wastes' : this.dim === 3 ? DREAM_ZONES[w.gen.dreamZone(Math.floor(p.x), Math.floor(p.z))] : BIOME_NAMES[biome];
     const snowy = biome === BIOME.TUNDRA || (biome === BIOME.MOUNTAINS && p.y > SEA + 45);
     const desert = biome === BIOME.DESERT;
     const rain = desert || this.dim ? 0 : this.rain;
     this.sky.dim = this.dim;
     const ug = this.undergroundFactor();
-    this.sky.update(dt, (this.time / DAY_LENGTH) % 1, rain, cam, Math.max(48, w.renderRadius * 16 - 8), underwater, ug);
+    this.sky.update(dt, this.dim === 3 ? 0.48 : (this.time / DAY_LENGTH) % 1, rain, cam, Math.max(48, w.renderRadius * 16 - 8), underwater, ug);
     if (this.state !== 'pause') this.particles.update(dt, cam.position, rain * (1 - ug), snowy, (x, z) => w.surfaceY(Math.floor(x), Math.floor(z)));
     (this as any)._underwater = underwater;
     (this as any)._inMagma = camBlock === B.MAGMA;
@@ -749,6 +750,7 @@ export class Game {
       case B.SILVER_LEAVES: return r < 0.12 ? one(I.stick) : [];
       case B.GLOW_VINE: return one(B.GLOW_VINE);
       case BX.melon: return one(I.melon_slice, 3 + Math.floor(r * 4));
+      case BX.lumenite_ore: return this.canHarvest(id, held) ? one(I.lumenite, 1 + (r < 0.35 ? 1 : 0)) : [];
       case BX.frond_fern: return r < 0.5 ? one(I.fiber) : [];
     }
     if (TGLASS.has(id)) return [];
@@ -861,6 +863,7 @@ export class Game {
     if (this.targetMob) return 'Attack';
     if (t) {
       const w = this.world!;
+      if (t.id === BX.dream_rift) return 'Travel';
       switch (t.id) {
         case B.CRATE: return 'Open';
         case B.WORKBENCH: return 'Craft';
@@ -902,6 +905,7 @@ export class Game {
     if (this.targetMob && !(held && item(held.id).food)) { if (this.attackCd <= 0) this.attack(); return; }
     if (t && (!p.sneaking || interactOnly)) {
       const meta = w.getMeta(t.x, t.y, t.z);
+      if (t.id === BX.dream_rift) { this.audio.thunder(); this.travel(this.dim !== 0 ? 0 : 3); return; }
       switch (t.id) {
         case B.CRATE: { const inv = w.getCrate(t.x, t.y, t.z); if (inv) { this.audio.block('wood', 'place'); this.ui.openCrate(inv, t.x, t.y, t.z); } return; }
         case B.WORKBENCH: this.ui.openInventory('bench'); return;

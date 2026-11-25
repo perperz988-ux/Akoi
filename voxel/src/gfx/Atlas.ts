@@ -464,6 +464,17 @@ const EX: Record<string, (p: P) => void> = {
   capshroom_red: (p) => shroom(p, [210, 40, 36], true),
   capshroom_brown: (p) => shroom(p, [150, 110, 76], false),
 };
+// Dreamhollow
+EX.dream_turf_top = (p) => { p.noise([92, 196, 186], 18, 12); for (let k = 0; k < 22; k++) p.set(Math.floor(p.r() * 16), Math.floor(p.r() * 16), [200, 255, 240]); for (let k = 0; k < 8; k++) p.set(Math.floor(p.r() * 16), Math.floor(p.r() * 16), [214, 150, 255]); };
+EX.dream_turf_side = (p) => { EX.dreamstone(p); for (let x = 0; x < 16; x++) { const h = 3 + Math.floor(p.r() * 3); for (let y = 0; y < h; y++) p.set(x, y, p.jitter([92, 196, 186], 14)); } };
+EX.dreamstone = (p) => { stoneBase(p, [112, 96, 150], [92, 78, 128]); specks(p, [170, 150, 220], 8); };
+EX.bloomcap_stem = (p) => { p.noise([230, 220, 236], 8); for (let x = 1; x < 16; x += 4) for (let y = 0; y < 16; y++) if (p.r() < 0.7) p.set(x, y, [204, 192, 214]); };
+EX.bloomcap_stem_top = (p) => rings(p, [214, 204, 222], [244, 236, 248], [226, 216, 236]);
+EX.bloomcap_cap = (p) => { for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) p.set(x, y, p.jitter(mix([200, 90, 220], [120, 60, 190], y / 15), 12)); for (let k = 0; k < 7; k++) { const x = Math.floor(p.r() * 15), y = Math.floor(p.r() * 12); p.set(x, y, [255, 230, 255]); p.set(x + 1, y, [250, 200, 255]); } };
+EX.bloomcap_cap_top = (p) => { p.noise([196, 88, 216], 14); for (let k = 0; k < 9; k++) { const x = Math.floor(p.r() * 15), y = Math.floor(p.r() * 15); p.rect(x, y, 2, 2, [255, 236, 255]); } };
+EX.bloomcap_cap_under = (p) => { p.noise([110, 230, 220], 10); for (let i = 0; i < 16; i += 2) for (let j = 0; j < 16; j++) p.shade(i, j, 0.85); };
+EX.lumenite_ore = (p) => ore(p, () => EX.dreamstone(p), [120, 255, 230], [240, 255, 250], 6);
+EX.dream_rift = (p) => { for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) { const a = Math.atan2(y - 7.5, x - 7.5), d = Math.hypot(x - 7.5, y - 7.5); const v = Math.sin(a * 4 + d * 1.1); p.set(x, y, d > 7 ? [70, 50, 110] : mix([120, 230, 220], [220, 140, 255], (v + 1) / 2)); } };
 for (const [k, base, dark] of [['ash', [214, 186, 140], [150, 136, 118]], ['pine', [196, 150, 100], [104, 66, 48]], ['palm', [208, 182, 130], [170, 140, 96]], ['charred', [120, 60, 40], [44, 38, 38]], ['silver', [236, 230, 214], [226, 226, 232]]] as [string, C, C][]) {
   EX[`stripped_${k}`] = (p) => { p.noise(base, 10); for (let x = 0; x < 16; x += 3) for (let y = 0; y < 16; y++) if (p.r() < 0.6) p.set(x, y, dk(base, 0.86)); };
   EX[`stripped_${k}_top`] = (p) => { rings(p, dark, base, dk(base, 0.88)); for (let i = 0; i < 16; i++) { p.set(i, 0, dark); p.set(0, i, dark); p.set(i, 15, dark); p.set(15, i, dark); } };

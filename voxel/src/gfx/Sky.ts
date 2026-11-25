@@ -139,6 +139,10 @@ export class Sky {
     if (this.dim === 2) {
       top.lerp(new THREE.Color().setRGB(0.24, 0.05, 0.04, THREE.SRGBColorSpace), 0.85);
       hor.lerp(new THREE.Color().setRGB(0.62, 0.22, 0.09, THREE.SRGBColorSpace), 0.85);
+    } else if (this.dim === 3) {
+      // Dreamhollow: eternal violet twilight with a teal aurora horizon
+      top.lerp(new THREE.Color().setRGB(0.2, 0.1, 0.38, THREE.SRGBColorSpace), 0.8);
+      hor.lerp(new THREE.Color().setRGB(0.36, 0.78, 0.74, THREE.SRGBColorSpace), 0.7);
     } else if (this.dim === 1) {
       top.lerp(new THREE.Color().setRGB(0.42, 0.5, 0.98, THREE.SRGBColorSpace), 0.35 * day);
       hor.lerp(new THREE.Color().setRGB(0.98, 0.86, 1.0, THREE.SRGBColorSpace), 0.45 * day);
@@ -147,7 +151,7 @@ export class Sky {
     const u = this.skyMat.uniforms;
     u.uTop.value.copy(top); u.uHor.value.copy(hor); u.uSun.value.copy(sunDir);
     u.uSunCol.value.setRGB(1.0, 0.85 + 0.15 * day, 0.65 + 0.35 * day);
-    u.uStars.value = 1 - day; u.uRain.value = rain;
+    u.uStars.value = this.dim === 3 ? 0.85 : 1 - day; u.uRain.value = rain;
     shared.uSkyTop.value.copy(top); shared.uSkyHorizon.value.copy(hor);
     shared.uDay.value = day * (1 - rain * 0.4);
     const p = camera.position;
@@ -166,6 +170,7 @@ export class Sky {
     this.sun.target.position.set(tx, p.y, tz);
     this.hemi.intensity = this.dim === 2 ? 0.9 : (0.35 + 1.05 * day) * (1 - rain * 0.25);
     if (this.dim === 2) this.sun.intensity = 0.7;
+    if (this.dim === 3) { this.hemi.intensity = 1.0; this.sun.intensity = 0.9; }
     this.hemi.color.copy(top).lerp(new THREE.Color(1, 1, 1), 0.45);
     this.hemi.groundColor.setRGB(0.32 + 0.1 * day, 0.3 + 0.08 * day, 0.26);
     // fog
@@ -183,7 +188,7 @@ export class Sky {
     // clouds
     this.wind += dt * 1.2;
     this.clouds.position.set(p.x, this.dim === 1 ? 20 : 150, p.z);
-    this.clouds.visible = this.cloudsOn && this.dim !== 2;
+    this.clouds.visible = this.cloudsOn && this.dim !== 2 && this.dim !== 3;
     const cu = this.cloudMat.uniforms;
     cu.uOff.value.set((p.x + this.wind) / 300, -p.z / 300);
     cu.uCol.value.copy(new THREE.Color(1, 1, 1).lerp(new THREE.Color(0.1, 0.12, 0.18), 1 - day).lerp(RAIN, rain * 0.6));

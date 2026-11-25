@@ -25,7 +25,7 @@ export class Generator {
   private nC: Simplex; private nH: Simplex; private nE: Simplex; private nR: Simplex; private nI: Simplex;
   private nRiv: Simplex; private nT: Simplex; private nW: Simplex; private nCave1: Simplex; private nCave2: Simplex;
   private nCave3: Simplex; private nD: Simplex;
-  private nZone: Simplex; private nSky: Simplex; private nSky2: Simplex; private nAsh: Simplex; private nAsh2: Simplex;
+  private nZone: Simplex; private nSky: Simplex; private nSky2: Simplex; private nAsh: Simplex; private nAsh2: Simplex; private nDream: Simplex; private nDream2: Simplex;
   private colCache = new Map<number, Column>();
 
   constructor(seed: number) {
@@ -36,6 +36,7 @@ export class Generator {
     this.nI = new Simplex(s()); this.nRiv = new Simplex(s()); this.nT = new Simplex(s()); this.nW = new Simplex(s());
     this.nCave1 = new Simplex(s()); this.nCave2 = new Simplex(s()); this.nCave3 = new Simplex(s()); this.nD = new Simplex(s());
     this.nZone = new Simplex(s()); this.nSky = new Simplex(s()); this.nSky2 = new Simplex(s()); this.nAsh = new Simplex(s()); this.nAsh2 = new Simplex(s());
+    this.nDream = new Simplex(s()); this.nDream2 = new Simplex(s());
   }
 
   column(x: number, z: number): Column {
@@ -120,6 +121,7 @@ export class Generator {
   generateChunk(cx: number, cz: number, dim = 0): { blocks: Uint8Array; meta: Uint8Array } {
     if (dim === 1) return this.genSky(cx, cz);
     if (dim === 2) return this.genAsh(cx, cz);
+    if (dim === 3) return this.genDream(cx, cz);
     const blocks = new Uint8Array(CHUNK * CHUNK * HEIGHT);
     const meta = new Uint8Array(CHUNK * CHUNK * HEIGHT);
     const x0 = cx * CHUNK, z0 = cz * CHUNK;
@@ -386,6 +388,79 @@ export class Generator {
       }
     }
     void meta;
+  }
+
+  // ---------------------------------------------------------------- Dreamhollow (twilight meadows & bloomcap woods)
+  /** 0 = Mistmeadow, 1 = Bloomwood, 2 = Crystal Spires */
+  dreamZone(wx: number, wz: number) {
+    const z = this.nDream2.fbm2(wx / 340, wz / 340, 2);
+    return z > 0.22 ? 1 : z < -0.3 ? 2 : 0;
+  }
+  private genDream(cx: number, cz: number) {
+    const blocks = new Uint8Array(CHUNK * CHUNK * HEIGHT), meta = new Uint8Array(CHUNK * CHUNK * HEIGHT);
+    const r = mulberry32(hash3(cx, 733, cz, this.seed) * 4294967296);
+    const heights = new Int16Array(256);
+    for (let z = 0; z < 16; z++) for (let x = 0; x < 16; x++) {
+      const wx = cx * 16 + x, wz = cz * 16 + z;
+      const zone = this.dreamZone(wx, wz);
+      const roll = this.nDream.fbm2(wx / 120, wz / 120, 4);
+      const h = Math.floor(60 + roll * (zone === 2 ? 22 : 12) + this.nDream2.n3(wx / 30, 0, wz / 30) * 3);
+      heights[x + z * 16] = h;
+      blocks[idx(x, 0, z)] = B.DEEPSTONE;
+      for (let y = 1; y <= h; y++) blocks[idx(x, y, z)] = y === h ? BX.dream_turf : BX.dreamstone;
+      // shallow luminous ponds in the low meadows
+      if (h < 56) for (let y = h + 1; y <= 56; y++) blocks[idx(x, y, z)] = B.WATER;
+      const top = idx(x, h + 1, z);
+      if (h < 56 || h + 1 >= HEIGHT - 2) continue;
+      const p = r();
+      if (zone === 0) {
+        if (p < 0.16) blocks[top] = B.TALL_GRASS;
+        else if (p < 0.24) blocks[top] = [BX.orchid_puff, BX.starburst_daisy, B.BLUEBELL, BX.cupflower_snow][Math.floor(r() * 4)];
+        else if (p < 0.245) blocks[top] = B.GLOWCAP;
+      } else if (zone === 1) {
+        if (p < 0.1) blocks[top] = B.GLOWCAP;
+        else if (p < 0.16) blocks[top] = BX.frond_fern;
+      } else if (p < 0.04) blocks[top] = B.CRYSTAL_SHARD;
+    }
+    // bloomcaps (giant glowing mushrooms) and crystal spires, kept inside the chunk
+    for (let k = 0; k < 4; k++) {
+      const x = 3 + Math.floor(r() * 10), z = 3 + Math.floor(r() * 10);
+      const wx = cx * 16 + x, wz = cz * 16 + z, zone = this.dreamZone(wx, wz), h = heights[x + z * 16];
+      if (h < 57 || h > HEIGHT - 24) continue;
+      if (zone === 1 && r() < 0.8) this.bloomcap(blocks, x, h + 1, z, r);
+      else if (zone === 0 && r() < 0.12) this.bloomcap(blocks, x, h + 1, z, r);
+      else if (zone === 2 && r() < 0.7) {
+        const tall = 6 + Math.floor(r() * 12);
+        for (let y = 0; y < tall; y++) {
+          const w = y < tall * 0.4 ? 1 : 0;
+          for (let dx = -w; dx <= w; dx++) for (let dz = -w; dz <= w; dz++) blocks[idx(x + dx, h + 1 + y, z + dz)] = B.CRYSTAL_BLOCK;
+        }
+      }
+    }
+    // lumenite veins
+    for (let v = 0; v < 7; v++) {
+      let x = r() * 16, y = 8 + r() * 46, z = r() * 16;
+      for (let k = 0; k < 6; k++) {
+        const ix = Math.floor(x), iy = Math.floor(y), iz = Math.floor(z);
+        if (ix >= 0 && ix < 16 && iz >= 0 && iz < 16 && iy > 0) { const i = idx(ix, iy, iz); if (blocks[i] === BX.dreamstone) blocks[i] = BX.lumenite_ore; }
+        x += r() * 2 - 1; y += r() * 2 - 1; z += r() * 2 - 1;
+      }
+    }
+    return { blocks, meta };
+  }
+
+  private bloomcap(blocks: Uint8Array, x: number, y: number, z: number, r: () => number) {
+    const h = 5 + Math.floor(r() * 6), rad = h > 8 ? 3 : 2;
+    for (let i = 0; i < h; i++) blocks[idx(x, y + i, z)] = BX.bloomcap_stem;
+    const cy = y + h;
+    for (let dy = 0; dy < 2; dy++) for (let dx = -rad; dx <= rad; dx++) for (let dz = -rad; dz <= rad; dz++) {
+      const rr = rad - dy;
+      if (dx * dx + dz * dz > rr * rr + 1) continue;
+      const xx = x + dx, zz = z + dz;
+      if (xx < 0 || xx > 15 || zz < 0 || zz > 15) continue;
+      const i = idx(xx, cy + dy, zz);
+      if (blocks[i] === B.AIR) blocks[i] = BX.bloomcap_cap;
+    }
   }
 
   // ---------------------------------------------------------------- Celestia (sky islands)

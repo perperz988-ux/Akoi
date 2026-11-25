@@ -1,10 +1,10 @@
 // Creatures: types, spawning rules, AI (wander / follow / flee / seek food / attack / fly) and combat.
 import * as THREE from 'three';
-import { B, L_OPAQUE, L_SOLID, UNLOADED } from '../world/Blocks';
+import { B, BX, L_OPAQUE, L_SOLID, UNLOADED } from '../world/Blocks';
 import type { World } from '../world/World';
 import { Body, makeBody, moveBody } from './Physics';
 import { I } from './Items';
-import { Model, buildCrawler, buildGlimmerwing, buildGloomling, buildHopkin, buildMossback, buildStingwisp, buildCloudray, buildCinderhound, disposeModel } from './Models';
+import { Model, buildCrawler, buildGlimmerwing, buildGloomling, buildHopkin, buildMossback, buildStingwisp, buildCloudray, buildCinderhound, buildGlowjelly, disposeModel } from './Models';
 
 export interface MobType {
   key: string; name: string; hostile: boolean; flying: boolean;
@@ -23,6 +23,7 @@ export const MOB_TYPES: MobType[] = [
   { key: 'crawler', name: 'Crag Crawler', hostile: true, flying: false, hw: 0.55, h: 0.7, health: 24, speed: 2.0, damage: 4, range: 1.6, aggro: 12, drops: [[I.crag_shard, 1, 2, 1], [I.coal, 0, 2, 0.5], [B.RUBBLE, 1, 2, 0.5], [I.bone, 0, 1, 0.5]], lure: [], food: [], build: buildCrawler, category: 'hostile' },
   { key: 'cloudray', name: 'Cloudray', hostile: false, flying: true, hw: 0.5, h: 0.3, health: 10, speed: 2.2, damage: 0, range: 0, aggro: 0, drops: [[I.fiber, 1, 2, 1], [B.CLOUD, 1, 2, 0.6]], lure: [], food: [], build: buildCloudray, category: 'ambient' },
   { key: 'cinderhound', name: 'Cinderhound', hostile: true, flying: false, hw: 0.35, h: 1.1, health: 20, speed: 3.6, damage: 4, range: 1.5, aggro: 20, drops: [[I.coal, 1, 2, 1], [I.emberite_ingot, 0, 1, 0.25], [I.raw_meat, 0, 1, 0.5]], lure: [], food: [], build: buildCinderhound, category: 'hostile' },
+  { key: 'glowjelly', name: 'Glowjelly', hostile: false, flying: true, hw: 0.35, h: 0.6, health: 6, speed: 1.2, damage: 0, range: 0, aggro: 0, drops: [[I.glow_jelly, 1, 2, 1], [I.lumenite, 0, 1, 0.2]], lure: [], food: [], build: buildGlowjelly, category: 'ambient' },
   { key: 'stingwisp', name: 'Stingwisp', hostile: true, flying: true, hw: 0.3, h: 0.5, health: 8, speed: 4.2, damage: 2, range: 1.2, aggro: 22, drops: [[I.glow_dust, 0, 1, 0.6], [I.fiber, 0, 1, 0.4]], lure: [], food: [], build: buildStingwisp, category: 'hostile' },
 ];
 export const mobType = (k: string) => MOB_TYPES.find((t) => t.key === k)!;
@@ -153,6 +154,10 @@ export class MobManager {
     if (this.ctx.dim === 1) {
       if (this.count('ambient') < 6 && top === B.SKY_GRASS && this.isClear(x, sy + 1, z, 2)) this.spawn(mobType('cloudray'), x + 0.5, sy + 3 + Math.random() * 4, z + 0.5);
       else if (night && hostileOk && this.count('hostile') < 3 && this.isClear(x, sy + 1, z, 2)) this.spawn(mobType('stingwisp'), x + 0.5, sy + 4, z + 0.5);
+      return;
+    }
+    if (this.ctx.dim === 3) {
+      if (this.count('ambient') < 8 && top === BX.dream_turf && this.isClear(x, sy + 1, z, 3)) this.spawn(mobType('glowjelly'), x + 0.5, sy + 2 + Math.random() * 5, z + 0.5);
       return;
     }
     if (this.ctx.dim === 2) {

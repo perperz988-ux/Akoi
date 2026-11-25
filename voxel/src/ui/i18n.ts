@@ -203,6 +203,9 @@ const ES: Record<string, string> = {
 Object.assign(ES, NAMES_ES);
 for (const d of DYES) ES[`${d.name} Dye`] = `Tinte (${d.es})`;
 Object.assign(ES, {
+  'Lumenite': 'Lumenita', 'Glow Jelly': 'Gelatina luminosa', 'Glowjelly': 'Medusa luminosa', 'A glowing gem from Dreamhollow.': 'Una gema brillante de Ensueño.',
+  'Dropped by Glowjellies.': 'La sueltan las medusas luminosas.', 'Dreamhollow': 'Ensueño', 'Mistmeadow': 'Prados de Bruma', 'Bloomwood': 'Bosque de Setas', 'Crystal Spires': 'Agujas de Cristal',
+  'Drifting into Dreamhollow…': 'Flotando hacia Ensueño…', 'Dreamhollow — use the rift to return home': 'Ensueño — usa la grieta para volver a casa', 'Travel': 'Viajar',
   'Bone': 'Hueso', 'Melon Slice': 'Rebanada de melón', 'Strip': 'Pelar', 'Any Dye': 'Cualquier tinte', 'Dyes': 'Tintes', 'Colours': 'Colores', 'Stone': 'Piedra',
   'Storage': 'Almacenaje', 'Metal': 'Metal', 'Decor': 'Decoración', 'Colours cloth, rugs, smoothcast, fired clay and glass.': 'Tiñe tela, alfombras, hormigón, arcilla cocida y cristal.',
   'Dropped by Gloomlings and Crag Crawlers.': 'Lo sueltan los Penumbros y los Reptarrocas.',

@@ -283,3 +283,20 @@ export function disposeModel(m: Model) {
     if (mesh.isMesh && m.glow.includes(mesh.material as THREE.MeshBasicMaterial)) mesh.geometry.dispose();
   });
 }
+
+export function buildGlowjelly(): Model {
+  const b = new Builder(), m = b.m;
+  const bell = b.glowMat(0x9ff5ea, 0.75), inner = b.glowMat(0xe2a6ff, 0.9), eye = b.glowMat(0xffffff);
+  b.box(m.body, 0.62, 0.36, 0.62, [1, 1, 1], 0, 0.1, 0, bell);
+  b.box(m.body, 0.46, 0.14, 0.46, [1, 1, 1], 0, 0.32, 0, bell);
+  b.box(m.body, 0.3, 0.2, 0.3, [1, 1, 1], 0, 0.06, 0, inner);
+  b.box(m.body, 0.06, 0.06, 0.04, [1, 1, 1], 0.12, 0.12, 0.32, eye);
+  b.box(m.body, 0.06, 0.06, 0.04, [1, 1, 1], -0.12, 0.12, 0.32, eye);
+  for (const [x, z] of [[0.2, 0.2], [-0.2, 0.2], [0.2, -0.2], [-0.2, -0.2]]) {
+    const t = b.pivot(m.body, x, -0.08, z);
+    b.box(t, 0.05, 0.5, 0.05, [1, 1, 1], 0, -0.25, 0, inner);
+    m.legs.push(t);
+  }
+  m.head = null;
+  return m;
+}

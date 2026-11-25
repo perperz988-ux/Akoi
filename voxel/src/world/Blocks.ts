@@ -308,6 +308,13 @@ for (const [k, n, es] of [['crimson_bloom', 'Crimson Bloom', 'Flor carmesí'], [
 add('frond_fern', 'Frond Fern', 'Helecho', plant({ tex: all('frond_fern'), replaceable: true }));
 add('capshroom_red', 'Red Capshroom', 'Hongo rojo', plant({ tex: all('capshroom_red'), support: 'solid', light: 1 }));
 add('capshroom_brown', 'Brown Capshroom', 'Hongo café', plant({ tex: all('capshroom_brown'), support: 'solid' }));
+// ---- Dreamhollow (4th dimension): ids 249-254 ----
+add('dream_turf', 'Dream Turf', 'Césped de ensueño', { tex: tbs('dream_turf_top', 'dreamstone', 'dream_turf_side'), hardness: 0.6, tool: 'spade', mat: 'grass', light: 2 });
+add('dreamstone', 'Dreamstone', 'Piedra de ensueño', stone('dreamstone'));
+add('bloomcap_stem', 'Bloomcap Stem', 'Tallo de seta gigante', { tex: tbs('bloomcap_stem_top', 'bloomcap_stem_top', 'bloomcap_stem'), hardness: 1.5, tool: 'axe', mat: 'wood' });
+add('bloomcap_cap', 'Bloomcap', 'Sombrero de seta gigante', { tex: tbs('bloomcap_cap_top', 'bloomcap_cap_under', 'bloomcap_cap'), hardness: 0.5, tool: 'axe', mat: 'leaves', light: 11 });
+add('lumenite_ore', 'Lumenite Vein', 'Veta de lumenita', { tex: all('lumenite_ore'), hardness: 3, tool: 'pick', tier: 3, light: 6 });
+add('dream_rift', 'Dream Rift', 'Grieta de ensueño', { tex: all('dream_rift'), hardness: 4, tool: 'pick', tier: 1, mat: 'glass', light: 12 });
 export const FLOWERS = [B.SUNPETAL, B.BLUEBELL, BX.crimson_bloom, BX.cupflower_amber, BX.cupflower_snow, BX.cupflower_blossom, BX.starburst_daisy, BX.orchid_puff];
 const RUG = new Uint8Array(256);
 for (const id of Object.values(COLOR_BLOCKS.rug)) RUG[id] = 1;

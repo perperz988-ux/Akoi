@@ -279,3 +279,11 @@ rc('hand', 'Basics', B.PINE_PLANKS, 4, [STRIPPED[B.PINE_LOG], 1]);
 rc('hand', 'Basics', BX.palm_planks, 4, [STRIPPED[B.PALM_LOG], 1]);
 rc('hand', 'Basics', BX.charred_planks, 4, [STRIPPED[B.CHARRED_LOG], 1]);
 rc('hand', 'Basics', BX.silver_planks, 4, [STRIPPED[B.SILVER_LOG], 1]);
+
+// ---- Dreamhollow ----
+rc('bench', 'Dimensions', BX.dream_rift, 1, [I.starstone, 2], [I.emberite_ingot, 2], [I.prism_shard, 4]);
+rc('kiln', 'Smelting', I.lumenite, 1, [BX.lumenite_ore, 1], ['fuel', 1]);
+rc('hand', 'Materials', I.glow_dust, 4, [I.lumenite, 1]);
+rc('bench', 'Decor', BX.tide_lamp, 2, [I.lumenite, 1], [BX.tidestone, 4]);
+rc('hand', 'Basics', BX.silver_planks, 2, [BX.bloomcap_stem, 1]);
+rc('hand', 'Dyes', dye('orchid'), 2, [BX.bloomcap_cap, 1]);

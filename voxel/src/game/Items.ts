@@ -105,6 +105,8 @@ for (const k of KINDS) r(`ember_${k.type}`, `Emberite ${k.name}`, { maxStack: 1,
 for (const d of DYES) r(`dye_${d.key}`, `${d.name} Dye`, { desc: 'Colours cloth, rugs, smoothcast, fired clay and glass.' });
 r('bone', 'Bone', { desc: 'Dropped by Gloomlings and Crag Crawlers.' });
 r('melon_slice', 'Melon Slice', { food: 2 });
+r('lumenite', 'Lumenite', { desc: 'A glowing gem from Dreamhollow.' });
+r('glow_jelly', 'Glow Jelly', { food: 4, desc: 'Dropped by Glowjellies.' });
 
 export function item(id: number): ItemDef { return ITEMS[id] || ITEMS[B.STONE]; }
 export function maxStack(id: number) { return item(id).maxStack; }
@@ -212,6 +214,8 @@ for (const d of DYES) ITEM_ART[`dye_${d.key}`] = (s: any, r: () => number) => {
   const c = d.rgb as RGB;
   for (let y = 7; y < 14; y++) for (let x = 2; x < 14; x++) { const e = ((x - 8) / 6) ** 2 + ((y - 13) / 6) ** 2; if (e < 1) s(x, y, r() < 0.25 ? dk(c, 0.75) : y < 10 ? [Math.min(255, c[0] + 40), Math.min(255, c[1] + 40), Math.min(255, c[2] + 40)] : c); }
 };
+ITEM_ART.lumenite = (s: any) => gem(s, [110, 250, 226]);
+ITEM_ART.glow_jelly = (s: any) => { for (let y = 4; y < 13; y++) for (let x = 3; x < 13; x++) { const e = ((x - 8) / 5) ** 2 + ((y - 9) / 4.5) ** 2; if (e < 1) s(x, y, y < 7 ? [210, 255, 250] : e < 0.4 ? [226, 170, 255] : [140, 236, 222]); } };
 ITEM_ART.bone = (s: any) => { for (let i = 0; i < 9; i++) { s(4 + i, 11 - i, [236, 230, 210]); s(5 + i, 11 - i, [200, 194, 172]); } for (const [x, y] of [[3, 11], [3, 12], [4, 13], [12, 2], [13, 3], [14, 3]]) s(x, y, [240, 236, 220]); };
 ITEM_ART.melon_slice = (s: any) => { for (let y = 4; y < 14; y++) for (let x = 2; x < 14; x++) { const d = Math.hypot(x - 8, y - 14); if (d < 10 && y < 14 && Math.abs(x - 8) < (y - 3)) s(x, y, d > 8.6 ? [70, 140, 50] : d > 7.6 ? [210, 240, 170] : [236, 80, 80]); } for (const [x, y] of [[7, 9], [9, 10], [6, 11], [10, 12]]) s(x, y, [40, 30, 30]); };
 function fish(s: any, c: RGB) { for (let y = 5; y < 11; y++) for (let x = 2; x < 12; x++) if (((x - 7) / 5) ** 2 + ((y - 8) / 3) ** 2 < 1) s(x, y, y < 7 ? [Math.min(255, c[0] + 40), Math.min(255, c[1] + 40), Math.min(255, c[2] + 40)] : c); for (let y = 5; y < 11; y++) if (Math.abs(y - 8) < 3) s(12 + Math.abs(y - 8) * 0.5, y, dk(c, 0.8)); s(4, 7, [20, 20, 20]); }
