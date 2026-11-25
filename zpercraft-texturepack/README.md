@@ -58,3 +58,23 @@ python3 tools/zperify.py <bedrock-samples>/resource_pack/textures OUT/raw releas
 | Bloques | Objetos |
 |---|---|
 | ![](completo/preview_bloques.png) | ![](completo/preview_objetos.png) |
+
+---
+
+# Menú de ZperCraft (incluido en los dos packs)
+
+![menú](menu/menu_preview.png)
+
+- **Logo:** `textures/ui/title.png` es el logo de ZperCraft ("Zper" crema + "Craft" ámbar con la sombra 3D), renderizado con el mismo CSS de `voxel/src/ui/style.css` (`tools/logo.cjs`).
+- **Fondo del menú:** el panorama son 6 capturas reales de un mundo de ZperCraft a 90° (`tools/panorama.cjs` abre `voxel/release/zpercraft.html` en Chromium y gira la cámara). Se guarda en PNG y en HDR (`panoramahdr_*`) para Vibrant Visuals.
+- **Interfaz:** `tools/ui_theme.py` recolorea ~1,675 texturas de `textures/ui` y `textures/gui` con la paleta del menú de ZperCraft: grises → azul marino/pizarra (mismo brillo, el texto sigue legible), verde → ámbar, azul → verde azulado.
+
+Algunas pantallas nuevas de Bedrock (Ajustes, Crear mundo, Marketplace) están hechas con "Ore UI" y no se pueden cambiar con un resource pack.
+
+Regenerar:
+```
+node tools/logo.cjs logo_raw.png            # luego ajustar a 1937x333 -> title.png
+node tools/panorama.cjs voxel/release/zpercraft.html pano 0.3 1024
+python3 tools/ui_theme.py <bedrock-samples>/resource_pack/textures uitheme
+python3 tools/menu_assets.py <pack> uitheme title.png pano raw
+```
