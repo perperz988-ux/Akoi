@@ -502,7 +502,7 @@ Image.open(ICON).convert('RGBA').resize((256, 256), Image.LANCZOS).save(f'{OUT}/
 json.dump({
  "format_version": 2,
  "header": {"name": "ZperCraft Completo", "description": "Todos los bloques y objetos de Minecraft con el estilo de ZperCraft",
-            "uuid": "a3b8cd50-9eaf-4fce-ab67-e9aff7a52a3b", "version": [2, 0, 0], "min_engine_version": [1, 21, 0]},
- "modules": [{"type": "resources", "uuid": "94b7f274-c51f-4dae-a876-96f8a22b5bc3", "version": [2, 0, 0]}]
+            "uuid": "a3b8cd50-9eaf-4fce-ab67-e9aff7a52a3b", "version": [2, 1, 0], "min_engine_version": [1, 21, 0]},
+ "modules": [{"type": "resources", "uuid": "94b7f274-c51f-4dae-a876-96f8a22b5bc3", "version": [2, 1, 0]}]
 }, open(f'{OUT}/manifest.json', 'w'), indent=2, ensure_ascii=False)
 print(stats, 'total', len(written))
