@@ -78,3 +78,25 @@ node tools/panorama.cjs voxel/release/zpercraft.html pano 0.3 1024
 python3 tools/ui_theme.py <bedrock-samples>/resource_pack/textures uitheme
 python3 tools/menu_assets.py <pack> uitheme title.png pano raw
 ```
+
+---
+
+# Mobs y animales (incluido en los dos packs)
+
+![mobs](mobs/preview_mobs.png)
+
+`tools/mobs.py` cambia las ~820 texturas de `textures/entity` (todos los mobs, animales, aldeanos, jefes, jugadores por defecto, barcos, carteles...) al estilo de los mobs de ZperCraft (`voxel/src/game/Models.ts`): colores sólidos y planos, sin ruido.
+
+Los que tienen pareja en ZperCraft usan la paleta de ese mob, con el sombreado por cara del juego (1 / 0.88 / 0.78 / 0.55) y su color brillante para ojos y detalles:
+
+| ZperCraft | Minecraft |
+|---|---|
+| Gloomling (morado, ojos lima) | Zombi, husk, ahogado |
+| Crag Crawler (roca, ojos rojos) | Araña, araña de cueva |
+| Mossback (caparazón y musgo) | Vaca, champiñaca, tortuga bebé |
+| Hopkin (pelaje crema) | Conejo |
+| Glimmerwing (alas violeta/turquesa) | Murciélago |
+| Stingwisp (amarillo y negro, ojos rojos) | Abeja |
+| Cloudray (azul cielo) | Phantom |
+| Cinderhound (piel oscura, brasas) | Hoglin |
+| Avatar (capa turquesa, bufanda ámbar) | Steve y Alex |
