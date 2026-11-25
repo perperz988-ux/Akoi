@@ -37,3 +37,24 @@ npx esbuild src/__export.ts --bundle --format=iife --outfile=OUT/export.js
 node tools/run.cjs OUT            # escribe OUT/raw/tiles y OUT/raw/items
 python3 tools/build_pack.py OUT/raw release/zpercraft-icon-1024.png pack
 ```
+
+---
+
+# ZperCraft Completo (todos los bloques y objetos)
+
+`release/ZperCraft_Completo.mcpack` reemplaza **todas** las texturas de bloques y objetos de Minecraft Bedrock 1.26 (≈2,270 texturas, más cofres, camas y armadura puesta) con el estilo de ZperCraft:
+
+1. **Exactas de ZperCraft** (≈250): las texturas que existen en el juego, tal cual (tabla de arriba), más herramientas y armaduras de oro/cota de malla y azadas recoloreadas a partir de los íconos de ZperCraft.
+2. **Repintadas con los algoritmos de ZperCraft** (≈250): menas, troncos, tablones, hojas, lana, concreto, terracota, bloques de metal, ladrillos, piedras, tierras y vidrios usan los mismos pintores de `Atlas.ts` con los colores de cada bloque.
+3. **Filtro ZperCraft** (el resto): paleta plana y saturada, ruido de píxel y contorno oscuro en los objetos, conservando la silueta de cada cosa.
+
+Las texturas vanilla solo se usan como referencia (colores, forma, tamaño); no se copian al pack.
+
+Regenerar (necesita `resource_pack/textures` de github.com/Mojang/bedrock-samples y la carpeta `raw/` exportada arriba):
+```
+python3 tools/zperify.py <bedrock-samples>/resource_pack/textures OUT/raw release/zpercraft-icon-1024.png OUT/ZperCraft_Completo
+```
+
+| Bloques | Objetos |
+|---|---|
+| ![](completo/preview_bloques.png) | ![](completo/preview_objetos.png) |
