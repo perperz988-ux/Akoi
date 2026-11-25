@@ -31,6 +31,7 @@ export interface Settings {
   tapToPlace: boolean;
   holdToBreak: boolean;
   aimMode: 'crosshair' | 'touch';
+  controlScheme: 'bedrock' | 'joystick';
   autoJump: boolean;
   sneakToggle: boolean;
   leftHanded: boolean;
@@ -48,15 +49,17 @@ export const PRESETS: Record<Preset, Partial<Settings>> = {
 };
 
 export const DEFAULT_LAYOUT: Record<string, ButtonLayout> = {
-  jump: { x: 0.9, y: 0.78, s: 1.15 },
-  sneak: { x: 0.9, y: 0.58, s: 0.85 },
+  jump: { x: 0.92, y: 0.4, s: 1.05 },
+  sneak: { x: 0.92, y: 0.64, s: 1.05 },
   break: { x: 0.79, y: 0.84, s: 1 },
   place: { x: 0.79, y: 0.63, s: 1 },
   interact: { x: 0.68, y: 0.84, s: 0.9 },
   sprint: { x: 0.12, y: 0.4, s: 0.8 },
-  fly: { x: 0.9, y: 0.4, s: 0.8 },
+  fly: { x: 0.92, y: 0.18, s: 0.8 },
   drop: { x: 0.68, y: 0.66, s: 0.7 },
   view: { x: 0.79, y: 0.44, s: 0.7 },
+  action: { x: 0.81, y: 0.52, s: 1.05 },
+  joy: { x: 0.15, y: 0.66, s: 1 },
 };
 
 function detectPreset(): Preset {
@@ -80,7 +83,7 @@ export function defaults(): Settings {
     fov: 75, brightness: 0.35, viewBobbing: true, showFps: false, performanceMode: true, targetFps: 60,
     sensitivity: 1, invertY: false, padSensitivity: 1, padDeadzone: 0.15,
     touchSize: 1, touchOpacity: 0.65, layout: JSON.parse(JSON.stringify(DEFAULT_LAYOUT)),
-    tapToPlace: true, holdToBreak: true, aimMode: 'crosshair', autoJump: true, sneakToggle: true, leftHanded: false, haptics: true,
+    tapToPlace: true, holdToBreak: true, aimMode: 'crosshair', controlScheme: 'bedrock', autoJump: true, sneakToggle: true, leftHanded: false, haptics: true,
     masterVolume: 0.8, sfxVolume: 0.9, musicVolume: 0.5,
   } as Settings;
 }
@@ -93,7 +96,9 @@ export function loadSettings(): Settings {
     if (raw) {
       const s = JSON.parse(raw);
       const out = { ...d, ...s };
-      out.layout = { ...JSON.parse(JSON.stringify(DEFAULT_LAYOUT)), ...(s.layout || {}) };
+      // layouts saved before the Bedrock-style controls get the new default positions
+      out.layout = s.layout && s.layout.action ? { ...JSON.parse(JSON.stringify(DEFAULT_LAYOUT)), ...s.layout } : JSON.parse(JSON.stringify(DEFAULT_LAYOUT));
+      if (out.controlScheme !== 'joystick') out.controlScheme = 'bedrock';
       return out;
     }
   } catch { /* ignore */ }

@@ -327,8 +327,10 @@ export class UI implements UIHooks {
       body.appendChild(h('div', 'sect', 'Controller'));
       slider('Controller look speed', 'padSensitivity', 0.2, 3, 0.05, (v) => v.toFixed(2));
       slider('Stick dead-zone', 'padDeadzone', 0, 0.5, 0.01, (v) => v.toFixed(2));
-      body.appendChild(h('div', 'small', 'Gamepad: left stick move · right stick look · A jump · B sneak · RT break · LT place · X use · Y inventory · LB/RB hotbar · Start pause · D-pad up fly. Keyboard: WASD, mouse, Space, Shift, Ctrl sprint, E inventory, Q drop, F use, V view, 1-9 hotbar.'));
+      body.appendChild(h('div', 'small', 'Gamepad: left stick move · right stick look · A jump · B drop · RS click sneak · LS click sprint · RT break · LT place/use · X use · Y inventory · LB/RB hotbar · Start pause · D-pad up fly. Keyboard: WASD (double-tap W to sprint), mouse (left break, right place/use, middle pick block), Space jump (double-tap to fly), Shift sneak, Ctrl sprint, E inventory, Q drop, F use, F1 hide HUD, F3 info, F5 view, 1-9 / wheel hotbar.'));
     } else if (this.settingsTab === 'touch') {
+      choice('Control scheme', [['bedrock', 'Bedrock (joystick + action)'], ['joystick', 'Floating joystick']], () => st.controlScheme, (v) => { st.controlScheme = v as any; this.touch.refresh(); });
+      body.appendChild(h('div', 'small', 'Hold a hotbar slot to drop the item'));
       slider('Button size', 'touchSize', 0.6, 1.6, 0.05, (v) => Math.round(v * 100) + '%', () => this.touch.refresh());
       slider('Button opacity', 'touchOpacity', 0.15, 1, 0.05, (v) => Math.round(v * 100) + '%', () => this.touch.refresh());
       toggle('Tap to place / use', 'tapToPlace');
@@ -461,6 +463,7 @@ export class UI implements UIHooks {
     hud.querySelector('#hinv')!.addEventListener('click', () => { if (this.game.state === 'play') this.openInventory(); });
     hud.querySelector('#hpause')!.addEventListener('click', () => { if (this.game.state === 'play') this.game.setState('pause'); });
     this.creativeBtn.addEventListener('click', () => { if (this.game.state === 'play') this.openCreative(); });
+    let holdTimer: any = 0;
     this.hotbarEl.addEventListener('pointerdown', (e) => {
       const sl = (e.target as HTMLElement).closest('.slot') as HTMLElement | null;
       if (!sl || this.game.state !== 'play') return;
@@ -468,7 +471,17 @@ export class UI implements UIHooks {
       if (sl.dataset.i === 'more') { this.openInventory(); return; }
       this.game.player.inv.selected = parseInt(sl.dataset.i!, 10);
       this.game.audio.ui();
+      // Minecraft-style: hold a hotbar slot to drop the item (keep holding to drop the whole stack)
+      clearTimeout(holdTimer);
+      holdTimer = setTimeout(() => {
+        this.game.input.fire('drop'); navigator.vibrate?.(20);
+        holdTimer = setTimeout(() => { this.game.input.fire('dropStack'); navigator.vibrate?.(40); }, 700);
+      }, 450);
     });
+    const cancelHold = () => clearTimeout(holdTimer);
+    this.hotbarEl.addEventListener('pointerup', cancelHold);
+    this.hotbarEl.addEventListener('pointerleave', cancelHold);
+    this.hotbarEl.addEventListener('pointercancel', cancelHold);
   }
 
   private slotHtml(s: Stack | null, extra = '') {
@@ -481,6 +494,8 @@ export class UI implements UIHooks {
     }
     return `<div class="slot ${extra}"><img src="${itemIcon(s.id)}" alt="">${s.count > 1 ? `<span class="n">${s.count}</span>` : ''}${dur}</div>`;
   }
+
+  toggleHud() { this.hud.classList.toggle('nohud'); }
 
   refreshHud() {
     const g = this.game, p = g.player, st = g.settings;

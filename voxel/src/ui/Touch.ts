@@ -7,8 +7,11 @@ import { t } from './i18n';
 interface BtnDef { id: string; icon: string; label?: string }
 const BUTTONS: BtnDef[] = [
   { id: 'jump', icon: ICON.jump }, { id: 'sneak', icon: ICON.sneak }, { id: 'break', icon: ICON.break }, { id: 'place', icon: ICON.place },
-  { id: 'interact', icon: '', label: 'USE' }, { id: 'sprint', icon: ICON.sprint }, { id: 'fly', icon: ICON.wing }, { id: 'drop', icon: ICON.drop }, { id: 'view', icon: ICON.eye },
+  { id: 'interact', icon: '', label: 'USE' }, { id: 'action', icon: ICON.action }, { id: 'sprint', icon: ICON.sprint }, { id: 'fly', icon: ICON.wing }, { id: 'drop', icon: ICON.drop }, { id: 'view', icon: ICON.eye },
 ];
+
+/** Buttons hidden in the Bedrock-style scheme (tap screen / action = use, hold = break, hotbar hold = drop). */
+const BEDROCK_HIDE = new Set(['break', 'place', 'sprint', 'interact', 'drop', 'view', 'fly']);
 
 export class Touch {
   layer: HTMLDivElement;
@@ -27,6 +30,12 @@ export class Touch {
   private editSel: string | null = null;
   private editBar: HTMLDivElement;
   private drag: { id: string; pid: number } | null = null;
+  private actionTimer: any = 0;
+  private actionHeld = false;
+  private flySneak = false;
+  private get bedrock() { return this.game.settings.controlScheme !== 'joystick'; }
+  /** fixed square joystick base (Bedrock scheme) */
+  private joyBase() { const p = this.pos('joy'); return { x: p.x, y: p.y, size: p.size * 2.5 }; }
 
   constructor(private game: Game, parent: HTMLElement) {
     const layer = document.createElement('div');
@@ -95,6 +104,19 @@ export class Touch {
       e.classList.toggle('sel', this.editing && this.editSel === id);
       if (this.editing) e.classList.remove('hidden');
     }
+    const br = this.bedrock;
+    this.layer.classList.toggle('bedrock', br);
+    document.getElementById('hud')?.classList.toggle('bedrock', br);
+    this.joy.classList.toggle('sq', br);
+    this.btns.get('action')!.classList.toggle('hidden', !br && !this.editing);
+    if (br && !this.editing) for (const id of BEDROCK_HIDE) this.btns.get(id)!.classList.add('hidden');
+    if (br) {
+      const jb = this.joyBase();
+      this.joy.style.left = jb.x + 'px'; this.joy.style.top = jb.y + 'px';
+      this.joy.style.width = jb.size + 'px'; this.joy.style.height = jb.size + 'px';
+      this.joy.classList.toggle('edit', this.editing); this.joy.classList.toggle('sel', this.editing && this.editSel === 'joy');
+      return;
+    }
     if (this.joyId === null) {
       const jx = s.leftHanded ? window.innerWidth * 0.86 : window.innerWidth * 0.14;
       this.joy.style.left = jx + 'px'; this.joy.style.top = window.innerHeight * 0.72 + 'px';
@@ -109,10 +131,10 @@ export class Touch {
     if (this.editing) return;
     const ctx = g.contextAction();
     const ib = this.btns.get('interact')!;
-    ib.classList.toggle('hidden', !ctx);
+    ib.classList.toggle('hidden', !ctx || this.bedrock);
     const label = ctx ? t(ctx).toUpperCase() : '';
     if (ctx && ib.textContent !== label) ib.textContent = label;
-    this.btns.get('fly')!.classList.toggle('hidden', !g.player.creative);
+    this.btns.get('fly')!.classList.toggle('hidden', !g.player.creative || this.bedrock);
     this.btns.get('fly')!.classList.toggle('on', g.player.flying);
     this.btns.get('sneak')!.classList.toggle('on', g.input.touchSneak);
     this.btns.get('sprint')!.classList.toggle('on', g.input.touchSprint);
@@ -127,6 +149,13 @@ export class Touch {
     const btn = (e.target as HTMLElement).closest('.tbtn') as HTMLDivElement | null;
     try { this.layer.setPointerCapture(e.pointerId); } catch { /* ignore */ }
     if (this.editing) {
+      if (!btn && this.bedrock) {
+        const jb = this.joyBase();
+        if (Math.abs(e.clientX - jb.x) < jb.size / 2 && Math.abs(e.clientY - jb.y) < jb.size / 2) {
+          this.editSel = 'joy'; this.drag = { id: 'joy', pid: e.pointerId };
+          (this.editBar.querySelector('#edsz') as HTMLInputElement).value = String(g.settings.layout.joy.s); this.refresh(); return;
+        }
+      }
       if (btn) { this.editSel = btn.dataset.id!; this.drag = { id: btn.dataset.id!, pid: e.pointerId }; (this.editBar.querySelector('#edsz') as HTMLInputElement).value = String(g.settings.layout[this.editSel].s); this.refresh(); }
       return;
     }
@@ -143,7 +172,16 @@ export class Touch {
           if (now - this.lastJump < 300) inp.fire('fly');
           this.lastJump = now; break;
         }
-        case 'sneak': if (g.settings.sneakToggle) inp.touchSneak = !inp.touchSneak; else inp.touchSneak = true; break;
+        case 'sneak':
+          if (g.player.flying) { inp.touchSneak = true; this.flySneak = true; }   // hold to descend while flying
+          else if (g.settings.sneakToggle) inp.touchSneak = !inp.touchSneak; else inp.touchSneak = true;
+          break;
+        case 'action':
+          // Bedrock action button: tap = use / place, hold = break / attack
+          this.actionHeld = false;
+          clearTimeout(this.actionTimer);
+          this.actionTimer = setTimeout(() => { this.actionHeld = true; inp.touchBreak = true; inp.fire('attack'); this.haptic(12); }, 260);
+          break;
         case 'break': inp.touchBreak = true; inp.fire('attack'); break;
         case 'place': inp.fire('place'); break;
         case 'interact': inp.fire('interact'); break;
@@ -156,7 +194,15 @@ export class Touch {
     }
     const x = e.clientX, y = e.clientY, W = window.innerWidth;
     const left = g.settings.leftHanded ? x > W * 0.6 : x < W * 0.4;
-    if (left && this.joyId === null && y > window.innerHeight * 0.25) {
+    if (this.bedrock) {
+      const jb = this.joyBase();
+      if (this.joyId === null && Math.abs(x - jb.x) < jb.size * 0.68 && Math.abs(y - jb.y) < jb.size * 0.68) {
+        this.joyId = e.pointerId; this.joyC = { x: jb.x, y: jb.y };
+        this.joy.classList.remove('idle');
+        this.move(e);
+        return;
+      }
+    } else if (left && this.joyId === null && y > window.innerHeight * 0.25) {
       this.joyId = e.pointerId;
       this.joyC = { x, y };
       this.joy.classList.remove('idle');
@@ -191,7 +237,7 @@ export class Touch {
       return;
     }
     if (e.pointerId === this.joyId) {
-      const R = 55 * g.settings.touchSize;
+      const R = this.bedrock ? this.joyBase().size * 0.36 : 55 * g.settings.touchSize;
       let dx = e.clientX - this.joyC.x, dy = e.clientY - this.joyC.y;
       const d = Math.hypot(dx, dy);
       if (d > R) { dx = dx / d * R; dy = dy / d * R; }
@@ -221,7 +267,8 @@ export class Touch {
       b.classList.remove('down');
       if (id === 'jump') inp.touchJump = false;
       if (id === 'break') inp.touchBreak = false;
-      if (id === 'sneak' && !g.settings.sneakToggle) inp.touchSneak = false;
+      if (id === 'sneak' && (this.flySneak || !g.settings.sneakToggle)) { inp.touchSneak = false; this.flySneak = false; }
+      if (id === 'action') { clearTimeout(this.actionTimer); if (this.actionHeld) inp.touchBreak = false; else inp.fire('place'); this.actionHeld = false; }
       if (id === 'drop') { if (this.dropTimer !== -1) { clearTimeout(this.dropTimer); inp.fire('drop'); } this.dropTimer = 0; }
       return;
     }

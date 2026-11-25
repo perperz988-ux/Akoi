@@ -29,10 +29,10 @@ export function tile(name: string): number {
   return i;
 }
 export const TILE_NAMES = tileNames;
-export const ATLAS_COLS = 16;
+export const ATLAS_COLS = 32;
 export const ATLAS_CELL = 32; // 16px tile + 8px wrapped padding each side (mip-safe)
 export const ATLAS_TILE = 16;
-export const ATLAS_SIZE = 512;
+export const ATLAS_SIZE = 1024;
 
 export const B = {
   AIR: 0, DEEPSTONE: 1, STONE: 2, DIRT: 3, GRASS: 4, SAND: 5, GRAVEL: 6, CLAY: 7, SANDSTONE: 8, SNOW: 9, ICE: 10,
@@ -202,6 +202,117 @@ def(97, 'starstone_block', 'Starstone Block', { tex: all('starstone_block'), har
 def(98, 'mud', 'Cave Mud', { tex: all('mud'), hardness: 0.5, tool: 'spade', mat: 'dirt' });
 def(99, 'silver_log', 'Silverwood Log', { tex: tbs('silver_log_top', 'silver_log_top', 'silver_log'), hardness: 2, tool: 'axe', mat: 'wood' });
 
+// ---- expansion 2 (ids 100+): dye colour families, stone variants, decor, plants ----
+export interface Dye { key: string; name: string; es: string; rgb: [number, number, number] }
+export const DYES: Dye[] = [
+  { key: 'snow', name: 'Snow', es: 'Nieve', rgb: [234, 232, 226] }, { key: 'amber', name: 'Amber', es: 'Ámbar', rgb: [226, 128, 44] },
+  { key: 'orchid', name: 'Orchid', es: 'Orquídea', rgb: [186, 72, 176] }, { key: 'sky', name: 'Sky', es: 'Cielo', rgb: [96, 170, 222] },
+  { key: 'sun', name: 'Sun', es: 'Sol', rgb: [236, 196, 60] }, { key: 'sprout', name: 'Sprout', es: 'Brote', rgb: [124, 196, 56] },
+  { key: 'blossom', name: 'Blossom', es: 'Flor', rgb: [232, 140, 170] }, { key: 'ash', name: 'Ash', es: 'Ceniza', rgb: [84, 86, 94] },
+  { key: 'mist', name: 'Mist', es: 'Niebla', rgb: [150, 152, 156] }, { key: 'lagoon', name: 'Lagoon', es: 'Laguna', rgb: [40, 140, 150] },
+  { key: 'dusk', name: 'Dusk', es: 'Ocaso', rgb: [118, 58, 170] }, { key: 'tide', name: 'Tide', es: 'Marea', rgb: [52, 94, 186] },
+  { key: 'bark', name: 'Bark', es: 'Corteza', rgb: [118, 78, 46] }, { key: 'moss', name: 'Moss', es: 'Musgo', rgb: [72, 146, 74] },
+  { key: 'ember', name: 'Ember', es: 'Ascua', rgb: [196, 58, 52] }, { key: 'night', name: 'Night', es: 'Noche', rgb: [44, 42, 50] },
+];
+/** Block ids of the expansion, by key. */
+export const BX: Record<string, number> = {};
+/** Spanish names for expansion blocks (merged into the i18n table). */
+export const NAMES_ES: Record<string, string> = {};
+let nextId = 100;
+function add(key: string, name: string, es: string, o: Opts) { const id = nextId++; if (id >= 255) throw new Error("block id space exhausted"); BX[key] = id; NAMES_ES[name] = es; return def(id, key, name, o); }
+const EXISTING_CLOTH: Record<string, number> = { snow: B.CLOTH_WHITE, ember: B.CLOTH_RED, tide: B.CLOTH_BLUE, moss: B.CLOTH_GREEN, sun: B.CLOTH_YELLOW, night: B.CLOTH_BLACK };
+const EXISTING_RUG: Record<string, number> = { ember: B.RUG_RED, tide: B.RUG_BLUE };
+/** cloth / rug / smoothcast / fired clay / tinted glass block id per dye key */
+export const COLOR_BLOCKS: Record<string, Record<string, number>> = { cloth: {}, rug: {}, smooth: {}, fclay: {}, tglass: {} };
+for (const d of DYES) {
+  COLOR_BLOCKS.cloth[d.key] = EXISTING_CLOTH[d.key] ?? add(`cloth_${d.key}`, `Woven Cloth (${d.name})`, `Tela tejida (${d.es})`, { tex: all(`cloth_${d.key}`), hardness: 0.8, mat: 'cloth' }).id;
+}
+for (const d of DYES) {
+  const tex = all(EXISTING_CLOTH[d.key] !== undefined ? BLOCKS[EXISTING_CLOTH[d.key]].key : `cloth_${d.key}`);
+  COLOR_BLOCKS.rug[d.key] = EXISTING_RUG[d.key] ?? add(`rug_${d.key}`, `Rug (${d.name})`, `Alfombra (${d.es})`, { tex, shape: SHAPE_BOX, render: RENDER_CUTOUT, solid: false, opaque: false, hardness: 0.2, mat: 'cloth', support: 'solid' }).id;
+}
+for (const d of DYES) COLOR_BLOCKS.smooth[d.key] = add(`smooth_${d.key}`, `Smoothcast (${d.name})`, `Hormigón (${d.es})`, { tex: all(`smooth_${d.key}`), hardness: 1.8, tool: 'pick', tier: 1 }).id;
+for (const d of DYES) COLOR_BLOCKS.fclay[d.key] = add(`fclay_${d.key}`, `Fired Clay (${d.name})`, `Arcilla cocida (${d.es})`, { tex: all(`fclay_${d.key}`), hardness: 1.25, tool: 'pick', tier: 1 }).id;
+for (const d of DYES) COLOR_BLOCKS.tglass[d.key] = add(`tglass_${d.key}`, `Tinted Glass (${d.name})`, `Cristal teñido (${d.es})`, { tex: all(`tglass_${d.key}`), hardness: 0.3, mat: 'glass', opaque: false, render: RENDER_CUTOUT, cullSame: true, filter: 1 }).id;
+
+const stone = (t: string, h = 1.5): Opts => ({ tex: all(t), hardness: h, tool: 'pick', tier: 1 });
+const stoneTbs = (top: string, side: string, h = 1.5): Opts => ({ tex: tbs(top, top, side), hardness: h, tool: 'pick', tier: 1 });
+for (const [k, n, es] of [['rosestone', 'Rosestone', 'Piedra rosa'], ['chalkstone', 'Chalkstone', 'Piedra caliza'], ['fieldstone', 'Fieldstone', 'Piedra de campo']]) {
+  add(k, n, es, stone(k));
+  add(`${k}_polished`, `Polished ${n}`, `${es} pulida`, stone(`${k}_polished`));
+}
+add('duskstone', 'Duskstone', 'Piedra ocaso', stone('duskstone'));
+add('duskstone_polished', 'Polished Duskstone', 'Piedra ocaso pulida', stone('duskstone_polished', 2));
+add('duskstone_bricks', 'Duskstone Bricks', 'Ladrillos de piedra ocaso', stone('duskstone_bricks', 2));
+add('slate_bricks', 'Slate Bricks', 'Ladrillos de pizarra', stone('slate_bricks', 3));
+add('slate_tiles', 'Slate Tiles', 'Baldosas de pizarra', stone('slate_tiles', 3));
+add('slate_polished', 'Polished Slate', 'Pizarra pulida', stone('slate_polished', 3));
+add('smooth_stone', 'Smooth Stone', 'Piedra lisa', stone('smooth_stone', 2));
+add('cracked_hewn', 'Cracked Hewn Stone', 'Piedra tallada agrietada', stone('cracked_hewn', 2));
+add('mossy_hewn', 'Mossy Hewn Stone', 'Piedra tallada musgosa', stone('mossy_hewn', 2));
+add('carved_hewn', 'Carved Hewn Stone', 'Piedra tallada cincelada', stone('carved_hewn', 2));
+add('tuffrock', 'Tuffrock', 'Toba', stone('tuffrock'));
+add('whitespar', 'Whitespar', 'Espato blanco', stone('whitespar', 0.8));
+add('driprock', 'Driprock', 'Roca de goteo', stone('driprock'));
+add('obsidite', 'Obsidite', 'Obsidita', { ...stone('obsidite', 12), tier: 4 });
+add('smooth_sandstone', 'Smooth Sandstone', 'Arenisca lisa', stone('smooth_sandstone_top', 0.8));
+add('cut_sandstone', 'Cut Sandstone', 'Arenisca cortada', stoneTbs('sandstone_top', 'cut_sandstone', 0.8));
+add('rust_sand', 'Rust Sand', 'Arena rojiza', { tex: all('rust_sand'), hardness: 0.5, tool: 'spade', mat: 'sand' });
+add('rust_sandstone', 'Rust Sandstone', 'Arenisca rojiza', stoneTbs('rust_sandstone_top', 'rust_sandstone', 0.8));
+add('packed_ice', 'Packed Ice', 'Hielo compacto', { tex: all('packed_ice'), hardness: 0.5, tool: 'pick', mat: 'glass' });
+add('glacier_ice', 'Glacier Ice', 'Hielo glaciar', { tex: all('glacier_ice'), hardness: 2.8, tool: 'pick', mat: 'glass' });
+add('forest_litter', 'Forest Litter', 'Hojarasca', { tex: tbs('forest_litter_top', 'dirt', 'forest_litter_side'), hardness: 0.5, tool: 'spade', mat: 'dirt' });
+add('fungal_turf', 'Fungal Turf', 'Césped fúngico', { tex: tbs('fungal_turf_top', 'dirt', 'fungal_turf_side'), hardness: 0.6, tool: 'spade', mat: 'grass' });
+add('stony_soil', 'Stony Soil', 'Tierra pedregosa', { tex: all('stony_soil'), hardness: 0.5, tool: 'spade', mat: 'dirt' });
+add('packed_mud', 'Packed Mud', 'Barro compacto', { tex: all('packed_mud'), hardness: 1, tool: 'pick', mat: 'dirt' });
+add('mud_bricks', 'Mud Bricks', 'Ladrillos de barro', stone('mud_bricks'));
+add('tidestone', 'Tidestone', 'Piedra marea', stone('tidestone'));
+add('tidestone_bricks', 'Tidestone Bricks', 'Ladrillos de piedra marea', stone('tidestone_bricks'));
+add('dark_tidestone', 'Dark Tidestone', 'Piedra marea oscura', stone('dark_tidestone'));
+add('tide_lamp', 'Tide Lamp', 'Lámpara de marea', { tex: all('tide_lamp'), hardness: 0.3, mat: 'glass', light: 15 });
+add('cinder_bricks', 'Cinder Bricks', 'Ladrillos de escoria', stone('cinder_bricks', 2));
+add('red_cinder_bricks', 'Red Cinder Bricks', 'Ladrillos de escoria roja', stone('red_cinder_bricks', 2));
+add('pale_quartz', 'Pale Quartz', 'Cuarzo pálido', stone('pale_quartz', 0.8));
+add('quartz_bricks', 'Quartz Bricks', 'Ladrillos de cuarzo', stone('quartz_bricks', 0.8));
+add('quartz_pillar', 'Quartz Pillar', 'Columna de cuarzo', stoneTbs('quartz_pillar_top', 'quartz_pillar', 0.8));
+add('violet_tiles', 'Violet Tiles', 'Baldosas violeta', stone('violet_tiles'));
+add('violet_pillar', 'Violet Pillar', 'Columna violeta', stoneTbs('violet_pillar_top', 'violet_pillar'));
+add('skystone_bricks', 'Skystone Bricks', 'Ladrillos de piedra celeste', stone('skystone_bricks'));
+add('bone_block', 'Bone Block', 'Bloque de hueso', stoneTbs('bone_block_top', 'bone_block', 2));
+add('grain_bale', 'Grain Bale', 'Fardo de grano', { tex: tbs('grain_bale_top', 'grain_bale_top', 'grain_bale'), hardness: 0.5, mat: 'plant', soft: true });
+add('melon', 'Melon', 'Melón', { tex: tbs('melon_top', 'melon_top', 'melon'), hardness: 1, tool: 'axe', mat: 'plant' });
+add('gourd', 'Gourd', 'Calabaza', { tex: tbs('gourd_top', 'gourd_top', 'gourd'), hardness: 1, tool: 'axe', mat: 'plant' });
+add('gourd_lantern', 'Gourd Lantern', 'Farol de calabaza', { tex: front('gourd_top', 'gourd_top', 'gourd', 'gourd_face'), hardness: 1, tool: 'axe', mat: 'plant', light: 15 });
+add('sponge', 'Sponge', 'Esponja', { tex: all('sponge'), hardness: 0.6, mat: 'cloth' });
+add('gel_block', 'Gel Block', 'Bloque de gel', { tex: all('gel_block'), hardness: 0.1, mat: 'cloth', soft: true });
+add('amber_gel', 'Amber Gel', 'Gel ámbar', { tex: all('amber_gel'), hardness: 0.1, mat: 'cloth', soft: true });
+add('honeycomb', 'Honeycomb Block', 'Bloque de panal', { tex: all('honeycomb'), hardness: 0.6, mat: 'cloth' });
+add('coal_block', 'Coal Block', 'Bloque de carbón', { tex: all('coal_block'), hardness: 4, tool: 'pick', tier: 1, mat: 'metal' });
+add('raw_iron_block', 'Raw Iron Block', 'Bloque de hierro en bruto', { tex: all('raw_iron_block'), hardness: 4, tool: 'pick', tier: 3 });
+add('raw_copper_block', 'Raw Copper Block', 'Bloque de cobre en bruto', { tex: all('raw_copper_block'), hardness: 4, tool: 'pick', tier: 2 });
+add('raw_sunstone_block', 'Raw Sunstone Block', 'Bloque de piedrasol en bruto', { tex: all('raw_sunstone_block'), hardness: 4, tool: 'pick', tier: 4 });
+add('weathered_copper', 'Weathered Copper', 'Cobre desgastado', { tex: all('weathered_copper'), hardness: 4, tool: 'pick', tier: 2, mat: 'metal' });
+add('verdigris_copper', 'Verdigris Copper', 'Cobre verdete', { tex: all('verdigris_copper'), hardness: 4, tool: 'pick', tier: 2, mat: 'metal' });
+add('cut_copper', 'Cut Copper', 'Cobre cortado', { tex: all('cut_copper'), hardness: 4, tool: 'pick', tier: 2, mat: 'metal' });
+add('silver_planks', 'Silverwood Boards', 'Tablas plateadas', { tex: all('silver_planks'), hardness: 2, tool: 'axe', mat: 'wood' });
+add('palm_planks', 'Palm Boards', 'Tablas de palmera', { tex: all('palm_planks'), hardness: 2, tool: 'axe', mat: 'wood' });
+add('charred_planks', 'Charred Boards', 'Tablas carbonizadas', { tex: all('charred_planks'), hardness: 2, tool: 'axe', mat: 'wood' });
+/** log id -> stripped log id (axe use) */
+export const STRIPPED: Record<number, number> = {};
+for (const [log, k, n, es] of [[B.ASH_LOG, 'ash', 'Ashwood', 'fresno'], [B.PINE_LOG, 'pine', 'Pine', 'pino'], [B.PALM_LOG, 'palm', 'Palm', 'palmera'], [B.CHARRED_LOG, 'charred', 'Charred', 'carbonizado'], [B.SILVER_LOG, 'silver', 'Silverwood', 'plateado']] as [number, string, string, string][]) {
+  STRIPPED[log] = add(`stripped_${k}`, `Stripped ${n} Log`, `Tronco de ${es} pelado`, { tex: tbs(`stripped_${k}_top`, `stripped_${k}_top`, `stripped_${k}`), hardness: 2, tool: 'axe', mat: 'wood' }).id;
+}
+add('glowpod', 'Glowpod', 'Vaina luminosa', { tex: all('glowpod'), hardness: 1, tool: 'axe', mat: 'plant', light: 15 });
+for (const [k, n, es] of [['crimson_bloom', 'Crimson Bloom', 'Flor carmesí'], ['cupflower_amber', 'Amber Cupflower', 'Copaflor ámbar'], ['cupflower_snow', 'Snow Cupflower', 'Copaflor blanca'],
+  ['cupflower_blossom', 'Blossom Cupflower', 'Copaflor rosa'], ['starburst_daisy', 'Starburst Daisy', 'Margarita estelar'], ['orchid_puff', 'Orchid Puff', 'Pompón orquídea']]) add(k, n, es, plant({ tex: all(k) }));
+add('frond_fern', 'Frond Fern', 'Helecho', plant({ tex: all('frond_fern'), replaceable: true }));
+add('capshroom_red', 'Red Capshroom', 'Hongo rojo', plant({ tex: all('capshroom_red'), support: 'solid', light: 1 }));
+add('capshroom_brown', 'Brown Capshroom', 'Hongo café', plant({ tex: all('capshroom_brown'), support: 'solid' }));
+export const FLOWERS = [B.SUNPETAL, B.BLUEBELL, BX.crimson_bloom, BX.cupflower_amber, BX.cupflower_snow, BX.cupflower_blossom, BX.starburst_daisy, BX.orchid_puff];
+const RUG = new Uint8Array(256);
+for (const id of Object.values(COLOR_BLOCKS.rug)) RUG[id] = 1;
+export const isRug = (id: number) => RUG[id] === 1;
+
 // Unloaded sentinel behaves like an invisible solid wall.
 BLOCKS[UNLOADED] = {
   id: UNLOADED, key: 'unloaded', name: 'Unloaded', shape: SHAPE_NONE, render: RENDER_NONE, solid: true, opaque: true,
@@ -283,7 +394,7 @@ export function blockBoxes(id: number, meta: number): number[][] {
     case B.LANTERN: return [[5, 0, 5, 11, 9, 11], [6, 9, 6, 10, 11, 10]];
     case B.RUG_RED: case B.RUG_BLUE: return [[0, 0, 0, 16, 1, 16]];
     case B.FARMLAND: return [[0, 0, 0, 16, 15, 16]];
-    default: return [[0, 0, 0, 16, 16, 16]];
+    default: return isRug(id) ? [[0, 0, 0, 16, 1, 16]] : [[0, 0, 0, 16, 16, 16]];
   }
 }
 

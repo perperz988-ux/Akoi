@@ -1,5 +1,6 @@
 // Localization (English / Spanish). Static UI text is translated automatically by a MutationObserver;
 // dynamic strings use t() and the pattern rules below.
+import { DYES, NAMES_ES } from '../world/Blocks';
 export type Lang = 'en' | 'es';
 let lang: Lang = 'en';
 
@@ -199,6 +200,17 @@ const ES: Record<string, string> = {
   'Any Boards': 'Cualquier tabla', 'Any Log': 'Cualquier tronco', 'Any Leaves': 'Cualquier hoja', 'Fuel (coal/wood)': 'Combustible (carbón/madera)', 'Rubble or Stone': 'Escombro o piedra',
 };
 
+Object.assign(ES, NAMES_ES);
+for (const d of DYES) ES[`${d.name} Dye`] = `Tinte (${d.es})`;
+Object.assign(ES, {
+  'Bone': 'Hueso', 'Melon Slice': 'Rebanada de melón', 'Strip': 'Pelar', 'Any Dye': 'Cualquier tinte', 'Dyes': 'Tintes', 'Colours': 'Colores', 'Stone': 'Piedra',
+  'Storage': 'Almacenaje', 'Metal': 'Metal', 'Decor': 'Decoración', 'Colours cloth, rugs, smoothcast, fired clay and glass.': 'Tiñe tela, alfombras, hormigón, arcilla cocida y cristal.',
+  'Dropped by Gloomlings and Crag Crawlers.': 'Lo sueltan los Penumbros y los Reptarrocas.',
+  'Control scheme': 'Esquema de controles', 'Bedrock (joystick + action)': 'Bedrock (joystick + acción)', 'Floating joystick': 'Joystick flotante',
+  'Hold a hotbar slot to drop the item': 'Mantén presionada una casilla para tirar el objeto',
+  'Gamepad: left stick move · right stick look · A jump · B drop · RS click sneak · LS click sprint · RT break · LT place/use · X use · Y inventory · LB/RB hotbar · Start pause · D-pad up fly. Keyboard: WASD (double-tap W to sprint), mouse (left break, right place/use, middle pick block), Space jump (double-tap to fly), Shift sneak, Ctrl sprint, E inventory, Q drop, F use, F1 hide HUD, F3 info, F5 view, 1-9 / wheel hotbar.':
+    'Mando: stick izq. moverse · stick der. mirar · A saltar · B tirar · clic stick der. agacharse · clic stick izq. correr · RT romper · LT poner/usar · X usar · Y inventario · LB/RB barra · Start pausa · cruceta arriba volar. Teclado: WASD (doble W para correr), ratón (izq. romper, der. poner/usar, central tomar bloque), Espacio saltar (doble para volar), Shift agacharse, Ctrl correr, E inventario, Q tirar, F usar, F1 ocultar interfaz, F3 info, F5 vista, 1-9 / rueda barra.',
+});
 const PATTERNS: [RegExp, (m: RegExpMatchArray) => string][] = [
   [/^Day (\d+) · (.+)$/, (m) => `Día ${m[1]} · ${m[2]}`],
   [/^Seed (.*)$/, (m) => `Semilla ${m[1]}`],

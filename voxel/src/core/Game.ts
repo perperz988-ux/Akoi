@@ -1,6 +1,6 @@
 // Main game orchestration: render loop, world session lifecycle, interaction, survival rules, saving.
 import * as THREE from 'three';
-import { B, BLOCKS, CRACK_TILES, HEIGHT, L_SOLID, SHAPE_CROSS, SHAPE_CUBE, UNLOADED, blockDef, isLiquid, pickBoxes, ATLAS_CELL, ATLAS_COLS, ATLAS_SIZE, ATLAS_TILE } from '../world/Blocks';
+import { B, BX, COLOR_BLOCKS, STRIPPED, BLOCKS, CRACK_TILES, HEIGHT, L_SOLID, SHAPE_CROSS, SHAPE_CUBE, UNLOADED, blockDef, isLiquid, pickBoxes, ATLAS_CELL, ATLAS_COLS, ATLAS_SIZE, ATLAS_TILE } from '../world/Blocks';
 import { World, Stack } from '../world/World';
 import { BIOME, BIOME_NAMES, SEA, seedFromString } from '../world/Generator';
 import { buildAtlas, AtlasInfo } from '../gfx/Atlas';
@@ -13,7 +13,7 @@ import { Settings, loadSettings, saveSettings } from './Settings';
 import { Player } from '../game/Player';
 import { MobManager, MOB_TYPES, Mob, rayBox } from '../game/Mobs';
 import { DropManager, blockGeometry } from '../game/Drops';
-import { I, item, itemCanvas, setTileCanvasSource, toolMatches } from '../game/Items';
+import { I, item, itemCanvas, maxStack, setTileCanvasSource, toolMatches } from '../game/Items';
 import { Station, Recipe, craft as doCraft } from '../game/Inventory';
 import { overlapsSolid } from '../game/Physics';
 import { buildAvatar, Model } from '../game/Models';
@@ -24,6 +24,7 @@ export type GameState = 'menu' | 'loading' | 'play' | 'pause' | 'inventory' | 'd
 export interface Rules { daylightCycle: boolean; mobSpawning: boolean; keepInventory: boolean; difficulty: number; weatherCycle: boolean }
 export interface Target { x: number; y: number; z: number; nx: number; ny: number; nz: number; id: number; t: number }
 
+const TGLASS = new Set(Object.values(COLOR_BLOCKS.tglass));
 export const DAY_LENGTH = 960; // seconds per full day/night cycle
 
 export interface UIHooks {
@@ -33,6 +34,7 @@ export interface UIHooks {
   openInventory(station?: Station): void;
   onDeath(msg: string): void;
   refreshHud(): void;
+  toggleHud(): void;
   setLoading(p: number, msg: string): void;
   openCreative(): void;
 }
@@ -746,7 +748,10 @@ export class Game {
       case B.EMBER_LEAVES: return r < 0.1 ? one(I.ashfruit) : r < 0.16 ? one(I.stick) : [];
       case B.SILVER_LEAVES: return r < 0.12 ? one(I.stick) : [];
       case B.GLOW_VINE: return one(B.GLOW_VINE);
+      case BX.melon: return one(I.melon_slice, 3 + Math.floor(r * 4));
+      case BX.frond_fern: return r < 0.5 ? one(I.fiber) : [];
     }
+    if (TGLASS.has(id)) return [];
     if (!this.canHarvest(id, held)) return [];
     return BLOCKS[id]?.item ? one(id) : [];
   }
@@ -828,6 +833,18 @@ export class Game {
     if (inp.consume('drop')) this.dropHeld(false);
     if (inp.consume('dropStack')) this.dropHeld(true);
     if (inp.consume('view')) this.viewMode = (this.viewMode + 1) % 3;
+    if (inp.consume('hud')) this.ui.toggleHud();
+    if (inp.consume('debug')) { this.settings.showFps = !this.settings.showFps; saveSettings(this.settings); }
+    if (inp.consume('pick') && this.target) {
+      // pick block (middle click): select it in the hotbar, or put it in hand in creative
+      const id = this.target.id;
+      const want = id === B.DOOR_LOWER || id === B.DOOR_UPPER ? I.door : BLOCKS[id]?.item ? id : -1;
+      if (want >= 0) {
+        const slot = p.inv.slots.slice(0, 9).findIndex((s) => s && s.id === want);
+        if (slot >= 0) p.inv.selected = slot;
+        else if (p.creative) p.inv.slots[p.inv.selected] = { id: want, count: maxStack(want) };
+      }
+    }
     if (inp.consume('fly')) { if (p.creative) { p.flying = !p.flying; this.ui.toast(p.flying ? 'Flying' : 'Walking'); } }
     if (inp.consume('attack')) {
       if (this.targetMob) { if (this.attackCd <= 0) this.attack(); }
@@ -858,6 +875,7 @@ export class Game {
       if (held) {
         const d = item(held.id);
         if (d.tool?.type === 'tiller' && (t.id === B.DIRT || t.id === B.GRASS)) return 'Till';
+        if (d.tool?.type === 'axe' && STRIPPED[t.id]) return 'Strip';
         if (held.id === I.seeds && t.id === B.FARMLAND) return 'Plant';
       }
     }
@@ -906,6 +924,10 @@ export class Game {
     if (!held) return;
     const d = item(held.id);
     // tools / items with special uses
+    if (d.tool?.type === 'axe' && t && STRIPPED[t.id]) {
+      w.setBlock(t.x, t.y, t.z, STRIPPED[t.id], w.getMeta(t.x, t.y, t.z)); this.audio.block('wood', 'place'); this.useDurability(); this.swing = 1; this.placeCd = 0.25;
+      return;
+    }
     if (d.tool?.type === 'tiller') {
       if (t && (t.id === B.DIRT || t.id === B.GRASS) && w.getBlock(t.x, t.y + 1, t.z) === B.AIR) {
         w.setBlock(t.x, t.y, t.z, B.FARMLAND); this.audio.block('dirt', 'place'); this.useDurability(); this.swing = 1;

@@ -1,6 +1,6 @@
 // Deterministic procedural terrain: continents, oceans, islands, rivers, hills, mountains,
 // biomes, caves (interpolated 3D noise), ore veins, trees and vegetation.
-import { B, CHUNK, HEIGHT } from './Blocks';
+import { B, BX, CHUNK, FLOWERS, HEIGHT } from './Blocks';
 import { Simplex, hash3, hashString, lerp, mulberry32, smoothstep } from './Noise';
 
 export const SEA = 46;
@@ -259,6 +259,13 @@ export class Generator {
     vein(B.AZURITE_ORE, 2, 4, 3, 18);
     vein(B.FROSTQUARTZ_ORE, 4, 6, 62, 120);
     vein(B.RUBELLITE_ORE, 2, 4, 3, 14);
+    // large stone pockets (expansion 2)
+    vein(BX.rosestone, 1, 34, 10, 90);
+    vein(BX.chalkstone, 1, 34, 10, 90);
+    vein(BX.fieldstone, 1, 34, 10, 90);
+    vein(BX.tuffrock, 1, 28, 3, 26);
+    vein(BX.driprock, 1, 22, 8, 50);
+    vein(BX.whitespar, 1, 14, 3, 30);
   }
 
   private decorate(blocks: Uint8Array, meta: Uint8Array, cols: Column[], cx: number, cz: number) {
@@ -275,8 +282,11 @@ export class Generator {
         const bio = col.biome;
         const grassChance = bio === BIOME.PLAINS ? 0.22 : bio === BIOME.FOREST ? 0.12 : 0.06;
         if (p < grassChance) blocks[i] = B.TALL_GRASS;
-        else if (p < grassChance + 0.018) blocks[i] = r() < 0.5 ? B.SUNPETAL : B.BLUEBELL;
+        else if (p < grassChance + 0.018) blocks[i] = FLOWERS[Math.floor(r() * FLOWERS.length)];
         else if (p < grassChance + 0.024 && bio !== BIOME.MOUNTAINS) { blocks[i] = B.BERRY_BUSH; meta[i] = r() < 0.6 ? 1 : 0; }
+        else if (bio === BIOME.FOREST && p < grassChance + 0.05) blocks[i] = BX.frond_fern;
+        else if (bio === BIOME.FOREST && p < grassChance + 0.056) blocks[i] = r() < 0.5 ? BX.capshroom_red : BX.capshroom_brown;
+        else if (p > 0.9995) blocks[i] = bio === BIOME.PLAINS ? BX.gourd : BX.melon;
       } else if (below === B.FROST_GRASS) {
         if (p < 0.04) blocks[i] = B.TALL_GRASS;
         else if (p < 0.05) blocks[i] = B.BLUEBELL;

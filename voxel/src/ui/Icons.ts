@@ -13,5 +13,6 @@ export const ICON = {
   wing: S('<path d="M3 17c4-1 7-4 9-9 2 5 5 8 9 9"/><path d="M7 15c1-2 3-3 5-3s4 1 5 3"/>'),
   sprint: S('<path d="M6 6l6 6-6 6"/><path d="M13 6l6 6-6 6"/>'),
   star: S('<path d="M12 3l2.6 5.6L20 9.5l-4 4 1 6-5-2.8L7 19.5l1-6-4-4 5.4-.9z"/>'),
+  action: S('<path d="M5 19L17 7"/><path d="M13 4c3 0 6 2 7 5-3-1-5-1-7-1z"/><path d="M19 19L8 8"/><path d="M8 8L5 5M4 7l3-3"/>'),
   gear: S('<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/>'),
 };

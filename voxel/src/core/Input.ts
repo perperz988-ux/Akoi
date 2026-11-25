@@ -3,7 +3,7 @@ import type { Settings } from './Settings';
 
 export type Action =
   | 'place' | 'interact' | 'inventory' | 'pause' | 'drop' | 'dropStack' | 'next' | 'prev' | 'view' | 'fly' | 'attack'
-  | 'slot0' | 'slot1' | 'slot2' | 'slot3' | 'slot4' | 'slot5' | 'slot6' | 'slot7' | 'slot8' | 'sprintToggle' | 'creative';
+  | 'pick' | 'hud' | 'debug' | 'slot0' | 'slot1' | 'slot2' | 'slot3' | 'slot4' | 'slot5' | 'slot6' | 'slot7' | 'slot8' | 'sprintToggle' | 'creative';
 
 export class Input {
   moveX = 0; moveY = 0;
@@ -24,6 +24,8 @@ export class Input {
   gamepadActive = false;
   enabled = true;
   lastJumpTap = 0;
+  lastWTap = 0;
+  wSprint = false;
 
   constructor(private canvas: HTMLCanvasElement, private settings: Settings) {
     window.addEventListener('keydown', (e) => {
@@ -38,6 +40,14 @@ export class Input {
         case 'F5': case 'KeyV': this.fire('view'); e.preventDefault(); break;
         case 'KeyG': this.fire('fly'); break;
         case 'KeyC': this.fire('creative'); break;
+        case 'F1': this.fire('hud'); e.preventDefault(); break;
+        case 'F3': this.fire('debug'); e.preventDefault(); break;
+        case 'KeyW': {
+          // double-tap forward to sprint (Minecraft style)
+          const now = performance.now();
+          if (now - this.lastWTap < 300) this.wSprint = true;
+          this.lastWTap = now; break;
+        }
         case 'Space': {
           const now = performance.now();
           if (now - this.lastJumpTap < 300) this.fire('fly');
@@ -48,14 +58,14 @@ export class Input {
       }
       if (['Space', 'Tab', 'ArrowUp', 'ArrowDown'].includes(e.code)) e.preventDefault();
     });
-    window.addEventListener('keyup', (e) => this.keys.delete(e.code));
+    window.addEventListener('keyup', (e) => { this.keys.delete(e.code); if (e.code === 'KeyW') this.wSprint = false; });
     window.addEventListener('blur', () => { this.keys.clear(); this.mouseBreak = false; });
     canvas.addEventListener('mousedown', (e) => {
       if (this.usingTouch) return;
       if (!this.pointerLocked) return;
       if (e.button === 0) { this.mouseBreak = true; this.fire('attack'); }
       if (e.button === 2) this.fire('place');
-      if (e.button === 1) this.fire('interact');
+      if (e.button === 1) { this.fire('pick'); e.preventDefault(); }
     });
     window.addEventListener('mouseup', (e) => { if (e.button === 0) this.mouseBreak = false; });
     canvas.addEventListener('contextmenu', (e) => e.preventDefault());
@@ -101,7 +111,7 @@ export class Input {
     if (k.has('KeyD') || k.has('ArrowRight')) mx += 1;
     let jump = k.has('Space') || this.touchJump;
     let sneakHeld = k.has('ShiftLeft') || k.has('ShiftRight');
-    let sprint = k.has('ControlLeft') || k.has('KeyR');
+    let sprint = k.has('ControlLeft') || k.has('KeyR') || this.wSprint;
     let brk = this.mouseBreak || this.touchBreak;
     mx += this.touchMoveX; my += this.touchMoveY;
 
@@ -120,7 +130,8 @@ export class Input {
       const b = (i: number) => !!gp.buttons[i]?.pressed;
       const edge = (i: number) => b(i) && !this.padPrev[i];
       if (b(0)) jump = true;
-      if (b(1)) sneakHeld = true;
+      if (b(11)) sneakHeld = true;
+      if (edge(1)) this.fire('drop');
       if (b(10)) sprint = true;
       if (b(7)) brk = true;
       if (edge(7)) this.fire('attack');
@@ -132,7 +143,6 @@ export class Input {
       if (edge(9)) this.fire('pause');
       if (edge(8)) this.fire('view');
       if (edge(12)) this.fire('fly');
-      if (edge(13)) this.fire('drop');
       this.padPrev = gp.buttons.map((x) => x.pressed);
     }
     const len = Math.hypot(mx, my);

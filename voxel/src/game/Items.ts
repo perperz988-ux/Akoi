@@ -1,5 +1,5 @@
 // Item registry: every block item (id < 256) plus tools, materials and food (id >= 256).
-import { B, BLOCKS, SHAPE_CROSS, SHAPE_CUBE, faceTile } from '../world/Blocks';
+import { B, BLOCKS, DYES, SHAPE_CROSS, SHAPE_CUBE, faceTile } from '../world/Blocks';
 import { hashString, mulberry32 } from '../world/Noise';
 
 export type ToolType = 'pick' | 'axe' | 'spade' | 'blade' | 'tiller';
@@ -101,6 +101,10 @@ for (const t of ARMOR_TIERS) ARMOR_SLOTS.forEach((sl, i) => r(`${t.key}_${sl.toL
 const EMBER_TIER = { key: 'ember', name: 'Emberite', tier: 6, speed: 11, dmg: 6, dur: 2000 };
 TIERS.push(EMBER_TIER);
 for (const k of KINDS) r(`ember_${k.type}`, `Emberite ${k.name}`, { maxStack: 1, tool: { type: k.type, tier: 6, speed: EMBER_TIER.speed, damage: k.base + EMBER_TIER.dmg + (k.type === 'blade' ? 6 : 0), durability: EMBER_TIER.dur } });
+// ---- expansion 2 items (appended so existing save ids stay stable) ----
+for (const d of DYES) r(`dye_${d.key}`, `${d.name} Dye`, { desc: 'Colours cloth, rugs, smoothcast, fired clay and glass.' });
+r('bone', 'Bone', { desc: 'Dropped by Gloomlings and Crag Crawlers.' });
+r('melon_slice', 'Melon Slice', { food: 2 });
 
 export function item(id: number): ItemDef { return ITEMS[id] || ITEMS[B.STONE]; }
 export function maxStack(id: number) { return item(id).maxStack; }
@@ -204,6 +208,12 @@ const ITEM_ART: Record<string, (set: any, r: () => number) => void> = {
   fishing_line: (s) => { for (let i = 0; i < 12; i++) s(2 + i, 13 - i, [130, 90, 50]); for (let y = 2; y < 12; y++) s(13, y, [220, 220, 220]); s(13, 12, [220, 50, 50]); s(13, 13, [240, 240, 240]); },
   glowcap_stew: (s) => { for (let y = 8; y < 14; y++) for (let x = 2; x < 14; x++) if (Math.abs(x - 8) < 6 - (y - 8) * 0.5) s(x, y, [150, 100, 60]); for (let x = 3; x < 13; x++) s(x, 8, [90, 220, 210]); s(6, 7, [200, 255, 250]); s(9, 7, [200, 255, 250]); },
 };
+for (const d of DYES) ITEM_ART[`dye_${d.key}`] = (s: any, r: () => number) => {
+  const c = d.rgb as RGB;
+  for (let y = 7; y < 14; y++) for (let x = 2; x < 14; x++) { const e = ((x - 8) / 6) ** 2 + ((y - 13) / 6) ** 2; if (e < 1) s(x, y, r() < 0.25 ? dk(c, 0.75) : y < 10 ? [Math.min(255, c[0] + 40), Math.min(255, c[1] + 40), Math.min(255, c[2] + 40)] : c); }
+};
+ITEM_ART.bone = (s: any) => { for (let i = 0; i < 9; i++) { s(4 + i, 11 - i, [236, 230, 210]); s(5 + i, 11 - i, [200, 194, 172]); } for (const [x, y] of [[3, 11], [3, 12], [4, 13], [12, 2], [13, 3], [14, 3]]) s(x, y, [240, 236, 220]); };
+ITEM_ART.melon_slice = (s: any) => { for (let y = 4; y < 14; y++) for (let x = 2; x < 14; x++) { const d = Math.hypot(x - 8, y - 14); if (d < 10 && y < 14 && Math.abs(x - 8) < (y - 3)) s(x, y, d > 8.6 ? [70, 140, 50] : d > 7.6 ? [210, 240, 170] : [236, 80, 80]); } for (const [x, y] of [[7, 9], [9, 10], [6, 11], [10, 12]]) s(x, y, [40, 30, 30]); };
 function fish(s: any, c: RGB) { for (let y = 5; y < 11; y++) for (let x = 2; x < 12; x++) if (((x - 7) / 5) ** 2 + ((y - 8) / 3) ** 2 < 1) s(x, y, y < 7 ? [Math.min(255, c[0] + 40), Math.min(255, c[1] + 40), Math.min(255, c[2] + 40)] : c); for (let y = 5; y < 11; y++) if (Math.abs(y - 8) < 3) s(12 + Math.abs(y - 8) * 0.5, y, dk(c, 0.8)); s(4, 7, [20, 20, 20]); }
 function armorIcon(slot: number, c: RGB, key: string) {
   return pix((s) => {

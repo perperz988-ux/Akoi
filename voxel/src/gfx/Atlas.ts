@@ -1,6 +1,6 @@
 // Procedurally painted 16x16 block textures packed into a mip-safe atlas (each tile padded by wrapping).
 import * as THREE from 'three';
-import { ATLAS_CELL, ATLAS_COLS, ATLAS_SIZE, ATLAS_TILE, TILE_NAMES } from '../world/Blocks';
+import { ATLAS_CELL, ATLAS_COLS, ATLAS_SIZE, ATLAS_TILE, DYES, TILE_NAMES } from '../world/Blocks';
 import { hashString, mulberry32 } from '../world/Noise';
 
 type C = [number, number, number, number?];
@@ -338,6 +338,150 @@ for (let s = 0; s < 8; s++) painters['crack' + s] = (p) => {
     for (let j = 0; j < len; j++) { p.set(x, y, [20, 20, 24, 220]); if (r() < 0.5) x += dx; else y += dy; }
   }
 };
+
+// ---- expansion 2 painters (all procedural, same building blocks as above) ----
+const dk = (c: C, k: number): C => [c[0] * k, c[1] * k, c[2] * k];
+const lt = (c: C, k: number): C => mix(c, [255, 255, 255], k);
+function polished(p: P, base: C) {
+  p.noise(base, 8);
+  for (let i = 0; i < 16; i++) { p.set(i, 0, lt(base, 0.25)); p.set(0, i, lt(base, 0.25)); p.set(i, 15, dk(base, 0.7)); p.set(15, i, dk(base, 0.7)); }
+}
+function bricks(p: P, base: C, mortar: C, bw = 8, bh = 4) {
+  p.noise(base, 12);
+  for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) {
+    const row = Math.floor(y / bh), ox = row % 2 ? bw / 2 : 0;
+    const bx = (x + ox) % bw, by = y % bh;
+    if (by === bh - 1 || bx === bw - 1) p.set(x, y, p.jitter(mortar, 8));
+    else if (by === 0 || bx === 0) p.add(x, y, 14);
+  }
+}
+function tiles4(p: P, base: C, line: C) {
+  p.noise(base, 10);
+  for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) {
+    if (x % 8 === 7 || y % 8 === 7) p.set(x, y, line);
+    else if (x % 8 === 0 || y % 8 === 0) p.add(x, y, 16);
+  }
+}
+function specks(p: P, c: C, n: number) { for (let k = 0; k < n; k++) p.set(Math.floor(p.r() * 16), Math.floor(p.r() * 16), p.jitter(c, 10)); }
+function turfSide(p: P, top: C) { painters.dirt(p); for (let x = 0; x < 16; x++) { const h = 3 + Math.floor(p.r() * 3); for (let y = 0; y < h; y++) p.set(x, y, p.jitter(top, 14)); } }
+function pillarSide(p: P, base: C) { p.noise(base, 8); for (let y = 0; y < 16; y++) for (const x of [3, 7, 11]) p.shade(x, y, 0.86); for (let x = 0; x < 16; x++) { p.shade(x, 0, 0.8); p.shade(x, 15, 0.8); } }
+function pillarTop(p: P, base: C) { p.noise(base, 8); for (let i = 0; i < 16; i++) { p.shade(i, 0, 0.8); p.shade(0, i, 0.8); p.shade(i, 15, 0.8); p.shade(15, i, 0.8); } p.rect(5, 5, 6, 6, dk(base, 0.88)); }
+function nuggets(p: P, base: C, hi: C) { voronoi(p, 7, base, dk(base, 0.6), 30); specks(p, hi, 10); }
+function stripedSide(p: P, base: C, stripe: C, step: number) { p.noise(base, 12); for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x += step) p.set(x, y, p.jitter(stripe, 10)); }
+function flower(p: P, petal: C, center: C, shape: 'rose' | 'cup' | 'daisy' | 'puff') {
+  p.clear(); plantStem(p, 7, 7, 15, [64, 130, 60]); p.set(6, 11, [80, 150, 70]); p.set(8, 12, [80, 150, 70]); p.set(5, 10, [80, 150, 70]);
+  if (shape === 'cup') { for (let y = 3; y < 8; y++) for (let x = 5; x < 10; x++) if (!(y === 3 && (x === 6 || x === 8))) p.set(x, y, y > 5 ? dk(petal, 0.85) : petal); }
+  else if (shape === 'rose') { for (let y = 3; y < 8; y++) for (let x = 5; x < 10; x++) if ((x - 7) ** 2 + (y - 5) ** 2 < 6.5) p.set(x, y, (x + y) % 3 ? petal : dk(petal, 0.7)); }
+  else if (shape === 'daisy') { for (const [x, y] of [[7, 2], [7, 8], [4, 5], [10, 5], [5, 3], [9, 3], [5, 7], [9, 7], [6, 4], [8, 4], [6, 6], [8, 6]]) p.set(x, y, petal); p.rect(6, 4, 3, 3, center); }
+  else { for (let y = 2; y < 8; y++) for (let x = 4; x < 11; x++) if ((x - 7) ** 2 + (y - 5) ** 2 < 8) p.set(x, y, p.r() < 0.3 ? lt(petal, 0.3) : petal); }
+  if (shape !== 'daisy' && shape !== 'puff') p.set(7, 5, center);
+}
+function shroom(p: P, cap: C, dots: boolean) {
+  p.clear(); plantStem(p, 7, 9, 15, [226, 220, 200]); plantStem(p, 8, 9, 15, [200, 194, 176]);
+  for (let y = 5; y < 10; y++) for (let x = 3; x < 13; x++) if ((x - 7.5) ** 2 / 25 + (y - 9.5) ** 2 / 16 < 1) p.set(x, y, p.jitter(cap, 14));
+  if (dots) for (const [x, y] of [[5, 7], [9, 6], [10, 8], [7, 6]]) p.set(x, y, [245, 240, 230]);
+}
+const EX: Record<string, (p: P) => void> = {
+  rosestone: (p) => { stoneBase(p, [176, 112, 96], [150, 90, 80]); specks(p, [220, 170, 150], 10); },
+  rosestone_polished: (p) => polished(p, [182, 116, 100]),
+  chalkstone: (p) => { stoneBase(p, [214, 212, 206], [186, 184, 178]); specks(p, [90, 92, 96], 12); },
+  chalkstone_polished: (p) => polished(p, [220, 218, 212]),
+  fieldstone: (p) => { stoneBase(p, [136, 138, 136], [112, 114, 114]); specks(p, [170, 170, 168], 10); },
+  fieldstone_polished: (p) => polished(p, [140, 142, 140]),
+  duskstone: (p) => { stoneBase(p, [48, 42, 52], [34, 30, 38]); specks(p, [96, 80, 110], 6); },
+  duskstone_polished: (p) => polished(p, [54, 48, 60]),
+  duskstone_bricks: (p) => bricks(p, [56, 50, 62], [26, 22, 30]),
+  slate_bricks: (p) => bricks(p, [84, 88, 102], [50, 52, 62]),
+  slate_tiles: (p) => tiles4(p, [80, 84, 98], [48, 50, 60]),
+  slate_polished: (p) => polished(p, [86, 90, 104]),
+  smooth_stone: (p) => { p.noise([150, 152, 158], 6); for (let i = 0; i < 16; i++) { p.set(i, 0, [176, 178, 184]); p.set(i, 15, [110, 112, 118]); } },
+  cracked_hewn: (p) => { painters.stone_bricks(p); let x = 3, y = 1; for (let j = 0; j < 14; j++) { p.set(x, y, [60, 62, 70]); y++; x += p.r() < 0.5 ? 1 : 0; } x = 12; y = 9; for (let j = 0; j < 6; j++) { p.set(x, y, [60, 62, 70]); y++; x -= p.r() < 0.5 ? 1 : 0; } },
+  mossy_hewn: (p) => { painters.stone_bricks(p); for (let k = 0; k < 34; k++) { const x = Math.floor(p.r() * 16), y = Math.floor(p.r() * 16); if (y > 6 || p.r() < 0.4) p.set(x, y, p.jitter([82, 140, 70], 20)); } },
+  carved_hewn: (p) => { polished(p, [140, 142, 150]); for (let i = 3; i < 13; i++) { p.set(i, 3, [96, 98, 106]); p.set(i, 12, [96, 98, 106]); p.set(3, i, [96, 98, 106]); p.set(12, i, [96, 98, 106]); } p.rect(6, 6, 4, 4, [110, 112, 120]); p.rect(7, 7, 2, 2, [170, 172, 180]); },
+  tuffrock: (p) => { p.noise([110, 112, 98], 18); specks(p, [150, 150, 130], 14); specks(p, [70, 72, 64], 8); },
+  whitespar: (p) => { p.noise([226, 228, 222], 10); for (let k = 0; k < 3; k++) { let y = Math.floor(p.r() * 16); for (let x = 0; x < 16; x++) { if (p.r() < 0.7) p.set(x, y, [184, 188, 190]); if (p.r() < 0.3) y++; } } },
+  driprock: (p) => { p.noise([134, 104, 88], 14); for (let x = 0; x < 16; x++) if (p.r() < 0.5) { const y0 = Math.floor(p.r() * 16), n = 3 + Math.floor(p.r() * 6); for (let j = 0; j < n; j++) p.set(x, y0 + j, p.jitter([108, 82, 70], 8)); } },
+  obsidite: (p) => { p.noise([26, 18, 38], 10); specks(p, [90, 60, 140], 9); specks(p, [150, 120, 200], 3); },
+  smooth_sandstone_top: (p) => p.noise([222, 196, 142], 6),
+  cut_sandstone: (p) => { p.noise([214, 186, 132], 8); for (const y of [0, 1, 14, 15]) for (let x = 0; x < 16; x++) p.set(x, y, [186, 156, 108]); for (let x = 0; x < 16; x++) p.set(x, 8, [196, 166, 116]); },
+  rust_sand: (p) => { p.noise([196, 110, 54], 14, 6); for (let y = 2; y < 16; y += 5) for (let x = 0; x < 16; x++) if (Math.sin(x * 0.7 + y) > 0.2) p.shade(x, y, 0.92); },
+  rust_sandstone: (p) => { p.noise([184, 104, 56], 10); for (const y of [0, 5, 11]) for (let x = 0; x < 16; x++) p.set(x, y, [150, 80, 40]); },
+  rust_sandstone_top: (p) => { p.noise([190, 110, 60], 10); for (let i = 0; i < 16; i++) { p.set(i, 0, [150, 82, 42]); p.set(0, i, [150, 82, 42]); } },
+  packed_ice: (p) => { p.noise([140, 180, 230], 10); for (let k = 0; k < 4; k++) { let x = Math.floor(p.r() * 16), y = Math.floor(p.r() * 16); for (let j = 0; j < 6; j++) { p.set(x, y, [200, 226, 250]); x++; y += p.r() < 0.5 ? 1 : 0; } } },
+  glacier_ice: (p) => { p.noise([96, 146, 228], 12); for (let k = 0; k < 6; k++) { let x = Math.floor(p.r() * 16), y = Math.floor(p.r() * 16); for (let j = 0; j < 5; j++) { p.set(x, y, [180, 214, 255]); y++; x += p.r() < 0.5 ? 1 : -1; } } },
+  forest_litter_top: (p) => { p.noise([106, 76, 44], 16); for (let k = 0; k < 40; k++) { const x = Math.floor(p.r() * 16), y = Math.floor(p.r() * 16); p.set(x, y, p.r() < 0.5 ? [150, 104, 54] : [70, 98, 50]); } },
+  forest_litter_side: (p) => turfSide(p, [110, 80, 46]),
+  fungal_turf_top: (p) => { p.noise([118, 104, 120], 16, 8); specks(p, [176, 156, 180], 18); specks(p, [80, 70, 84], 10); },
+  fungal_turf_side: (p) => turfSide(p, [118, 104, 120]),
+  stony_soil: (p) => { painters.dirt(p); for (let k = 0; k < 16; k++) { const x = Math.floor(p.r() * 15), y = Math.floor(p.r() * 15); p.set(x, y, [132, 126, 122]); p.set(x + 1, y, [100, 96, 92]); } },
+  packed_mud: (p) => { p.noise([150, 112, 86], 12); for (let k = 0; k < 12; k++) { const x = Math.floor(p.r() * 14), y = Math.floor(p.r() * 16); p.set(x, y, [196, 170, 110]); p.set(x + 1, y, [196, 170, 110]); } },
+  mud_bricks: (p) => bricks(p, [150, 112, 86], [110, 82, 64], 8, 4),
+  tidestone: (p) => { for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) p.set(x, y, p.jitter(mix([84, 150, 136], [110, 176, 168], (Math.sin(x * 0.6) + Math.cos(y * 0.5 + x * 0.2) + 2) / 4), 10)); },
+  tidestone_bricks: (p) => bricks(p, [98, 166, 152], [58, 110, 100], 8, 4),
+  dark_tidestone: (p) => tiles4(p, [44, 88, 80], [26, 54, 50]),
+  tide_lamp: (p) => { for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) { const d = Math.max(Math.abs(x - 7.5), Math.abs(y - 7.5)); p.set(x, y, d > 6.5 ? [70, 130, 120] : p.jitter(mix([236, 255, 250], [130, 220, 210], d / 7), 10)); } },
+  cinder_bricks: (p) => bricks(p, [74, 36, 42], [38, 18, 24], 8, 4),
+  red_cinder_bricks: (p) => bricks(p, [124, 26, 32], [60, 12, 16], 8, 4),
+  pale_quartz: (p) => p.noise([236, 230, 222], 6),
+  quartz_bricks: (p) => bricks(p, [236, 230, 222], [196, 188, 178], 8, 8),
+  quartz_pillar: (p) => pillarSide(p, [236, 230, 222]),
+  quartz_pillar_top: (p) => pillarTop(p, [236, 230, 222]),
+  violet_tiles: (p) => tiles4(p, [170, 120, 170], [130, 88, 132]),
+  violet_pillar: (p) => pillarSide(p, [176, 126, 176]),
+  violet_pillar_top: (p) => pillarTop(p, [176, 126, 176]),
+  skystone_bricks: (p) => bricks(p, [204, 194, 228], [160, 148, 190], 8, 4),
+  bone_block: (p) => stripedSide(p, [226, 220, 196], [196, 190, 166], 4),
+  bone_block_top: (p) => { p.noise([226, 220, 196], 8); for (let i = 0; i < 16; i++) { p.set(i, 0, [196, 190, 166]); p.set(0, i, [196, 190, 166]); } p.rect(5, 5, 6, 6, [200, 194, 170]); },
+  grain_bale: (p) => { stripedSide(p, [214, 176, 70], [180, 140, 48], 3); for (const y of [3, 12]) for (let x = 0; x < 16; x++) p.set(x, y, [150, 96, 50]); },
+  grain_bale_top: (p) => rings(p, [196, 160, 60], [226, 190, 90], [190, 150, 60]),
+  melon: (p) => { stripedSide(p, [96, 160, 56], [52, 110, 40], 4); },
+  melon_top: (p) => { rings(p, [70, 130, 46], [110, 170, 70], [80, 140, 50]); p.set(7, 7, [110, 90, 50]); },
+  gourd: (p) => { stripedSide(p, [226, 130, 40], [190, 96, 28], 4); },
+  gourd_top: (p) => { rings(p, [210, 116, 34], [230, 140, 50], [200, 110, 30]); p.rect(7, 6, 2, 3, [96, 120, 50]); },
+  gourd_face: (p) => { stripedSide(p, [226, 130, 40], [190, 96, 28], 4); const g: C = [255, 220, 90]; p.rect(3, 4, 3, 3, g); p.rect(10, 4, 3, 3, g); for (let x = 3; x < 13; x++) p.set(x, 10, g); for (const x of [4, 7, 10]) p.set(x, 11, g); p.rect(6, 7, 4, 1, [255, 180, 60]); },
+  sponge: (p) => { p.noise([214, 196, 70], 14); for (let k = 0; k < 14; k++) { const x = Math.floor(p.r() * 15), y = Math.floor(p.r() * 15); p.set(x, y, [140, 120, 30]); if (p.r() < 0.5) p.set(x + 1, y, [160, 140, 40]); } },
+  gel_block: (p) => { p.noise([110, 200, 90], 10); for (let i = 3; i < 13; i++) { p.set(i, 3, [80, 160, 70]); p.set(i, 12, [80, 160, 70]); p.set(3, i, [80, 160, 70]); p.set(12, i, [80, 160, 70]); } p.rect(5, 5, 3, 2, [200, 255, 190]); },
+  amber_gel: (p) => { p.noise([240, 170, 50], 10); for (let i = 3; i < 13; i++) { p.set(i, 3, [200, 130, 30]); p.set(i, 12, [200, 130, 30]); p.set(3, i, [200, 130, 30]); p.set(12, i, [200, 130, 30]); } p.rect(5, 5, 3, 2, [255, 230, 160]); },
+  honeycomb: (p) => { p.noise([230, 160, 40], 10); for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) { const r = Math.floor(y / 4), ox = r % 2 ? 2 : 0; if ((x + ox) % 4 === 0 || y % 4 === 0) p.set(x, y, [176, 110, 24]); } },
+  coal_block: (p) => metal(p, [44, 42, 48], [90, 90, 100]),
+  raw_iron_block: (p) => nuggets(p, [190, 160, 140], [240, 220, 206]),
+  raw_copper_block: (p) => nuggets(p, [200, 112, 64], [110, 210, 180]),
+  raw_sunstone_block: (p) => nuggets(p, [232, 180, 50], [255, 244, 170]),
+  weathered_copper: (p) => { metal(p, [170, 130, 92], [100, 200, 170]); specks(p, [100, 170, 140], 30); },
+  verdigris_copper: (p) => { metal(p, [84, 168, 140], [190, 240, 220]); specks(p, [60, 130, 110], 20); },
+  cut_copper: (p) => { metal(p, [212, 124, 72], [120, 220, 190]); for (let i = 0; i < 16; i++) { p.set(i, 7, [150, 80, 46]); p.set(7, i, [150, 80, 46]); p.set(i, 8, [240, 160, 110]); p.set(8, i, [240, 160, 110]); } },
+  silver_planks: (p) => boards(p, [218, 214, 206], [150, 146, 140], false),
+  palm_planks: (p) => boards(p, [196, 164, 110], [130, 100, 62], false),
+  charred_planks: (p) => boards(p, [74, 58, 56], [36, 28, 28], false),
+  glowpod: (p) => { p.noise([130, 60, 40], 10); for (let k = 0; k < 6; k++) { const cx = 2 + Math.floor(p.r() * 12), cy = 2 + Math.floor(p.r() * 12); for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) p.set(cx + dx, cy + dy, Math.abs(dx) + Math.abs(dy) < 2 ? [255, 200, 90] : [240, 140, 50]); } },
+  crimson_bloom: (p) => flower(p, [210, 30, 40], [120, 10, 20], 'rose'),
+  cupflower_amber: (p) => flower(p, [240, 130, 40], [255, 200, 90], 'cup'),
+  cupflower_snow: (p) => flower(p, [240, 240, 236], [230, 220, 120], 'cup'),
+  cupflower_blossom: (p) => flower(p, [240, 150, 180], [255, 210, 220], 'cup'),
+  starburst_daisy: (p) => flower(p, [246, 246, 240], [240, 200, 50], 'daisy'),
+  orchid_puff: (p) => flower(p, [180, 90, 220], [230, 180, 255], 'puff'),
+  frond_fern: (p) => { p.clear(); for (const [x0, dir] of [[7, 0], [4, -1], [10, 1]] as [number, number][]) { let x = x0; for (let y = 15; y > 3; y--) { p.set(x, y, mix([56, 120, 50], [110, 180, 80], (15 - y) / 12)); if (y % 2) { p.set(x - 1, y, [70, 140, 60]); p.set(x + 1, y, [70, 140, 60]); } if (y % 4 === 0) x += dir; } } },
+  capshroom_red: (p) => shroom(p, [210, 40, 36], true),
+  capshroom_brown: (p) => shroom(p, [150, 110, 76], false),
+};
+for (const [k, base, dark] of [['ash', [214, 186, 140], [150, 136, 118]], ['pine', [196, 150, 100], [104, 66, 48]], ['palm', [208, 182, 130], [170, 140, 96]], ['charred', [120, 60, 40], [44, 38, 38]], ['silver', [236, 230, 214], [226, 226, 232]]] as [string, C, C][]) {
+  EX[`stripped_${k}`] = (p) => { p.noise(base, 10); for (let x = 0; x < 16; x += 3) for (let y = 0; y < 16; y++) if (p.r() < 0.6) p.set(x, y, dk(base, 0.86)); };
+  EX[`stripped_${k}_top`] = (p) => { rings(p, dark, base, dk(base, 0.88)); for (let i = 0; i < 16; i++) { p.set(i, 0, dark); p.set(0, i, dark); p.set(i, 15, dark); p.set(15, i, dark); } };
+}
+for (const d of DYES) {
+  const c = d.rgb as C;
+  EX[`cloth_${d.key}`] = (p) => cloth(p, c);
+  EX[`smooth_${d.key}`] = (p) => { p.noise(c, 8); specks(p, lt(c, 0.12), 6); };
+  EX[`fclay_${d.key}`] = (p) => { p.noise(mix(c, [160, 110, 90], 0.3), 10); for (let y = 0; y < 16; y += 4) for (let x = 0; x < 16; x++) if (p.r() < 0.6) p.shade(x, y, 0.93); };
+  EX[`tglass_${d.key}`] = (p) => {
+    p.clear();
+    const hi = lt(c, 0.45), lo = dk(c, 0.75);
+    for (let i = 0; i < 16; i++) { p.set(i, 0, hi); p.set(i, 15, lo); p.set(0, i, hi); p.set(15, i, lo); }
+    for (let y = 2; y < 14; y++) for (let x = 2; x < 14; x++) if ((x + y) % 5 === 0 && (x * 7 + y) % 3 !== 0) p.set(x, y, [c[0], c[1], c[2], 200]);
+    for (let i = 3; i < 8; i++) p.set(i, 11 - i, lt(c, 0.8));
+  };
+}
+Object.assign(painters, EX);
 
 export interface AtlasInfo { texture: THREE.Texture; canvas: HTMLCanvasElement; tileCanvas: (t: number) => HTMLCanvasElement; avgColor: (t: number) => [number, number, number] }
 

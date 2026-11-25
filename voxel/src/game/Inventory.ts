@@ -1,5 +1,5 @@
 // Inventory storage and the crafting system.
-import { B } from '../world/Blocks';
+import { B, BX, COLOR_BLOCKS, DYES, STRIPPED } from '../world/Blocks';
 import type { Stack } from '../world/World';
 import { I, ITEMS, item, maxStack } from './Items';
 
@@ -65,13 +65,14 @@ type Ing = [string | number, number];
 export interface Recipe { id: number; station: Station; inputs: Ing[]; out: number; count: number; group: string }
 
 export const TAGS: Record<string, number[]> = {
-  planks: [B.ASH_PLANKS, B.PINE_PLANKS],
-  logs: [B.ASH_LOG, B.PINE_LOG, B.PALM_LOG],
+  planks: [B.ASH_PLANKS, B.PINE_PLANKS, BX.silver_planks, BX.palm_planks, BX.charred_planks],
+  logs: [B.ASH_LOG, B.PINE_LOG, B.PALM_LOG, B.SILVER_LOG, B.CHARRED_LOG, ...Object.values(STRIPPED)],
   leaves: [B.ASH_LEAVES, B.PINE_LEAVES, B.PALM_LEAVES],
-  fuel: [I.coal, B.ASH_LOG, B.PINE_LOG, B.PALM_LOG, B.ASH_PLANKS, B.PINE_PLANKS, I.stick],
+  fuel: [I.coal, B.ASH_LOG, B.PINE_LOG, B.PALM_LOG, B.SILVER_LOG, B.CHARRED_LOG, ...Object.values(STRIPPED), B.ASH_PLANKS, B.PINE_PLANKS, BX.silver_planks, BX.palm_planks, BX.charred_planks, I.stick, BX.coal_block],
+  dyes: DYES.map((d) => I[`dye_${d.key}`]),
   stoneish: [B.RUBBLE, B.STONE],
 };
-export const TAG_NAMES: Record<string, string> = { planks: 'Any Boards', logs: 'Any Log', leaves: 'Any Leaves', fuel: 'Fuel (coal/wood)', stoneish: 'Rubble or Stone' };
+export const TAG_NAMES: Record<string, string> = { dyes: 'Any Dye', planks: 'Any Boards', logs: 'Any Log', leaves: 'Any Leaves', fuel: 'Fuel (coal/wood)', stoneish: 'Rubble or Stone' };
 
 export const RECIPES: Recipe[] = [];
 let rid = 0;
@@ -199,3 +200,82 @@ export function craft(inv: Inventory, r: Recipe, creative: boolean): number {
 }
 
 export function recipesFor(stations: Set<Station>): Recipe[] { return RECIPES.filter((r) => stations.has(r.station)); }
+
+// ---- expansion 2: dyes, colour families, stone variants and decor ----
+const dye = (k: string) => I[`dye_${k}`];
+const C = COLOR_BLOCKS;
+// dyes from plants and materials
+for (const [k, src, n] of [['snow', I.bone, 3], ['snow', BX.cupflower_snow, 1], ['ember', I.berries, 1], ['ember', BX.crimson_bloom, 2], ['sun', B.SUNPETAL, 2],
+  ['tide', B.BLUEBELL, 2], ['moss', B.CACTUS, 2], ['night', I.coal, 2], ['amber', BX.cupflower_amber, 2], ['orchid', BX.orchid_puff, 2], ['blossom', BX.cupflower_blossom, 2],
+  ['mist', BX.starburst_daisy, 2], ['bark', BX.capshroom_brown, 2], ['sprout', B.TALL_GRASS, 1]] as [string, number, number][]) rc('hand', 'Dyes', dye(k), n, [src, 1]);
+rc('hand', 'Dyes', dye('moss'), 1, ['leaves', 2]);
+// mixed dyes
+for (const [k, a, b] of [['amber', 'ember', 'sun'], ['orchid', 'dusk', 'blossom'], ['sky', 'tide', 'snow'], ['sprout', 'moss', 'snow'], ['blossom', 'ember', 'snow'],
+  ['ash', 'night', 'snow'], ['mist', 'ash', 'snow'], ['lagoon', 'tide', 'moss'], ['dusk', 'tide', 'ember']]) rc('hand', 'Dyes', dye(k), 2, [dye(a), 1], [dye(b), 1]);
+for (const d of DYES) {
+  rc('hand', 'Colours', C.cloth[d.key], 1, [B.CLOTH_WHITE, 1], [dye(d.key), 1]);
+  if (d.key !== 'ember' && d.key !== 'tide') rc('hand', 'Colours', C.rug[d.key], 3, [C.cloth[d.key], 2]);
+  rc('bench', 'Colours', C.smooth[d.key], 8, [B.SAND, 4], [B.GRAVEL, 4], [dye(d.key), 1]);
+  rc('kiln', 'Colours', C.fclay[d.key], 4, [B.CLAY, 4], [dye(d.key), 1], ['fuel', 1]);
+  rc('bench', 'Colours', C.tglass[d.key], 8, [B.GLASS, 8], [dye(d.key), 1]);
+}
+// stone variants
+for (const k of ['rosestone', 'chalkstone', 'fieldstone']) rc('bench', 'Stone', BX[`${k}_polished`], 4, [BX[k], 4]);
+rc('bench', 'Stone', BX.duskstone, 4, [B.RUBBLE, 4], [I.coal, 1]);
+rc('bench', 'Stone', BX.duskstone_polished, 4, [BX.duskstone, 4]);
+rc('bench', 'Stone', BX.duskstone_bricks, 4, [BX.duskstone_polished, 4]);
+rc('bench', 'Stone', BX.slate_polished, 4, [B.SLATE, 4]);
+rc('bench', 'Stone', BX.slate_bricks, 4, [BX.slate_polished, 4]);
+rc('bench', 'Stone', BX.slate_tiles, 4, [BX.slate_bricks, 4]);
+rc('kiln', 'Stone', BX.smooth_stone, 1, [B.STONE, 1], ['fuel', 1]);
+rc('kiln', 'Stone', BX.cracked_hewn, 1, [B.STONE_BRICKS, 1], ['fuel', 1]);
+rc('hand', 'Stone', BX.mossy_hewn, 1, [B.STONE_BRICKS, 1], [B.MOSS, 1]);
+rc('bench', 'Stone', BX.carved_hewn, 1, [B.STONE_SLAB, 2]);
+rc('kiln', 'Stone', BX.obsidite, 1, [B.BASALT, 2], ['fuel', 2]);
+rc('kiln', 'Stone', BX.smooth_sandstone, 1, [B.SANDSTONE, 1], ['fuel', 1]);
+rc('bench', 'Stone', BX.cut_sandstone, 4, [B.SANDSTONE, 4]);
+rc('bench', 'Stone', BX.rust_sand, 8, [B.SAND, 8], [dye('ember'), 1]);
+rc('bench', 'Stone', BX.rust_sandstone, 1, [BX.rust_sand, 4]);
+rc('bench', 'Stone', BX.packed_ice, 1, [B.ICE, 9]);
+rc('bench', 'Stone', BX.glacier_ice, 1, [BX.packed_ice, 9]);
+rc('hand', 'Stone', BX.forest_litter, 2, [B.DIRT, 2], ['leaves', 1]);
+rc('hand', 'Stone', BX.fungal_turf, 2, [B.DIRT, 2], [BX.capshroom_red, 1]);
+rc('hand', 'Stone', BX.stony_soil, 4, [B.DIRT, 2], [B.GRAVEL, 2]);
+rc('hand', 'Stone', BX.packed_mud, 1, [B.MUD, 1], [I.grain_item, 1]);
+rc('bench', 'Stone', BX.mud_bricks, 4, [BX.packed_mud, 4]);
+rc('bench', 'Stone', BX.tidestone, 4, [B.STONE, 4], [dye('lagoon'), 1]);
+rc('bench', 'Stone', BX.tidestone_bricks, 4, [BX.tidestone, 4]);
+rc('bench', 'Stone', BX.dark_tidestone, 8, [BX.tidestone, 8], [dye('night'), 1]);
+rc('kiln', 'Stone', BX.cinder_bricks, 1, [B.ASH_SOIL, 2], ['fuel', 1]);
+rc('hand', 'Stone', BX.red_cinder_bricks, 2, [BX.cinder_bricks, 2], [I.berries, 2]);
+rc('bench', 'Stone', BX.pale_quartz, 1, [I.frostquartz, 4]);
+rc('bench', 'Stone', BX.quartz_bricks, 4, [BX.pale_quartz, 4]);
+rc('bench', 'Stone', BX.quartz_pillar, 2, [BX.pale_quartz, 2]);
+rc('bench', 'Stone', BX.violet_tiles, 4, [B.SKYSTONE, 4], [dye('dusk'), 1]);
+rc('bench', 'Stone', BX.violet_pillar, 2, [BX.violet_tiles, 2]);
+rc('bench', 'Stone', BX.skystone_bricks, 4, [B.SKYSTONE, 4]);
+// decor & storage blocks
+rc('bench', 'Decor', BX.tide_lamp, 1, [BX.tidestone, 4], [I.glow_dust, 4]);
+rc('bench', 'Decor', BX.glowpod, 1, [I.glow_dust, 4], [B.GLOWCAP, 1]);
+rc('hand', 'Decor', BX.gourd_lantern, 1, [BX.gourd, 1], [B.TORCH, 1]);
+rc('bench', 'Decor', BX.sponge, 1, [I.fiber, 6], [dye('sun'), 1]);
+rc('bench', 'Decor', BX.gel_block, 1, [I.gloom_essence, 4], [dye('sprout'), 1]);
+rc('bench', 'Decor', BX.amber_gel, 1, [I.berries, 6], [dye('amber'), 1]);
+rc('bench', 'Decor', BX.honeycomb, 1, [BX.amber_gel, 1], [I.fiber, 4]);
+rc('hand', 'Food', I.melon_slice, 4, [BX.melon, 1]);
+rc('bench', 'Food', BX.melon, 1, [I.melon_slice, 9]);
+for (const [blk, it] of [[BX.bone_block, I.bone], [BX.grain_bale, I.grain_item], [BX.coal_block, I.coal], [BX.raw_iron_block, B.IRON_ORE], [BX.raw_copper_block, B.COPPER_ORE], [BX.raw_sunstone_block, B.SUNSTONE_ORE]]) {
+  rc('bench', 'Storage', blk, 1, [it, 9]);
+  rc('hand', 'Storage', it, 9, [blk, 1]);
+}
+rc('bench', 'Metal', BX.cut_copper, 4, [B.COPPER_BLOCK, 4]);
+rc('hand', 'Metal', BX.weathered_copper, 1, [B.COPPER_BLOCK, 1], [B.MOSS, 1]);
+rc('hand', 'Metal', BX.verdigris_copper, 1, [BX.weathered_copper, 1], [B.MOSS, 1]);
+rc('hand', 'Basics', BX.silver_planks, 4, [B.SILVER_LOG, 1]);
+rc('hand', 'Basics', BX.palm_planks, 4, [B.PALM_LOG, 1]);
+rc('hand', 'Basics', BX.charred_planks, 4, [B.CHARRED_LOG, 1]);
+rc('hand', 'Basics', B.ASH_PLANKS, 4, [STRIPPED[B.ASH_LOG], 1]);
+rc('hand', 'Basics', B.PINE_PLANKS, 4, [STRIPPED[B.PINE_LOG], 1]);
+rc('hand', 'Basics', BX.palm_planks, 4, [STRIPPED[B.PALM_LOG], 1]);
+rc('hand', 'Basics', BX.charred_planks, 4, [STRIPPED[B.CHARRED_LOG], 1]);
+rc('hand', 'Basics', BX.silver_planks, 4, [STRIPPED[B.SILVER_LOG], 1]);
