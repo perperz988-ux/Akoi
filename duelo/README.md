@@ -22,3 +22,13 @@ Gana quien llegue primero a 5 bajas. Los cubos verdes curan 40 HP.
 
 Los modelos se escalan solos a 1,8 m. Si tienen animaciones `idle`/`walk`/`run`, se usan automáticamente.
 Respeta la licencia de cada modelo (CC-BY exige dar crédito al autor).
+
+## ¿Modelo demasiado grande?
+- No muevas el archivo: usa la opción 2 (token + enlace) y el juego lo descarga directamente.
+- O comprímelo (100 MB → pocos MB). El juego soporta Draco, Meshopt y texturas WebP:
+
+```bash
+npx @gltf-transform/cli optimize modelo.glb modelo-mini.glb --compress meshopt --texture-compress webp --texture-size 1024
+```
+
+- GitHub no acepta archivos de más de 100 MB: comprímelos antes de subirlos a `models/`.
