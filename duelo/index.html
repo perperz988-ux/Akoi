@@ -1,0 +1,550 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Duelo Arena</title>
+<style>
+  :root { --p1:#ff4d5e; --p2:#3fa9ff; --bg:#0b0e14; --panel:#151a24ee; --txt:#e8ecf3; --mut:#8b95a8; }
+  * { box-sizing:border-box; }
+  html,body { margin:0; height:100%; overflow:hidden; background:var(--bg); color:var(--txt);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  canvas { display:block; }
+  #hud { position:fixed; inset:0; pointer-events:none; }
+  .bar { position:absolute; top:14px; width:min(38vw,360px); }
+  .bar.p1 { left:16px; } .bar.p2 { right:16px; text-align:right; }
+  .name { font-weight:800; letter-spacing:.04em; font-size:15px; }
+  .p1 .name { color:var(--p1); } .p2 .name { color:var(--p2); }
+  .hp { height:14px; background:#ffffff1a; border-radius:7px; overflow:hidden; margin-top:6px; }
+  .hp > i { display:block; height:100%; width:100%; transition:width .12s; }
+  .p1 .hp > i { background:var(--p1); } .p2 .hp > i { background:var(--p2); margin-left:auto; }
+  .ammo { font-size:12px; color:var(--mut); margin-top:4px; }
+  #score { position:absolute; top:10px; left:50%; transform:translateX(-50%); font-size:34px; font-weight:900;
+    text-shadow:0 2px 8px #000; }
+  #score .s1 { color:var(--p1); } #score .s2 { color:var(--p2); }
+  #msg { position:absolute; top:40%; width:100%; text-align:center; font-size:44px; font-weight:900;
+    text-shadow:0 3px 14px #000; opacity:0; transition:opacity .25s; }
+  #menu { position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
+    background:radial-gradient(ellipse at center,#1b2233cc,#05070bf2); overflow:auto; padding:16px; }
+  #menu.hidden { display:none; }
+  .card { background:var(--panel); border:1px solid #ffffff14; border-radius:16px; padding:22px;
+    width:min(860px,100%); box-shadow:0 20px 60px #0008; }
+  h1 { margin:0 0 4px; font-size:34px; letter-spacing:.03em; }
+  h1 span { color:var(--p1); } h1 b { color:var(--p2); }
+  .sub { color:var(--mut); margin:0 0 16px; font-size:14px; }
+  .grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  @media (max-width:700px){ .grid { grid-template-columns:1fr; } }
+  .slot { border:1px solid #ffffff1a; border-radius:12px; padding:14px; }
+  .slot.p1 { border-color:#ff4d5e66; } .slot.p2 { border-color:#3fa9ff66; }
+  .slot h3 { margin:0 0 8px; font-size:16px; }
+  .slot.p1 h3 { color:var(--p1); } .slot.p2 h3 { color:var(--p2); }
+  label { display:block; font-size:12px; color:var(--mut); margin:8px 0 3px; }
+  input[type=text], input[type=password] { width:100%; padding:8px 10px; border-radius:8px; border:1px solid #ffffff22;
+    background:#0b0e14; color:var(--txt); font-size:13px; }
+  .row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top:8px; }
+  button { cursor:pointer; border:0; border-radius:8px; padding:8px 12px; font-weight:700; font-size:13px;
+    background:#2a3245; color:var(--txt); }
+  button:hover { filter:brightness(1.2); }
+  button.go { background:linear-gradient(90deg,var(--p1),var(--p2)); color:#fff; font-size:18px; padding:12px 28px; }
+  .drop { margin-top:8px; border:2px dashed #ffffff26; border-radius:10px; padding:12px; text-align:center;
+    font-size:12px; color:var(--mut); }
+  .drop.over { border-color:#fff; color:#fff; }
+  .status { font-size:12px; margin-top:6px; min-height:16px; }
+  .status.ok { color:#6ee7a0; } .status.err { color:#ff8a8a; }
+  .keys { color:var(--mut); font-size:12px; margin-top:6px; }
+  kbd { background:#0b0e14; border:1px solid #ffffff26; border-radius:4px; padding:1px 5px; font-size:11px; color:var(--txt); }
+  details { margin-top:14px; color:var(--mut); font-size:13px; }
+  details p { margin:6px 0; }
+  a { color:#9cc9ff; }
+  .center { text-align:center; margin-top:16px; }
+</style>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+</head>
+<body>
+<div id="hud">
+  <div class="bar p1"><div class="name">JUGADOR 1</div><div class="hp"><i id="hp1"></i></div><div class="ammo" id="am1"></div></div>
+  <div id="score"><span class="s1" id="sc1">0</span> : <span class="s2" id="sc2">0</span></div>
+  <div class="bar p2"><div class="name">JUGADOR 2</div><div class="hp"><i id="hp2"></i></div><div class="ammo" id="am2"></div></div>
+  <div id="msg"></div>
+</div>
+
+<div id="menu">
+  <div class="card">
+    <h1><span>DUELO</span> <b>ARENA</b></h1>
+    <p class="sub">Shooter 3D para 2 jugadores en el mismo teclado. Gana el primero en llegar a <b id="winTxt">5</b> bajas.
+      Usa tus propios modelos de <a href="https://sketchfab.com/search?features=downloadable&type=models" target="_blank" rel="noopener">Sketchfab</a> (.glb).</p>
+
+    <label>Token de API de Sketchfab (opcional, solo para cargar por enlace) —
+      <a href="https://sketchfab.com/settings/password" target="_blank" rel="noopener">obtener token</a></label>
+    <input type="password" id="token" placeholder="Pega aquí tu API token" autocomplete="off" />
+
+    <div class="grid" style="margin-top:14px">
+      <div class="slot p1" data-p="0">
+        <h3>Jugador 1 (rojo)</h3>
+        <label>Enlace o UID del modelo en Sketchfab</label>
+        <input type="text" class="url" placeholder="https://sketchfab.com/3d-models/...-abc123" />
+        <div class="row"><button class="load">Cargar de Sketchfab</button><button class="rot">Girar 180°</button><button class="reset">Modelo básico</button></div>
+        <div class="drop">Arrastra aquí un archivo <b>.glb</b> o <label style="display:inline;cursor:pointer;color:#9cc9ff">elígelo<input type="file" accept=".glb" hidden class="file"></label></div>
+        <div class="status"></div>
+        <div class="keys">Mover <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> · Disparar <kbd>Espacio</kbd> · Recargar <kbd>R</kbd> · Mando 1</div>
+      </div>
+      <div class="slot p2" data-p="1">
+        <h3>Jugador 2 (azul)</h3>
+        <label>Enlace o UID del modelo en Sketchfab</label>
+        <input type="text" class="url" placeholder="https://sketchfab.com/3d-models/...-def456" />
+        <div class="row"><button class="load">Cargar de Sketchfab</button><button class="rot">Girar 180°</button><button class="reset">Modelo básico</button></div>
+        <div class="drop">Arrastra aquí un archivo <b>.glb</b> o <label style="display:inline;cursor:pointer;color:#9cc9ff">elígelo<input type="file" accept=".glb" hidden class="file"></label></div>
+        <div class="status"></div>
+        <div class="keys">Mover <kbd>↑</kbd><kbd>←</kbd><kbd>↓</kbd><kbd>→</kbd> · Disparar <kbd>Enter</kbd> o <kbd>L</kbd> · Recargar <kbd>K</kbd> · Mando 2</div>
+      </div>
+    </div>
+
+    <div class="center"><button class="go" id="start">¡JUGAR!</button></div>
+    <p class="sub center" style="margin-top:10px"><kbd>Esc</kbd> pausa y vuelve a este menú · los botiquines verdes curan 40 HP</p>
+
+    <details>
+      <summary>¿Cómo uso modelos de Sketchfab?</summary>
+      <p><b>Opción A (más fácil):</b> en Sketchfab abre un modelo con el botón <i>Download 3D Model</i>, descarga el formato
+        <b>GLB</b> y arrástralo a la casilla del jugador.</p>
+      <p><b>Opción B:</b> pega tu API token arriba y el enlace del modelo; el juego lo descarga directamente (el modelo debe ser descargable).</p>
+      <p>También puedes poner archivos en <code>duelo/models/player1.glb</code> y <code>player2.glb</code>: se cargan solos al abrir el juego si sirves la carpeta con un servidor web.</p>
+      <p>Los personajes con animaciones (idle / walk / run) se animan automáticamente. Si el modelo mira hacia atrás, pulsa <i>Girar 180°</i>.
+        Recuerda respetar la licencia del modelo (muchos son CC-BY: hay que dar crédito al autor).</p>
+    </details>
+  </div>
+</div>
+
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
+
+// ---------- Config ----------
+const WIN_SCORE = 5, MAX_HP = 100, MAG = 12, RELOAD_T = 1.3, FIRE_CD = 0.16;
+const SPEED = 6.2, BULLET_SPEED = 26, DAMAGE = 14, ARENA = 18, PLAYER_R = 0.55, MODEL_H = 1.8;
+document.getElementById('winTxt').textContent = WIN_SCORE;
+
+// ---------- Renderer / scene ----------
+const renderer = new THREE.WebGLRenderer({ antialias:true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+document.body.prepend(renderer.domElement);
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0b0e14);
+scene.fog = new THREE.Fog(0x0b0e14, 40, 80);
+const camera = new THREE.PerspectiveCamera(50, innerWidth/innerHeight, 0.1, 200);
+
+scene.add(new THREE.HemisphereLight(0xbfd4ff, 0x20242e, 0.9));
+const sun = new THREE.DirectionalLight(0xffffff, 2.2);
+sun.position.set(12, 26, 10);
+sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048);
+Object.assign(sun.shadow.camera, { left:-24, right:24, top:24, bottom:-24, near:1, far:70 });
+scene.add(sun);
+
+// Floor with grid texture
+function gridTexture() {
+  const c = document.createElement('canvas'); c.width = c.height = 256;
+  const g = c.getContext('2d');
+  g.fillStyle = '#1a2030'; g.fillRect(0,0,256,256);
+  g.strokeStyle = '#2a3348'; g.lineWidth = 4; g.strokeRect(0,0,256,256);
+  g.strokeStyle = '#222a3c'; g.lineWidth = 2; g.beginPath(); g.moveTo(128,0); g.lineTo(128,256); g.moveTo(0,128); g.lineTo(256,128); g.stroke();
+  const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(ARENA, ARENA);
+  t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8; return t;
+}
+const floor = new THREE.Mesh(new THREE.PlaneGeometry(ARENA*2, ARENA*2), new THREE.MeshStandardMaterial({ map:gridTexture(), roughness:.9 }));
+floor.rotation.x = -Math.PI/2; floor.receiveShadow = true; scene.add(floor);
+
+// Obstacles (axis-aligned boxes): [x, z, w, d, h]
+const obstacles = [];
+const wallMat = new THREE.MeshStandardMaterial({ color:0x3a4560, roughness:.7 });
+const crateMat = new THREE.MeshStandardMaterial({ color:0x8a6a3c, roughness:.8 });
+const pillarMat = new THREE.MeshStandardMaterial({ color:0x5b6b8c, roughness:.5, metalness:.3 });
+function addBox(x, z, w, d, h, mat) {
+  const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+  m.position.set(x, h/2, z); m.castShadow = m.receiveShadow = true; scene.add(m);
+  obstacles.push({ minX:x-w/2, maxX:x+w/2, minZ:z-d/2, maxZ:z+d/2 });
+}
+const T = 1;
+addBox(0, -ARENA-T/2, ARENA*2+2*T, T, 2, wallMat); addBox(0, ARENA+T/2, ARENA*2+2*T, T, 2, wallMat);
+addBox(-ARENA-T/2, 0, T, ARENA*2, 2, wallMat); addBox(ARENA+T/2, 0, T, ARENA*2, 2, wallMat);
+[[0,0,3,3,1.6,pillarMat],[-7,-6,4,1.2,1.4,crateMat],[7,6,4,1.2,1.4,crateMat],[-7,6,1.2,4,1.4,crateMat],[7,-6,1.2,4,1.4,crateMat],
+ [-12,0,1.5,1.5,2.4,pillarMat],[12,0,1.5,1.5,2.4,pillarMat],[0,-12,1.5,1.5,2.4,pillarMat],[0,12,1.5,1.5,2.4,pillarMat],
+ [-13,-12,2,2,1.2,crateMat],[13,12,2,2,1.2,crateMat],[-13,12,2,2,1.2,crateMat],[13,-12,2,2,1.2,crateMat],
+ [-4,10,2.5,1,1.1,crateMat],[4,-10,2.5,1,1.1,crateMat]].forEach(o => addBox(...o));
+
+function hitsObstacle(x, z, r) {
+  for (const o of obstacles) {
+    const cx = Math.max(o.minX, Math.min(x, o.maxX)), cz = Math.max(o.minZ, Math.min(z, o.maxZ));
+    if ((x-cx)**2 + (z-cz)**2 < r*r) return true;
+  }
+  return false;
+}
+
+// ---------- Audio ----------
+let actx;
+function beep(freq, dur, type='square', vol=.08, slide=0) {
+  try {
+    actx ??= new (window.AudioContext || window.webkitAudioContext)();
+    const o = actx.createOscillator(), g = actx.createGain(), t = actx.currentTime;
+    o.type = type; o.frequency.setValueAtTime(freq, t);
+    if (slide) o.frequency.exponentialRampToValueAtTime(Math.max(30, freq+slide), t+dur);
+    g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(.0001, t+dur);
+    o.connect(g).connect(actx.destination); o.start(t); o.stop(t+dur);
+  } catch {}
+}
+
+// ---------- Players ----------
+const COLORS = [0xff4d5e, 0x3fa9ff];
+const SPAWNS = [[-14, -14, Math.PI/4], [14, 14, -3*Math.PI/4]];
+const loader = new GLTFLoader();
+
+function basicModel(color) {
+  const g = new THREE.Group();
+  const mat = new THREE.MeshStandardMaterial({ color, roughness:.45 });
+  const dark = new THREE.MeshStandardMaterial({ color:0x222831, roughness:.6 });
+  const body = new THREE.Mesh(new THREE.CapsuleGeometry(.38, .8, 6, 14), mat); body.position.y = .82;
+  const head = new THREE.Mesh(new THREE.SphereGeometry(.3, 18, 14), mat); head.position.y = 1.55;
+  const visor = new THREE.Mesh(new THREE.BoxGeometry(.42, .12, .1), dark); visor.position.set(0, 1.58, .26);
+  const gun = new THREE.Mesh(new THREE.BoxGeometry(.14, .14, .8), dark); gun.position.set(.32, 1.05, .45);
+  [body, head, visor, gun].forEach(m => { m.castShadow = true; g.add(m); });
+  return g;
+}
+
+function makePlayer(i) {
+  const root = new THREE.Group(); scene.add(root);
+  const holder = new THREE.Group(); root.add(holder);
+  // Ring + aim line in player colour so custom models stay identifiable
+  const ring = new THREE.Mesh(new THREE.RingGeometry(.62, .78, 32), new THREE.MeshBasicMaterial({ color:COLORS[i], transparent:true, opacity:.85 }));
+  ring.rotation.x = -Math.PI/2; ring.position.y = .02; root.add(ring);
+  const aim = new THREE.Mesh(new THREE.PlaneGeometry(.08, 2.2), new THREE.MeshBasicMaterial({ color:COLORS[i], transparent:true, opacity:.35 }));
+  aim.rotation.x = -Math.PI/2; aim.position.set(0, .03, 1.9); root.add(aim);
+  const muzzle = new THREE.PointLight(COLORS[i], 0, 6); muzzle.position.set(0, 1.1, .9); root.add(muzzle);
+  const p = { i, root, holder, ring, muzzle, model:null, mixer:null, idle:null, run:null, rotOffset:0,
+    x:0, z:0, a:0, vx:0, vz:0, hp:MAX_HP, ammo:MAG, reload:0, cd:0, dead:0, score:0, flash:0, moving:false };
+  setModel(p, basicModel(COLORS[i]), []);
+  return p;
+}
+
+function setModel(p, obj, animations) {
+  if (p.model) p.holder.remove(p.model);
+  p.mixer?.stopAllAction(); p.mixer = null; p.idle = p.run = null;
+  // Normalise: scale to MODEL_H tall, centre on X/Z, feet on ground
+  obj.updateMatrixWorld(true);
+  const box = new THREE.Box3().setFromObject(obj), size = box.getSize(new THREE.Vector3());
+  const s = size.y > 1e-4 ? MODEL_H / Math.max(size.y, size.x*.6, size.z*.6) : 1;
+  const wrap = new THREE.Group(); wrap.add(obj);
+  obj.scale.multiplyScalar(s);
+  obj.updateMatrixWorld(true);
+  const b2 = new THREE.Box3().setFromObject(obj), c = b2.getCenter(new THREE.Vector3());
+  obj.position.x -= c.x; obj.position.z -= c.z; obj.position.y -= b2.min.y;
+  obj.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; o.frustumCulled = false; } });
+  wrap.rotation.y = p.rotOffset;
+  p.model = wrap; p.holder.add(wrap);
+  if (animations?.length) {
+    p.mixer = new THREE.AnimationMixer(obj);
+    const find = re => animations.find(a => re.test(a.name));
+    const runClip = find(/run|sprint/i) || find(/walk|move|jog/i) || animations[0];
+    const idleClip = find(/idle|stand|breath/i) || (animations.length > 1 ? animations.find(a => a !== runClip) : null);
+    p.run = p.mixer.clipAction(runClip); p.run.play(); p.run.setEffectiveWeight(idleClip ? 0 : 1);
+    if (idleClip) { p.idle = p.mixer.clipAction(idleClip); p.idle.play(); p.idle.setEffectiveWeight(1); }
+  }
+}
+
+const players = [makePlayer(0), makePlayer(1)];
+
+async function loadGLB(p, source, statusEl) {
+  status(statusEl, 'Cargando modelo…');
+  try {
+    const gltf = typeof source === 'string' ? await loader.loadAsync(source)
+      : await new Promise((res, rej) => loader.parse(source, '', res, rej));
+    const obj = gltf.animations?.length ? SkeletonUtils.clone(gltf.scene) : gltf.scene;
+    setModel(p, obj, gltf.animations);
+    status(statusEl, `✔ Modelo cargado${gltf.animations?.length ? ` (${gltf.animations.length} animaciones)` : ''}`, 'ok');
+    return true;
+  } catch (e) {
+    console.error(e); status(statusEl, '✖ No se pudo cargar el modelo: ' + (e.message || e), 'err'); return false;
+  }
+}
+function status(el, txt, cls='') { if (!el) return; el.textContent = txt; el.className = 'status ' + cls; }
+
+function parseUid(s) {
+  s = s.trim();
+  const m = s.match(/([0-9a-f]{32})/i);
+  return m ? m[1] : null;
+}
+
+async function loadFromSketchfab(p, input, statusEl) {
+  const token = document.getElementById('token').value.trim();
+  const uid = parseUid(input);
+  if (!uid) return status(statusEl, '✖ Pega el enlace completo del modelo (debe contener su UID de 32 caracteres).', 'err');
+  if (!token) return status(statusEl, '✖ Necesitas pegar tu API token de Sketchfab arriba (o arrastra un .glb descargado).', 'err');
+  status(statusEl, 'Pidiendo descarga a Sketchfab…');
+  try {
+    const r = await fetch(`https://api.sketchfab.com/v3/models/${uid}/download`, { headers:{ Authorization:`Token ${token}` } });
+    if (r.status === 401) throw new Error('token inválido');
+    if (r.status === 403 || r.status === 404) throw new Error('el modelo no es descargable o no existe');
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const data = await r.json();
+    if (!data.glb?.url) throw new Error('este modelo no ofrece GLB por API; descárgalo a mano en formato GLB y arrástralo');
+    const ok = await loadGLB(p, data.glb.url, statusEl);
+    if (ok) try { sessionStorage.setItem('sfToken', token); } catch {}
+  } catch (e) { status(statusEl, '✖ Sketchfab: ' + e.message, 'err'); }
+}
+
+// ---------- Menu wiring ----------
+try { document.getElementById('token').value = sessionStorage.getItem('sfToken') || ''; } catch {}
+document.querySelectorAll('.slot').forEach(slot => {
+  const p = players[+slot.dataset.p], st = slot.querySelector('.status'), drop = slot.querySelector('.drop');
+  slot.querySelector('.load').onclick = () => loadFromSketchfab(p, slot.querySelector('.url').value, st);
+  slot.querySelector('.rot').onclick = () => { p.rotOffset = p.rotOffset ? 0 : Math.PI; if (p.model) p.model.rotation.y = p.rotOffset; };
+  slot.querySelector('.reset').onclick = () => { setModel(p, basicModel(COLORS[p.i]), []); status(st, 'Modelo básico', 'ok'); };
+  const readFile = f => { if (!f) return; if (!/\.glb$/i.test(f.name)) return status(st, '✖ Usa un archivo .glb (glTF binario).', 'err'); f.arrayBuffer().then(b => loadGLB(p, b, st)); };
+  slot.querySelector('.file').onchange = e => readFile(e.target.files[0]);
+  drop.ondragover = e => { e.preventDefault(); drop.classList.add('over'); };
+  drop.ondragleave = () => drop.classList.remove('over');
+  drop.ondrop = e => { e.preventDefault(); drop.classList.remove('over'); readFile(e.dataTransfer.files[0]); };
+});
+// Auto-load models/player1.glb & player2.glb if present
+players.forEach((p, i) => {
+  const st = document.querySelectorAll('.slot')[i].querySelector('.status');
+  fetch(`models/player${i+1}.glb`, { method:'HEAD' }).then(r => { if (r.ok && !/text\/html/.test(r.headers.get('content-type')||'')) loadGLB(p, `models/player${i+1}.glb`, st); }).catch(() => {});
+});
+
+const menu = document.getElementById('menu');
+let running = false, matchOver = false;
+document.getElementById('start').onclick = () => {
+  if (matchOver || !running && players.every(p => p.score === 0)) resetMatch();
+  menu.classList.add('hidden'); running = true; beep(440, .1, 'triangle', .06, 400);
+};
+
+// ---------- Input ----------
+const keys = new Set();
+addEventListener('keydown', e => {
+  if (e.code === 'Escape') { running = false; menu.classList.remove('hidden'); document.getElementById('start').textContent = matchOver ? '¡REVANCHA!' : 'CONTINUAR'; return; }
+  if (!menu.classList.contains('hidden')) return;
+  keys.add(e.code);
+  if (['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Enter'].includes(e.code)) e.preventDefault();
+});
+addEventListener('keyup', e => keys.delete(e.code));
+addEventListener('blur', () => keys.clear());
+const BINDS = [
+  { up:['KeyW'], down:['KeyS'], left:['KeyA'], right:['KeyD'], fire:['Space','KeyF'], reload:['KeyR'] },
+  { up:['ArrowUp'], down:['ArrowDown'], left:['ArrowLeft'], right:['ArrowRight'], fire:['Enter','KeyL','NumpadEnter','Numpad0'], reload:['KeyK'] },
+];
+const any = arr => arr.some(k => keys.has(k));
+function readInput(i) {
+  const b = BINDS[i];
+  let x = (any(b.right)?1:0) - (any(b.left)?1:0), z = (any(b.down)?1:0) - (any(b.up)?1:0);
+  let fire = any(b.fire), reload = any(b.reload);
+  const gp = navigator.getGamepads?.()[i];
+  if (gp) {
+    const ax = gp.axes[0] || 0, az = gp.axes[1] || 0;
+    if (Math.hypot(ax, az) > .2) { x = ax; z = az; }
+    if (gp.buttons[12]?.pressed) z = -1; if (gp.buttons[13]?.pressed) z = 1;
+    if (gp.buttons[14]?.pressed) x = -1; if (gp.buttons[15]?.pressed) x = 1;
+    fire ||= gp.buttons[0]?.pressed || gp.buttons[7]?.pressed;
+    reload ||= gp.buttons[2]?.pressed;
+    // Right stick aims independently
+    const rx = gp.axes[2] || 0, rz = gp.axes[3] || 0;
+    if (Math.hypot(rx, rz) > .35) return { x, z, fire, reload, aim:Math.atan2(rx, rz) };
+  }
+  const l = Math.hypot(x, z); if (l > 1) { x /= l; z /= l; }
+  return { x, z, fire, reload };
+}
+
+// ---------- Bullets, pickups, particles ----------
+const bullets = [], sparks = [], pickups = [];
+const bulletGeo = new THREE.SphereGeometry(.12, 8, 6);
+const bulletMats = COLORS.map(c => new THREE.MeshBasicMaterial({ color:c }));
+function shoot(p) {
+  const dx = Math.sin(p.a), dz = Math.cos(p.a);
+  const m = new THREE.Mesh(bulletGeo, bulletMats[p.i]);
+  const sx = p.x + dx*.9, sz = p.z + dz*.9;
+  if (hitsObstacle(sx, sz, .12)) { spawnSparks(sx, 1.1, sz, COLORS[p.i], 5); }
+  else { m.position.set(sx, 1.1, sz); scene.add(m); bullets.push({ m, x:sx, z:sz, dx, dz, owner:p.i, life:1.4 }); }
+  p.ammo--; p.cd = FIRE_CD; p.flash = .06;
+  p.vx -= dx*1.2; p.vz -= dz*1.2;
+  beep(p.i ? 620 : 520, .07, 'square', .05, -300);
+  if (p.ammo <= 0) startReload(p);
+}
+function startReload(p) { if (p.reload > 0 || p.ammo === MAG) return; p.reload = RELOAD_T; beep(200, .15, 'triangle', .05, 150); }
+
+const sparkGeo = new THREE.BoxGeometry(.08, .08, .08);
+function spawnSparks(x, y, z, color, n=10) {
+  const mat = new THREE.MeshBasicMaterial({ color });
+  for (let k = 0; k < n; k++) {
+    const m = new THREE.Mesh(sparkGeo, mat); m.position.set(x, y, z); scene.add(m);
+    sparks.push({ m, v:new THREE.Vector3((Math.random()-.5)*8, Math.random()*6, (Math.random()-.5)*8), life:.5+Math.random()*.3 });
+  }
+}
+
+const pickupGeo = new THREE.BoxGeometry(.6, .6, .6);
+const pickupMat = new THREE.MeshStandardMaterial({ color:0x3ddc84, emissive:0x1a7a44, emissiveIntensity:.8 });
+const PICK_SPOTS = [[0,-6],[0,6],[-6,0],[6,0],[-15,0],[15,0]];
+let pickupTimer = 6;
+function spawnPickup() {
+  const free = PICK_SPOTS.filter(([x,z]) => !pickups.some(k => k.x === x && k.z === z));
+  if (!free.length) return;
+  const [x, z] = free[Math.floor(Math.random()*free.length)];
+  const m = new THREE.Mesh(pickupGeo, pickupMat); m.castShadow = true; m.position.set(x, .6, z); scene.add(m);
+  pickups.push({ m, x, z });
+}
+
+// ---------- HUD ----------
+const $ = id => document.getElementById(id);
+const msgEl = $('msg'); let msgT = 0;
+function showMsg(t, color='#fff', dur=1.6) { msgEl.textContent = t; msgEl.style.color = color; msgEl.style.opacity = 1; msgT = dur; }
+function updateHUD() {
+  players.forEach((p, i) => {
+    $('hp'+(i+1)).style.width = Math.max(0, p.hp/MAX_HP*100) + '%';
+    $('am'+(i+1)).textContent = p.dead > 0 ? 'Reapareciendo…' : p.reload > 0 ? 'Recargando…' : `Munición ${p.ammo}/${MAG}`;
+    $('sc'+(i+1)).textContent = p.score;
+  });
+}
+
+// ---------- Game flow ----------
+function spawn(p) {
+  const [x, z, a] = SPAWNS[p.i];
+  Object.assign(p, { x, z, a, vx:0, vz:0, hp:MAX_HP, ammo:MAG, reload:0, cd:.3, dead:0 });
+  p.root.visible = true; p.root.position.set(x, 0, z); p.root.rotation.set(0, a, 0);
+}
+function resetMatch() {
+  players.forEach(p => { p.score = 0; spawn(p); });
+  bullets.splice(0).forEach(b => scene.remove(b.m));
+  pickups.splice(0).forEach(k => scene.remove(k.m));
+  matchOver = false; pickupTimer = 6; document.getElementById('start').textContent = '¡JUGAR!';
+  showMsg('¡A LUCHAR!', '#fff', 1.2);
+}
+function kill(victim, killer) {
+  victim.dead = 2.2; victim.hp = 0; victim.root.visible = false;
+  spawnSparks(victim.x, 1, victim.z, COLORS[victim.i], 40);
+  beep(160, .5, 'sawtooth', .09, -120);
+  killer.score++;
+  if (killer.score >= WIN_SCORE) {
+    matchOver = true; showMsg(`¡JUGADOR ${killer.i+1} GANA!`, killer.i ? '#3fa9ff' : '#ff4d5e', 99);
+    setTimeout(() => { if (matchOver) { running = false; menu.classList.remove('hidden'); document.getElementById('start').textContent = '¡REVANCHA!'; } }, 2500);
+  } else showMsg(`J${killer.i+1} elimina a J${victim.i+1}`, killer.i ? '#3fa9ff' : '#ff4d5e');
+}
+
+function updatePlayer(p, dt) {
+  if (p.dead > 0) { p.dead -= dt; if (p.dead <= 0 && !matchOver) spawn(p); return; }
+  const inp = readInput(p.i);
+  const moving = Math.hypot(inp.x, inp.z) > .1;
+  // acceleration + friction
+  p.vx += (inp.x*SPEED - p.vx) * Math.min(1, dt*12);
+  p.vz += (inp.z*SPEED - p.vz) * Math.min(1, dt*12);
+  const target = inp.aim ?? (moving ? Math.atan2(inp.x, inp.z) : p.a);
+  let d = target - p.a; d = Math.atan2(Math.sin(d), Math.cos(d)); p.a += d * Math.min(1, dt*16);
+  // move with sliding collision
+  const nx = p.x + p.vx*dt, nz = p.z + p.vz*dt;
+  const other = players[1-p.i];
+  const blockedByOther = (x, z) => other.dead <= 0 && Math.hypot(x-other.x, z-other.z) < PLAYER_R*2;
+  if (!hitsObstacle(nx, p.z, PLAYER_R) && !blockedByOther(nx, p.z)) p.x = nx; else p.vx = 0;
+  if (!hitsObstacle(p.x, nz, PLAYER_R) && !blockedByOther(p.x, nz)) p.z = nz; else p.vz = 0;
+  // weapon
+  p.cd -= dt;
+  if (p.reload > 0) { p.reload -= dt; if (p.reload <= 0) { p.ammo = MAG; beep(700, .06, 'triangle', .05); } }
+  else if (inp.reload) startReload(p);
+  else if (inp.fire && p.cd <= 0 && p.ammo > 0) shoot(p);
+  // visuals
+  p.root.position.set(p.x, 0, p.z); p.root.rotation.y = p.a;
+  p.flash -= dt; p.muzzle.intensity = p.flash > 0 ? 25 : 0;
+  const speed = Math.hypot(p.vx, p.vz) / SPEED;
+  if (p.mixer) {
+    if (p.idle) { p.run.setEffectiveWeight(speed); p.idle.setEffectiveWeight(1-speed); }
+    p.run.timeScale = p.idle ? 1 : Math.max(speed, .0001);
+    p.mixer.update(dt);
+  } else {
+    p.holder.position.y = Math.abs(Math.sin(performance.now()/90)) * .08 * speed; // bob for static models
+  }
+  p.holder.rotation.z = Math.sin(performance.now()/120) * .04 * speed;
+  p.ring.material.opacity = p.hp < 30 ? .4 + .5*Math.abs(Math.sin(performance.now()/100)) : .85;
+  // pickups
+  for (let k = pickups.length-1; k >= 0; k--) {
+    const pk = pickups[k];
+    if (Math.hypot(pk.x-p.x, pk.z-p.z) < 1 && p.hp < MAX_HP) {
+      p.hp = Math.min(MAX_HP, p.hp + 40); scene.remove(pk.m); pickups.splice(k, 1); beep(880, .15, 'sine', .07, 400);
+    }
+  }
+}
+
+function updateBullets(dt) {
+  for (let k = bullets.length-1; k >= 0; k--) {
+    const b = bullets[k];
+    const steps = 3; let dead = false;
+    for (let s = 0; s < steps && !dead; s++) {
+      b.x += b.dx*BULLET_SPEED*dt/steps; b.z += b.dz*BULLET_SPEED*dt/steps;
+      if (hitsObstacle(b.x, b.z, .12)) { spawnSparks(b.x, 1.1, b.z, 0xffd27a, 6); beep(1200, .03, 'square', .02); dead = true; break; }
+      const t = players[1-b.owner];
+      if (t.dead <= 0 && Math.hypot(b.x-t.x, b.z-t.z) < PLAYER_R + .12) {
+        t.hp -= DAMAGE; t.vx += b.dx*4; t.vz += b.dz*4;
+        spawnSparks(b.x, 1.1, b.z, COLORS[t.i], 8); beep(300, .08, 'sawtooth', .06, -100);
+        if (t.hp <= 0 && !matchOver) kill(t, players[b.owner]);
+        dead = true;
+      }
+    }
+    b.life -= dt;
+    if (dead || b.life <= 0) { scene.remove(b.m); bullets.splice(k, 1); }
+    else b.m.position.set(b.x, 1.1, b.z);
+  }
+}
+
+// ---------- Camera ----------
+const camTarget = new THREE.Vector3(), camPos = new THREE.Vector3(0, 30, 22);
+function updateCamera(dt) {
+  const alive = players.filter(p => p.dead <= 0);
+  const pts = alive.length ? alive : players;
+  const cx = pts.reduce((s,p)=>s+p.x,0)/pts.length, cz = pts.reduce((s,p)=>s+p.z,0)/pts.length;
+  const spread = alive.length === 2 ? Math.hypot(players[0].x-players[1].x, (players[0].z-players[1].z)*1.3) : 6;
+  const aspectK = Math.max(1, 1.4 / camera.aspect);
+  const dist = THREE.MathUtils.clamp(10 + spread*0.8, 14, 34) * aspectK;
+  camTarget.lerp(new THREE.Vector3(cx*.85, 0, cz*.85), Math.min(1, dt*4));
+  camPos.lerp(new THREE.Vector3(camTarget.x, dist*.95, camTarget.z + dist*.62), Math.min(1, dt*3));
+  camera.position.copy(camPos); camera.lookAt(camTarget);
+}
+
+// ---------- Loop ----------
+const clock = new THREE.Clock();
+spawn(players[0]); spawn(players[1]); updateHUD();
+function frame() {
+  const dt = Math.min(clock.getDelta(), 1/30);
+  if (running) {
+    players.forEach(p => updatePlayer(p, dt));
+    updateBullets(dt);
+    pickupTimer -= dt; if (pickupTimer <= 0) { spawnPickup(); pickupTimer = 9 + Math.random()*5; }
+    updateHUD();
+  } else {
+    // idle preview animation in menu
+    players.forEach(p => p.mixer?.update(dt));
+  }
+  pickups.forEach(k => { k.m.rotation.y += dt*2; k.m.position.y = .6 + Math.sin(performance.now()/300)*.15; });
+  for (let k = sparks.length-1; k >= 0; k--) {
+    const s = sparks[k]; s.life -= dt; s.v.y -= 18*dt; s.m.position.addScaledVector(s.v, dt);
+    if (s.m.position.y < .04) { s.m.position.y = .04; s.v.multiplyScalar(.5); }
+    if (s.life <= 0) { scene.remove(s.m); sparks.splice(k, 1); }
+  }
+  if (msgT > 0) { msgT -= dt; if (msgT <= 0) msgEl.style.opacity = 0; }
+  updateCamera(dt);
+  renderer.render(scene, camera);
+  requestAnimationFrame(frame);
+}
+frame();
+
+addEventListener('resize', () => {
+  camera.aspect = innerWidth/innerHeight; camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+</script>
+</body>
+</html>
