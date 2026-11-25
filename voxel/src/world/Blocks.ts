@@ -333,6 +333,11 @@ export const FAST_LEAF: Record<number, number> = {
 };
 export const isLeaf = (id: number) => id === B.ASH_LEAVES || id === B.PINE_LEAVES || id === B.PALM_LEAVES || id === B.EMBER_LEAVES || id === B.SILVER_LEAVES;
 
+// tiles only reached through texMeta must be registered up front, or the atlas (built once) and the
+// meshing worker would never see them: ripe berry bush and the grain growth stages.
+tile('berry_bush_ripe');
+for (let i = 1; i < 8; i++) tile('grain' + i);
+
 // crack overlay tiles (painted after the block tiles)
 export const CRACK_TILES: number[] = [];
 for (let i = 0; i < 8; i++) CRACK_TILES.push(tile('crack' + i));
