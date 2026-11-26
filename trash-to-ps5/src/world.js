@@ -110,7 +110,7 @@ export class World {
     } else {
       const n = Math.ceil(len / 3);
       for (let i = 0; i <= n; i++) { const t = i / n; this.B.cyl(0.05, 0.05, h, 0x8a8f94, x0 + (x1 - x0) * t, 0, z0 + (z1 - z0) * t, 5); }
-      this.B.cyl(0.035, 0.035, len, 0x8a8f94, cx, h - 0.05, cz, 4, { rx: Math.PI / 2, ry: ang });
+      this.B.prim(new THREE.CylinderGeometry(0.035, 0.035, len, 4), 0x8a8f94, cx, h - 0.05, cz, ang, Math.PI / 2, 0);
       const m = new THREE.Mesh(new THREE.PlaneGeometry(len, h), this.fenceMat); m.position.set(cx, h / 2, cz); m.rotation.y = ang + Math.PI / 2;
       m.material.map.repeat.set(len / 1.2, h / 1.2); this.scene.add(m);
     }
@@ -181,7 +181,7 @@ export class World {
       const target = name === 'barrel' ? 1.0 : name === 'pizza-box' || name === 'carton' || name === 'styrofoam' ? 0.55 : 0.35 + rng() * 0.15;
       const s = target / Math.max(M.size.x, M.size.y, M.size.z);
       const tint = pick(rng, [0xffffff, 0xdddddd, 0xc8b8a0, 0xbbbbbb, 0xe0d0b0]);
-      idx.push([name, this.S.add(name, px, py, pz, (rng() - 0.5) * 2.5, rng() * 6.3, (rng() - 0.5) * 2.5, s, tint)]);
+      idx.push([name, this.S.add(name, px, py + target * 0.3, pz, (rng() - 0.5) * 2.5, rng() * 6.3, (rng() - 0.5) * 2.5, s, tint)]);
     }
     // procedural junk: boxes, planks, tyres
     for (let i = 0; i < 3 + r; i++) {
@@ -208,7 +208,7 @@ export class World {
     for (let i = 0; i < r * 5; i++) {
       const a = rng() * Math.PI * 2, t = rng(), rr = r * (1 - t) * 0.97, py = h * t; const name = pick(rng, props); const M = MODELS[name]; if (!M) continue;
       const s = (name === 'barrel' ? 1.1 : 0.5 + rng() * 0.3) / Math.max(M.size.x, M.size.y, M.size.z);
-      this.S.add(name, x + Math.cos(a) * rr, py, z + Math.sin(a) * rr, rng() * 3, rng() * 6, rng() * 3, s, pick(rng, [0xffffff, 0xcccccc, 0xb8a890]));
+      this.S.add(name, x + Math.cos(a) * rr, py + 0.2, z + Math.sin(a) * rr, rng() * 3, rng() * 6, rng() * 3, s, pick(rng, [0xffffff, 0xcccccc, 0xb8a890]));
     }
     for (let i = 0; i < r * 1.5; i++) { const a = rng() * Math.PI * 2, t = rng() * 0.8, rr = r * (1 - t); this.B.box(1 + rng() * 2, 0.5 + rng(), 1 + rng() * 2, pick(rng, [0x7d6b55, 0x5c6670, 0x8a3b2b, 0x3d5a3d, 0xaaa59a]), x + Math.cos(a) * rr, h * t - 0.3, z + Math.sin(a) * rr, rng() * 6, { rx: rng() - 0.5, rz: rng() - 0.5 }); }
     this.col.circle(x, z, r * 0.88, h);
@@ -239,7 +239,7 @@ export class World {
     this.building(x, z, w, d, H, color, 0x6b6b6b, ax ? 's' : 'e', { windows: false, floor: 0x5b4a3a, map: '#8a7a6a' });
     // broken bits
     B.box(1.4, 0.9, 0.08, 0x223344, x - w / 4, 1.3, z + d / 2 + 0.15); B.box(2, 0.1, 1.5, 0x777777, x + w / 3, H + 0.2, z, 0.3, { rz: 0.4 });
-    B.cyl(0.25, 0.25, 0.25, 0x111111, x - w / 3, 0, z + d / 2, 8, { rx: Math.PI / 2 });
+    B.prim(new THREE.CylinderGeometry(0.25, 0.25, 0.25, 8), 0x111111, x - w / 3, 0.25, z + d / 2, 0, Math.PI / 2, 0);
   }
   // ---------- build ----------
   build() {
@@ -521,8 +521,8 @@ export class World {
       }
     }
     // pipes, puddles, junk, lamps in the tunnel
-    for (let z = 0; z > -40; z -= 4) B.cyl(0.15, 0.15, 4, 0x6d4c33, 998.2, 2.6, z - 2, 6, { rx: Math.PI / 2 });
-    for (let x = 1000; x < 1092; x += 4) B.cyl(0.12, 0.12, 4, 0x4c5d6d, x + 2, 2.8, -81.9, 6, { rz: Math.PI / 2 });
+    for (let z = 0; z > -40; z -= 4) B.prim(new THREE.CylinderGeometry(0.15, 0.15, 4, 6), 0x6d4c33, 998.2, 2.6, z - 2, 0, Math.PI / 2, 0);
+    for (let x = 1000; x < 1092; x += 4) B.prim(new THREE.CylinderGeometry(0.12, 0.12, 4, 6), 0x4c5d6d, x + 2, 2.8, -81.9, 0, 0, Math.PI / 2);
     this.tunnelLamps = [[1000, -10], [1000, -36], [1030, -40], [1040, -62], [1065, -80], [1086, -80], [1070, -40], [978, -60]];
     for (const [x, z] of this.tunnelLamps) { B.box(0.4, 0.1, 0.4, 0xffeeaa, x, T - 0.15, z, 0, { glow: true }); this.lamps.push({ x, y: T - 0.4, z, color: 0xffb060, interior: true, flicker: true }); }
     this.pile(1003, -55 + 15, 1.4, 'tunnel', { n: 10 }); this.pile(1072, -38, 1.3, 'tunnel', { n: 8 }); this.pile(978, -62, 1.5, 'tunnel', { n: 10 });

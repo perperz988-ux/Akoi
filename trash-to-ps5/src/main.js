@@ -388,7 +388,7 @@ class Game {
     this.scene.background = sky; this.scene.fog.color.copy(sky);
     this.scene.fog.near = inside ? 2 : 40; this.scene.fog.far = inside ? 45 : 320 - this.night * 120;
     this.sun.intensity = inside ? 0 : day * 2.4 + 0.05; this.sun.color.setRGB(1, 0.92 - dusk * 0.25, 0.85 - dusk * 0.4);
-    this.hemi.intensity = inside ? 0.14 : 0.25 + day * 0.85; this.hemi.color.setRGB(0.75 - this.night * 0.4, 0.85 - this.night * 0.35, 1);
+    this.hemi.intensity = inside ? (this.area === 'tunnel' ? 0.16 : 0.55) : 0.25 + day * 0.85; this.hemi.color.setRGB(0.75 - this.night * 0.4, 0.85 - this.night * 0.35, 1);
     if (this.cctvOn) { this.hemi.intensity = 1.6; this.hemi.color.setRGB(1, 1, 1); this.scene.fog.far = 400; }
     this.stars.material.opacity = inside ? 0 : this.night; this.stars.position.copy(P); this.moon.visible = !inside && this.night > 0.3; this.moon.position.set(P.x - 300, 260, P.z - 400);
     this.world.B.glowMat.color.setScalar(inside ? 1 : 0.35 + this.night * 0.75);
@@ -399,7 +399,7 @@ class Game {
       const lamps = this.world.lamps.filter((l) => (l.interior ? inside : !inside && this.night > 0.35)).map((l) => [l, (l.x - P.x) ** 2 + (l.z - P.z) ** 2]).sort((a, b) => a[1] - b[1]);
       this.pool.forEach((pl, k) => { const e = lamps[k]; if (e && e[1] < 60 * 60) { pl.position.set(e[0].x, e[0].y, e[0].z); pl.color.set(e[0].color); pl.userData.l = e[0]; pl.userData.on = true; } else { pl.userData.on = false; } });
     }
-    for (const pl of this.pool) { const l = pl.userData.l; pl.intensity = pl.userData.on ? (l && l.flicker && Math.random() < 0.05 ? 3 : inside ? 9 : 14) : 0; }
+    for (const pl of this.pool) { const l = pl.userData.l; pl.intensity = pl.userData.on ? (l && l.flicker && Math.random() < 0.05 ? 3 : inside ? (this.area === 'tunnel' ? 18 : 26) : 14) : 0; }
     const fz = this.world.fire, fd = Math.hypot(P.x - fz.x, P.z - fz.z); this.fireLight.position.set(fz.x, 1, fz.z); this.fireLight.intensity = fd < 70 && !inside ? (6 + Math.sin(this.t * 13) * 1.5 + Math.random()) * (0.4 + this.night) : 0;
     const needLight = inside || this.night > 0.45;
     this.flash.intensity = this.has('flashlight') && this.flashOn && needLight && this.state === 'play' && !this.cine.active ? 40 : 0;
