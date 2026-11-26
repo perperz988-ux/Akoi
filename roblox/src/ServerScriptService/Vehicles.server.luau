@@ -76,6 +76,7 @@ end
 local function buildCar(groundCF, color, sporty)
 	local model = Instance.new("Model")
 	model.Name = CAR_NAMES[rng:NextInteger(1, #CAR_NAMES)]
+	model.ModelStreamingMode = Enum.ModelStreamingMode.Atomic
 
 	local chassis = Instance.new("Part")
 	chassis.Name = "Chassis"

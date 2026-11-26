@@ -63,7 +63,7 @@ local shellLabel = label(stats, {
 	Position = UDim2.new(0, 8, 0.58, 0),
 	TextXAlignment = Enum.TextXAlignment.Left,
 	TextColor3 = GOLD,
-	Text = "Conchas 0/" .. #Layout.SHELLS,
+	Text = "Paquetes 0/" .. #Layout.SHELLS,
 })
 
 local function formatMoney(n)
@@ -78,10 +78,10 @@ end
 task.spawn(function()
 	local ls = player:WaitForChild("leaderstats")
 	local money = ls:WaitForChild("Dinero")
-	local shells = ls:WaitForChild("Conchas")
+	local shells = ls:WaitForChild("Paquetes")
 	local function refresh()
 		moneyLabel.Text = formatMoney(money.Value)
-		shellLabel.Text = ("Conchas %d/%d"):format(shells.Value, #Layout.SHELLS)
+		shellLabel.Text = ("Paquetes %d/%d"):format(shells.Value, #Layout.SHELLS)
 	end
 	money.Changed:Connect(refresh)
 	shells.Changed:Connect(refresh)
@@ -246,13 +246,13 @@ local speedo = label(gui, {
 
 -- Conchas: ocultar las que ya tienes y hacerlas girar
 local collected = {}
-local shellFolder = workspace:WaitForChild("Conchas", 60)
+local shellFolder = workspace:WaitForChild("Paquetes", 120)
 local function hideShell(i)
 	collected[i] = true
 	if not shellFolder then
 		return
 	end
-	local p = shellFolder:FindFirstChild("Concha" .. i)
+	local p = shellFolder:FindFirstChild("Paquete" .. i)
 	if p then
 		p.Transparency = 1
 		local l = p:FindFirstChildOfClass("PointLight")
@@ -300,7 +300,7 @@ RunService.RenderStepped:Connect(function(dt)
 		if job then
 			local flat = Vector3.new(job.pos.X - pos.X, 0, job.pos.Z - pos.Z)
 			local left = math.max(0, math.ceil(job.deadline - os.clock()))
-			jobInfo.Text = ("%d m   |   %d:%02d"):format(math.floor(flat.Magnitude * 0.28), left // 60, left % 60)
+			jobInfo.Text = ("%d m   |   %d:%02d"):format(math.floor(flat.Magnitude / Layout.SCALE), left // 60, left % 60)
 			jobInfo.TextColor3 = if left > 0 then Color3.new(1, 1, 1) else Color3.fromRGB(255, 110, 110)
 		end
 	end
@@ -308,7 +308,7 @@ RunService.RenderStepped:Connect(function(dt)
 	local speed = player:GetAttribute("CarSpeed")
 	if speed then
 		speedo.Visible = true
-		speedo.Text = ("%d km/h"):format(math.floor(speed))
+		speedo.Text = ("%d km/h"):format(math.floor(speed / Layout.SCALE * 3.6))
 	else
 		speedo.Visible = false
 	end
@@ -320,6 +320,8 @@ RunService.RenderStepped:Connect(function(dt)
 			if i and not collected[i] then
 				local base = Layout.SHELLS[i]
 				p.CFrame = CFrame.new(base + Vector3.new(0, math.sin(bob * 2 + i) * 0.5, 0)) * CFrame.Angles(0, bob * 2, 0)
+			elseif i and p.Transparency < 1 then
+				hideShell(i) -- llego por streaming despues de recogerlo
 			end
 		end
 	end

@@ -1,4 +1,4 @@
--- Gameplay: dinero, conchas doradas coleccionables, trabajos de reparto
+-- Gameplay: dinero, paquetes ocultos (64, como en el original), trabajos de reparto
 -- y guardado de progreso (DataStore).
 
 local Players = game:GetService("Players")
@@ -34,7 +34,7 @@ local START_MONEY = 500
 ----------------------------------------------------------------------
 local store = nil
 pcall(function()
-	store = DataStoreService:GetDataStore("PortSolano_v1")
+	store = DataStoreService:GetDataStore("PortSolano_v2")
 end)
 
 local data = {} -- [player] = { money = n, shells = { [i] = true } }
@@ -64,7 +64,7 @@ local function updateStats(plr)
 	for _ in pairs(d.shells) do
 		n += 1
 	end
-	ls.Conchas.Value = n
+	ls.Paquetes.Value = n
 end
 
 local function addMoney(plr, amount, reason)
@@ -86,7 +86,7 @@ Players.PlayerAdded:Connect(function(plr)
 	money.Name = "Dinero"
 	money.Parent = ls
 	local shells = Instance.new("IntValue")
-	shells.Name = "Conchas"
+	shells.Name = "Paquetes"
 	shells.Parent = ls
 	ls.Parent = plr
 
@@ -141,14 +141,13 @@ while not workspace:GetAttribute("MapReady") do
 end
 
 local shellFolder = Instance.new("Folder")
-shellFolder.Name = "Conchas"
+shellFolder.Name = "Paquetes"
 shellFolder.Parent = workspace
 
 for i, pos in ipairs(Layout.SHELLS) do
 	local p = Instance.new("Part")
-	p.Name = "Concha" .. i
-	p.Shape = Enum.PartType.Ball
-	p.Size = Vector3.new(2.6, 2.6, 2.6)
+	p.Name = "Paquete" .. i
+	p.Size = Vector3.new(2.2, 2.2, 2.2)
 	p.Position = pos
 	p.Anchored = true
 	p.CanCollide = false
@@ -173,10 +172,10 @@ for i, pos in ipairs(Layout.SHELLS) do
 			return
 		end
 		d.shells[i] = true
-		addMoney(plr, SHELL_REWARD, "Concha dorada encontrada")
+		addMoney(plr, SHELL_REWARD, "Paquete oculto: " .. (Layout.SHELL_HINTS[i] or ""))
 		ShellRemote:FireClient(plr, "got", i)
-		if plr.leaderstats.Conchas.Value == #Layout.SHELLS then
-			addMoney(plr, 10000, "\u{A1}Encontraste TODAS las conchas!")
+		if plr.leaderstats.Paquetes.Value == #Layout.SHELLS then
+			addMoney(plr, 10000, "\u{A1}Encontraste TODOS los paquetes!")
 		end
 	end)
 end
@@ -204,7 +203,7 @@ JobRemote.OnServerEvent:Connect(function(plr, action)
 	end
 	local options = {}
 	for _, d in ipairs(Layout.DESTINATIONS) do
-		if flatDist(d.pos, root.Position) > 200 then
+		if flatDist(d.pos, root.Position) > 400 then
 			table.insert(options, d)
 		end
 	end
@@ -213,11 +212,11 @@ JobRemote.OnServerEvent:Connect(function(plr, action)
 	end
 	local dest = options[math.random(1, #options)]
 	local dist = flatDist(dest.pos, root.Position)
-	local timeLimit = math.floor(dist / 35 + 25)
+	local timeLimit = math.floor(dist / 30 + 30)
 	local job = {
 		pos = dest.pos,
 		name = dest.name,
-		reward = math.floor(dist * 1.5 / 10) * 10 + 150,
+		reward = math.floor(dist / 10) * 10 + 150,
 		deadline = os.clock() + timeLimit,
 	}
 	jobs[plr] = job
@@ -232,7 +231,7 @@ while true do
 	task.wait(0.25)
 	for plr, job in pairs(jobs) do
 		local root = plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
-		if root and flatDist(root.Position, job.pos) < 18 then
+		if root and flatDist(root.Position, job.pos) < 24 then
 			jobs[plr] = nil
 			local onTime = os.clock() <= job.deadline
 			local pay = if onTime then job.reward else math.floor(job.reward / 2)

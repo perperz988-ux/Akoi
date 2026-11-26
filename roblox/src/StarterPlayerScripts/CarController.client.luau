@@ -1,6 +1,6 @@
 -- CarController: conduccion arcade de los coches de Port Solano.
 -- Funciona con teclado (WASD / flechas), mando y joystick tactil del movil.
--- El coche "flota" a 0.25 studs sobre el suelo (raycast), asi no se atasca en bordillos.
+-- El coche "flota" a 0.35 studs sobre el suelo (raycast), asi no se atasca en bordillos.
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -17,13 +17,13 @@ task.spawn(function()
 	end
 end)
 
-local MAX_FWD = 110 -- studs/s (aprox. km/h en el velocimetro)
+local MAX_FWD = 95 -- studs/s (1 stud = 0.5 m -> ~170 km/h)
 local MAX_REV = 35
-local ACCEL = 42
+local ACCEL = 32
 local BRAKE = 95
 local DRAG = 18
 local TURN = math.rad(95)
-local HOVER = 1.1 -- altura del centro del chasis sobre el suelo
+local HOVER = 1.2 -- altura del centro del chasis sobre el suelo
 
 local conn = nil
 local current = nil
