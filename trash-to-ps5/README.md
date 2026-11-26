@@ -5,6 +5,11 @@ Aventura narrativa **en primera persona**, en **HTML** (un solo archivo), sobre 
 
 ▶ **Jugar:** abre `release/trash-to-ps5.html` en Chrome/Edge/Firefox (funciona sin internet, todo va dentro del archivo).
 
+## Icono
+
+`trash-to-ps5/icon.svg` (original, vectorial) y PNG en `trash-to-ps5/icons/` (512, 192, 180, 64, 32 px).
+Va incrustado en el HTML como favicon e icono de pantalla de inicio, y aparece en las pantallas de carga y título.
+
 ## Historia
 
 Una noche te llega un mensaje de un número desconocido: *"Bro… there's a PS5 in the junkyard."*

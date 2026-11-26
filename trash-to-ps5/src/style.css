@@ -240,3 +240,7 @@ button { font-family: var(--ui); cursor: pointer; }
   .ph { width: 300px; height: 92vh; } #phone { right: 50%; transform: translate(50%, 110%); } #phone.up { transform: translate(50%, -2vh); }
   #hotbar { display: none; }
 }
+
+.appicon { width: 120px; height: 120px; border-radius: 26px; box-shadow: 0 10px 30px rgba(0,0,0,.6); margin-bottom: 18px; }
+.appicon.sm { width: 84px; height: 84px; border-radius: 20px; margin-bottom: 4px; }
+@media (max-height: 500px) { .appicon.sm { display: none; } }

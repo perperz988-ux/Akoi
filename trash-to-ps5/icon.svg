@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2b1055"/>
+      <stop offset="0.55" stop-color="#7b1e6b"/>
+      <stop offset="1" stop-color="#ff3d71"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#bfe6ff" stop-opacity="0.95"/>
+      <stop offset="0.45" stop-color="#5fb8ff" stop-opacity="0.45"/>
+      <stop offset="1" stop-color="#5fb8ff" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="fin" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#d9dee6"/>
+    </linearGradient>
+    <linearGradient id="pile" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#6b5440"/>
+      <stop offset="1" stop-color="#2e2219"/>
+    </linearGradient>
+    <clipPath id="r"><rect width="512" height="512" rx="112"/></clipPath>
+  </defs>
+  <g clip-path="url(#r)">
+    <rect width="512" height="512" fill="url(#sky)"/>
+    <!-- stars -->
+    <g fill="#fff" opacity="0.85">
+      <circle cx="70" cy="70" r="4"/><circle cx="420" cy="58" r="3"/><circle cx="455" cy="150" r="4"/>
+      <circle cx="120" cy="150" r="2.5"/><circle cx="360" cy="110" r="2.5"/><circle cx="48" cy="210" r="3"/>
+    </g>
+    <!-- light rays -->
+    <g fill="#ffe08a" opacity="0.35">
+      <polygon points="256,250 150,0 210,0"/><polygon points="256,250 300,0 362,0"/>
+      <polygon points="256,250 0,90 0,160"/><polygon points="256,250 512,90 512,160"/>
+    </g>
+    <circle cx="256" cy="230" r="170" fill="url(#glow)"/>
+    <!-- console (fictional design) -->
+    <g transform="translate(256 228) rotate(-8)">
+      <rect x="-26" y="-118" width="52" height="236" rx="10" fill="#111318"/>
+      <rect x="-5" y="-104" width="10" height="200" rx="5" fill="#3aa0ff"/>
+      <path d="M-30 120 L-30 -112 Q-60 -150 -110 -140 Q-92 -20 -100 120 Z" fill="url(#fin)" stroke="#9aa4b2" stroke-width="4"/>
+      <path d="M30 120 L30 -112 Q60 -150 110 -140 Q92 -20 100 120 Z" fill="url(#fin)" stroke="#9aa4b2" stroke-width="4"/>
+    </g>
+    <!-- garbage pile -->
+    <path d="M-20 512 L-20 400 Q60 330 140 360 Q200 310 256 352 Q320 300 380 350 Q450 320 532 380 L532 512 Z" fill="url(#pile)"/>
+    <!-- junk on the pile -->
+    <g stroke="#1a120c" stroke-width="5" stroke-linejoin="round">
+      <rect x="70" y="372" width="64" height="44" rx="4" fill="#c8a070" transform="rotate(-14 102 394)"/>
+      <rect x="366" y="360" width="38" height="62" rx="12" fill="#d62828" transform="rotate(22 385 391)"/>
+      <rect x="380" y="371" width="38" height="10" fill="#f1f1f1" transform="rotate(22 385 391)"/>
+      <ellipse cx="196" cy="420" rx="44" ry="18" fill="#222"/>
+      <ellipse cx="196" cy="420" rx="18" ry="7" fill="#555"/>
+      <path d="M286 380 q40 -40 70 10 q-35 -12 -70 -10 z" fill="#f4d03f"/>
+      <rect x="250" y="430" width="70" height="40" rx="4" fill="#2e6fb0" transform="rotate(8 285 450)"/>
+      <circle cx="455" cy="440" r="22" fill="#8a8f94"/>
+    </g>
+    <!-- sparkles -->
+    <g fill="#fff">
+      <path d="M392 196 l8 -26 l8 26 l26 8 l-26 8 l-8 26 l-8 -26 l-26 -8 z"/>
+      <path d="M112 250 l5 -16 l5 16 l16 5 l-16 5 l-5 16 l-5 -16 l-16 -5 z"/>
+    </g>
+  </g>
+</svg>

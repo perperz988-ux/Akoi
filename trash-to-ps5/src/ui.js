@@ -4,6 +4,8 @@ import { ITEMS, SPEAKERS, MISSIONS, ENDINGS } from './story.js';
 import { BOUNDS, LOCATIONS } from './world.js';
 import { fmtTime, clamp } from './rng.js';
 import * as Save from './save.js';
+import iconSvg from '../icon.svg?raw';
+const iconUrl = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(iconSvg);
 
 const h = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
 const esc = (s) => String(s).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
@@ -62,14 +64,14 @@ export class UI {
   }
   // ---------- boot / title ----------
   loading(p) {
-    let s = this.$('#screen'); if (!this._ld) { s.innerHTML = `<div class="load"><div class="logo">TRASH<span>TO</span>PS5</div><div class="bar"><i></i></div><div class="tip">Loading junk…</div></div>`; this._ld = true; s.classList.add('on'); }
+    let s = this.$('#screen'); if (!this._ld) { s.innerHTML = `<div class="load"><img class="appicon" src="${iconUrl}" alt=""><div class="logo">TRASH<span>TO</span>PS5</div><div class="bar"><i></i></div><div class="tip">Loading junk…</div></div>`; this._ld = true; s.classList.add('on'); }
     s.querySelector('.bar i').style.width = Math.round(p * 100) + '%';
     s.querySelector('.tip').textContent = ['Loading junk…', 'Spawning garbage…', 'Teaching foxes to steal…', 'Hiding the PS5…', 'Almost there bro…'][Math.min(4, Math.floor(p * 5))];
   }
   title() {
     const s = this.$('#screen'); s.classList.add('on'); const auto = Save.info(0); const ends = Save.endings();
     s.innerHTML = `<div class="title">
-      <div class="logo big">TRASH<span>TO</span>PS5</div><div class="tag">a first-person junkyard adventure</div>
+      <img class="appicon sm" src="${iconUrl}" alt=""><div class="logo big">TRASH<span>TO</span>PS5</div><div class="tag">a first-person junkyard adventure</div>
       <div class="menu">
         ${auto ? `<button data-x="cont">▶ CONTINUE <small>Mission ${auto.m + 1} · Day ${auto.day}</small></button>` : ''}
         <button data-x="new">✦ NEW GAME</button><button data-x="load">📂 LOAD</button><button data-x="set">⚙ SETTINGS</button><button data-x="cred">★ CREDITS</button>
