@@ -61,8 +61,8 @@ export const SHARED = { uNight: { value: 0 }, uWet: { value: 0 }, uTime: { value
  * aStyle = (style, seed); style < 0 => roof.
  */
 export function facadeMaterial() {
-  const pl = NORMALS.plaster.clone(); pl.repeat.set(0.3, 0.3);
-  const m = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.86, metalness: 0.0, envMapIntensity: 1, normalMap: pl, normalScale: new THREE.Vector2(0.55, 0.55) });
+  const pl = NORMALS.plaster.clone(); pl.repeat.set(0.45, 0.45);
+  const m = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.86, metalness: 0.0, envMapIntensity: 1, normalMap: pl, normalScale: new THREE.Vector2(0.16, 0.16) });
   m.onBeforeCompile = (sh) => {
     sh.uniforms.uNight = SHARED.uNight; sh.uniforms.uWet = SHARED.uWet;
     sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nattribute vec2 aStyle; varying vec2 vStyle; varying vec2 vFac;')
