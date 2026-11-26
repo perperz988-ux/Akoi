@@ -25,7 +25,7 @@ let SEGQ = 1;
 function sphere(r: number, w = 10, h = 8) { w = Math.max(6, Math.round(w * SEGQ)); h = Math.max(4, Math.round(h * SEGQ)); const k = `s${r}_${w}_${h}`; let g = geoCache.get(k); if (!g) { g = new THREE.SphereGeometry(r, w, h); geoCache.set(k, g); } return g; }
 
 import { NORMALS } from '../render/assets';
-const clothN = NORMALS.cloth.clone(); clothN.repeat.set(1, 1);
+const clothN = NORMALS.cloth.clone(); clothN.repeat.set(5, 5);
 const skinMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.74, metalness: 0.0, normalMap: clothN, normalScale: new THREE.Vector2(0.35, 0.35) });
 const detailMats = new Map<number, THREE.MeshStandardMaterial>();
 const dmat = (c: number, r = 0.5, m = 0) => { const k = c * 7 + Math.round(r * 5) + m; let x = detailMats.get(k); if (!x) { x = new THREE.MeshStandardMaterial({ color: c, roughness: r, metalness: m }); detailMats.set(k, x); } return x; };
@@ -64,7 +64,7 @@ export class Humanoid {
     // ---- body parts (bind pose, world space), each rigidly weighted to a bone
     const parts: THREE.BufferGeometry[] = [];
     const add = (g: THREE.BufferGeometry, bone: BoneName, color: number, m: THREE.Matrix4) => {
-      let gg = g.index ? g.toNonIndexed() : g.clone(); gg.deleteAttribute('uv'); gg.applyMatrix4(m);
+      let gg = g.index ? g.toNonIndexed() : g.clone(); gg.applyMatrix4(m);
       const n = gg.getAttribute('position').count, col = new Float32Array(n * 3), si = new Uint16Array(n * 4), sw = new Float32Array(n * 4), c = new THREE.Color(color), bi = BONES.indexOf(bone);
       const par = PARENT[bone], pi = par ? BONES.indexOf(par) : bi, jp = new THREE.Vector3(...J[bone]), pos = gg.getAttribute('position'), v = new THREE.Vector3();
       // smooth skinning: vertices near the joint blend with the parent bone so elbows/knees/shoulders bend without seams
@@ -131,10 +131,28 @@ export class Humanoid {
     this.handR = new THREE.Group(); this.handR.position.set(0, -0.05, 0.03); this.bones.handR.add(this.handR);
     this.handL = new THREE.Group(); this.handL.position.set(0, -0.05, 0.03); this.bones.handL.add(this.handL);
     this.headSlot = new THREE.Group(); this.bones.head.add(this.headSlot);
+    this.buildFaceOverlay(s, hero);
     if (hero) this.buildFace(s);
     SEGQ = 1;
   }
 
+  /** Painted face (brows, lashes, lips, shading, stubble) + strand-textured hair shell, on a thin shell around the head. */
+  private buildFaceOverlay(s: number, hero: boolean) {
+    const L = this.look; const fem = !!L.female;
+    const key = `${hero ? L.skin : 'npc'}_${fem ? 1 : 0}_${L.beard ? 1 : 0}_${L.hair}_${hero ? 1 : 0}`;
+    let tex = faceCache.get(key); if (!tex) { tex = paintFace(L, hero); faceCache.set(key, tex); }
+    const m = new THREE.Mesh(sphere(1, 28, 20), new THREE.MeshStandardMaterial({ map: tex, transparent: true, depthWrite: false, roughness: 0.6, polygonOffset: true, polygonOffsetFactor: -2 }));
+    m.position.set(0, 0.1 * s, 0.005); m.scale.set((fem ? 0.085 : 0.09) * s * 1.012, 0.115 * s * 1.012, 0.1 * s * 1.012); m.renderOrder = 2;
+    this.bones.head.add(m);
+    // hair shell with strand texture (heroes + NPCs with longer hair)
+    if (L.hairStyle !== 'bald' && L.hairStyle !== 'cap' && L.hairStyle !== 'buzz') {
+      let ht = hairCache.get(L.hair); if (!ht) { ht = paintHair(L.hair); hairCache.set(L.hair, ht); }
+      const hm = new THREE.Mesh(new THREE.SphereGeometry(1, 24, 14, 0, Math.PI * 2, 0, Math.PI * 0.62), new THREE.MeshStandardMaterial({ map: ht, alphaTest: 0.35, roughness: 0.45, side: THREE.DoubleSide }));
+      hm.position.set(0, 0.148 * s, -0.008 * s); hm.scale.set(0.1 * s, (L.hairStyle === 'curly' ? 0.105 : 0.092) * s, 0.112 * s); hm.rotation.x = -0.25; hm.castShadow = true;
+      this.bones.head.add(hm);
+      if (fem || L.hairStyle === 'long') for (const sd of [1, -1]) { const lock = new THREE.Mesh(new THREE.CapsuleGeometry(0.022 * s, 0.09 * s, 3, 8), new THREE.MeshStandardMaterial({ map: ht, alphaTest: 0.35, roughness: 0.45 })); lock.position.set(sd * 0.078 * s, 0.07 * s, 0.035 * s); lock.rotation.z = sd * 0.12; this.bones.head.add(lock); }
+    }
+  }
   private buildFace(s: number) {
     const hb = this.bones.head; const hy = (1.7 - 1.6) * s; // head bone local y offset of the head centre
     const eyeWhite = dmat(0xf2eee8, 0.25), iris = dmat(this.look.eyes ?? 0x4a3020, 0.2), lid = dmat(this.look.skin, 0.6);
@@ -311,3 +329,44 @@ export function randomLook(r: () => number, style: 'civ' | 'beach' | 'rich' | 'w
 /** The two leads — original characters. */
 export const ROSA: Look = { skin: 0xc98c64, top: 0x1d1d20, jacket: 0x7a2e2a, bottom: 0x2a3a5a, shoes: 0xe8e4dc, hair: 0x1a0f0a, hairStyle: 'ponytail', female: true, build: 0.95, height: 1.68, eyes: 0x3a2412 };
 export const JACE: Look = { skin: 0xe0b08a, top: 0xe8e2d4, jacket: 0x3a4a3a, bottom: 0x2e2e32, shoes: 0x4a3a2a, hair: 0x3a2616, hairStyle: 'short', female: false, build: 1.08, height: 1.84, beard: true, eyes: 0x4a6a7a };
+
+// ------------------------------------------------------------------------------------------- painted textures
+const faceCache = new Map<string, THREE.Texture>(); const hairCache = new Map<number, THREE.Texture>();
+const hex = (c: number, k = 1) => { const r = Math.min(255, ((c >> 16) & 255) * k) | 0, g = Math.min(255, ((c >> 8) & 255) * k) | 0, b = Math.min(255, (c & 255) * k) | 0; return `rgb(${r},${g},${b})`; };
+/** UV layout of SphereGeometry: front (+z) is u=0.25, v=0.5 the equator. Canvas is 1024x512. */
+function paintFace(L: Look, hero: boolean): THREE.Texture {
+  const W = 1024, H = 512, cv = document.createElement('canvas'); cv.width = W; cv.height = H; const c = cv.getContext('2d')!;
+  const U = (x: number) => (0.25 + Math.asin(Math.max(-1, Math.min(1, x))) / (Math.PI * 2)) * W; // x in unit-sphere coords (left/right)
+  const V = (y: number) => (Math.acos(Math.max(-1, Math.min(1, y))) / Math.PI) * H;                 // y up
+  const fem = !!L.female; const brow = L.hair === 0x9a9a9a || L.hair === 0xc8a060 ? hex(L.hair, 0.7) : hex(L.hair, 0.9);
+  const ell = (x: number, y: number, rx: number, ry: number, col: string, blur = 0) => { c.save(); c.filter = blur ? `blur(${blur}px)` : 'none'; c.fillStyle = col; c.beginPath(); c.ellipse(U(x), V(y), rx, ry, 0, 0, 7); c.fill(); c.restore(); };
+  // soft shading: eye sockets, nose bridge shadow, cheek blush, jaw shadow
+  for (const sd of [1, -1]) { ell(sd * 0.36, 0.1, 30, 16, 'rgba(60,30,20,0.22)', 6); if (fem) ell(sd * 0.5, -0.18, 28, 18, 'rgba(220,90,90,0.22)', 10); }
+  ell(0, -0.15, 9, 26, 'rgba(70,40,30,0.12)', 4);
+  ell(0, -0.72, 70, 20, 'rgba(50,25,15,0.14)', 12);
+  // eyebrows
+  for (const sd of [1, -1]) { c.save(); c.strokeStyle = brow; c.lineCap = 'round'; c.lineWidth = fem ? 5 : 8; c.beginPath(); c.moveTo(U(sd * 0.18), V(0.3)); c.quadraticCurveTo(U(sd * 0.36), V(fem ? 0.4 : 0.36), U(sd * 0.55), V(0.29)); c.stroke(); c.restore(); }
+  if (!hero) { // simple painted eyes for crowd NPCs (heroes have 3D eyes)
+    for (const sd of [1, -1]) { ell(sd * 0.36, 0.1, 13, 7, '#f2eee8'); ell(sd * 0.36, 0.1, 6, 6, '#3a2616'); ell(sd * 0.36, 0.1, 3, 3, '#050505'); }
+  }
+  // lashes / upper lid line
+  for (const sd of [1, -1]) { c.save(); c.strokeStyle = 'rgba(20,12,8,0.85)'; c.lineWidth = fem ? 4 : 2.5; c.beginPath(); c.moveTo(U(sd * 0.24), V(0.13)); c.quadraticCurveTo(U(sd * 0.36), V(0.19), U(sd * 0.49), V(0.12)); c.stroke(); c.restore(); }
+  // lips
+  const lip = fem ? 'rgba(170,60,75,0.9)' : 'rgba(140,75,65,0.75)';
+  c.save(); c.fillStyle = lip; c.beginPath(); c.moveTo(U(-0.2), V(-0.39)); c.quadraticCurveTo(U(-0.08), V(-0.33), U(0), V(-0.36)); c.quadraticCurveTo(U(0.08), V(-0.33), U(0.2), V(-0.39)); c.quadraticCurveTo(U(0), V(-0.47), U(-0.2), V(-0.39)); c.fill(); c.restore();
+  c.save(); c.strokeStyle = 'rgba(60,20,20,0.6)'; c.lineWidth = 2; c.beginPath(); c.moveTo(U(-0.19), V(-0.39)); c.quadraticCurveTo(U(0), V(-0.4), U(0.19), V(-0.39)); c.stroke(); c.restore();
+  // nostrils
+  for (const sd of [1, -1]) ell(sd * 0.06, -0.2, 4, 3, 'rgba(40,20,15,0.5)');
+  // stubble / beard texture
+  if (L.beard) { c.save(); c.fillStyle = hex(L.hair, 0.8); c.globalAlpha = 0.5; for (let i = 0; i < 2500; i++) { const a = Math.random() * Math.PI - Math.PI / 2, y = -0.3 - Math.random() * 0.62; const x = Math.sin(a) * 0.75; if (Math.abs(x) < 0.16 && y > -0.48 && y < -0.3) continue; c.fillRect(U(x), V(y), 2, 2); } c.restore(); }
+  // hairline (forehead) blending into the hair cap
+  if (L.hairStyle !== 'bald') { const g = c.createLinearGradient(0, V(0.75), 0, V(0.55)); g.addColorStop(0, hex(L.hair)); g.addColorStop(1, 'rgba(0,0,0,0)'); c.fillStyle = g; c.fillRect(0, 0, W, V(0.55)); }
+  const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; return t;
+}
+function paintHair(col: number): THREE.Texture {
+  const W = 256, H = 256, cv = document.createElement('canvas'); cv.width = W; cv.height = H; const c = cv.getContext('2d')!;
+  c.fillStyle = hex(col); c.fillRect(0, 0, W, H * 0.92);
+  for (let i = 0; i < 1400; i++) { const x = Math.random() * W, len = 40 + Math.random() * 120, k = 0.6 + Math.random() * 0.9; c.strokeStyle = hex(col, k); c.globalAlpha = 0.5; c.lineWidth = 1 + Math.random() * 1.5; c.beginPath(); c.moveTo(x, Math.random() * 40); c.quadraticCurveTo(x + (Math.random() - 0.5) * 20, len * 0.5, x + (Math.random() - 0.5) * 10, Math.min(H, len + 60)); c.stroke(); }
+  c.globalAlpha = 1; for (let x = 0; x < W; x += 3) { const len = H * (0.85 + Math.random() * 0.15); c.fillStyle = hex(col, 0.9 + Math.random() * 0.3); c.fillRect(x, H * 0.8, 2, len - H * 0.8); }
+  const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = THREE.RepeatWrapping; t.repeat.set(3, 1); return t;
+}

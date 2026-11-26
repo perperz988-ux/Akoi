@@ -52,7 +52,11 @@ export class Environment {
     sg.setAttribute('position', new THREE.Float32BufferAttribute(sp, 3));
     this.stars = new THREE.Points(sg, new THREE.PointsMaterial({ color: 0xffffff, size: 2.2, sizeAttenuation: false, transparent: true, opacity: 0, fog: false, depthWrite: false }));
     this.stars.renderOrder = -1; s.add(this.stars);
-    this.moon = new THREE.Mesh(new THREE.SphereGeometry(70, 16, 12), new THREE.MeshBasicMaterial({ color: 0xe8ecf5, fog: false, transparent: true }));
+    const mc = document.createElement('canvas'); mc.width = mc.height = 256; const mx = mc.getContext('2d')!;
+    const gl = mx.createRadialGradient(128, 128, 20, 128, 128, 128); gl.addColorStop(0, 'rgba(220,230,255,0.55)'); gl.addColorStop(1, 'rgba(220,230,255,0)'); mx.fillStyle = gl; mx.fillRect(0, 0, 256, 256);
+    const dg = mx.createRadialGradient(118, 118, 4, 128, 128, 34); dg.addColorStop(0, '#fbfbf4'); dg.addColorStop(1, '#d8dbe0'); mx.fillStyle = dg; mx.beginPath(); mx.arc(128, 128, 34, 0, 7); mx.fill();
+    mx.fillStyle = 'rgba(150,155,165,0.35)'; for (const [x, y, r] of [[118, 120, 8], [138, 136, 6], [132, 112, 4], [114, 140, 5]]) { mx.beginPath(); mx.arc(x, y, r, 0, 7); mx.fill(); }
+    this.moon = new THREE.Mesh(new THREE.PlaneGeometry(520, 520), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(mc), fog: false, transparent: true, depthWrite: false, toneMapped: false }));
     s.add(this.moon);
     this.buildClouds(); this.buildRain();
     this.setQuality(q);
@@ -76,25 +80,30 @@ export class Environment {
 
   private buildClouds() {
     this.cloudMat = new THREE.ShaderMaterial({
-      transparent: true, depthWrite: false, fog: false, side: THREE.DoubleSide,
-      uniforms: { uT: { value: 0 }, uCover: { value: 0.3 }, uSun: { value: new THREE.Color(1, 1, 1) }, uShade: { value: new THREE.Color(0.6, 0.65, 0.72) }, uCam: { value: new THREE.Vector3() } },
-      vertexShader: `varying vec3 vW; void main(){ vec4 w = modelMatrix*vec4(position,1.); vW=w.xyz; gl_Position=projectionMatrix*viewMatrix*w; }`,
+      transparent: true, depthWrite: false, depthTest: true, fog: false, side: THREE.BackSide,
+      uniforms: { uT: { value: 0 }, uCover: { value: 0.3 }, uSun: { value: new THREE.Color(1, 1, 1) }, uShade: { value: new THREE.Color(0.6, 0.65, 0.72) }, uCam: { value: new THREE.Vector3() }, uSunDir: { value: new THREE.Vector3(0, 1, 0) } },
+      vertexShader: `varying vec3 vDir; void main(){ vDir = normalize(position); vec4 p = projectionMatrix * modelViewMatrix * vec4(position, 1.0); gl_Position = p.xyww; }`,
       fragmentShader: `
-        uniform float uT, uCover; uniform vec3 uSun, uShade, uCam; varying vec3 vW;
+        uniform float uT, uCover; uniform vec3 uSun, uShade, uCam, uSunDir; varying vec3 vDir;
         float h(vec2 p){ return fract(sin(dot(p, vec2(127.1,311.7)))*43758.5453); }
         float n(vec2 p){ vec2 i=floor(p), f=fract(p); f=f*f*(3.-2.*f); return mix(mix(h(i),h(i+vec2(1,0)),f.x), mix(h(i+vec2(0,1)),h(i+vec2(1,1)),f.x), f.y); }
-        float fbm(vec2 p){ float s=0., a=.5; for(int i=0;i<5;i++){ s+=n(p)*a; p=p*2.07+vec2(1.7,9.2); a*=.5; } return s; }
+        float fbm(vec2 p){ float s=0., a=.5; for(int i=0;i<6;i++){ s+=n(p)*a; p=p*2.03+vec2(1.7,9.2); a*=.5; } return s; }
         void main(){
-          vec2 p = vW.xz*0.0011 + vec2(uT*0.006, uT*0.002);
-          float d = fbm(p); float base = smoothstep(1.0-uCover-0.1, 1.0-uCover+0.35, d);
-          float shade = fbm(p*1.9+3.1);
-          float dist = length(vW.xz-uCam.xz); float fade = 1.0 - smoothstep(2200., 4200., dist);
-          vec3 col = mix(uSun, uShade, smoothstep(0.3,0.9,shade)*0.8 + uCover*0.25);
-          gl_FragColor = vec4(col, base*fade*0.92);
+          vec3 d = normalize(vDir);
+          if (d.y < 0.015) discard;
+          // intersect a cloud layer 1.6 km up: no plane edges, natural perspective toward the horizon
+          float t = 1600.0 / d.y; vec2 p = (uCam.xz + d.xz * t) * 0.00045 + vec2(uT * 0.004, uT * 0.0015);
+          float den = fbm(p) * 0.75 + fbm(p * 3.1 + 7.0) * 0.25;
+          float cov = smoothstep(1.0 - uCover - 0.12, 1.0 - uCover + 0.3, den);
+          float edge = smoothstep(0.015, 0.25, d.y);                 // fade into the horizon haze
+          float thick = smoothstep(0.35, 1.0, den);
+          float sunL = pow(max(dot(d, uSunDir), 0.0), 6.0);
+          vec3 col = mix(uSun, uShade, thick * 0.85 + uCover * 0.2) + uSun * sunL * 0.35 * (1.0 - thick);
+          gl_FragColor = vec4(col, cov * edge * 0.95);
         }`,
     });
-    this.clouds = new THREE.Mesh(new THREE.PlaneGeometry(9000, 9000).rotateX(Math.PI / 2), this.cloudMat);
-    this.clouds.position.y = 520; this.clouds.renderOrder = -1; this.clouds.frustumCulled = false;
+    this.clouds = new THREE.Mesh(new THREE.SphereGeometry(4000, 32, 16), this.cloudMat);
+    this.clouds.renderOrder = -1; this.clouds.frustumCulled = false;
     this.scene.add(this.clouds);
   }
   private buildRain() {
@@ -177,11 +186,11 @@ export class Environment {
     // stars / moon
     (this.stars.material as THREE.PointsMaterial).opacity = this.night * (1 - cloud);
     this.stars.position.copy(cam.position);
-    this.moon.position.copy(cam.position).addScaledVector(moonDir, 3800); this.moon.visible = this.night > 0.05;
+    this.moon.position.copy(cam.position).addScaledVector(moonDir, 3800); this.moon.lookAt(cam.position); this.moon.visible = this.night > 0.05;
     (this.moon.material as THREE.MeshBasicMaterial).opacity = this.night * (1 - cloud * 0.8);
     // clouds
     if (this.clouds) {
-      this.clouds.position.set(cam.position.x, 520, cam.position.z);
+      this.clouds.position.copy(cam.position); cu0(this.cloudMat, this.sunDir);
       const cu = this.cloudMat.uniforms; cu.uT.value = time * (1 + this.cur.wind * 3); cu.uCover.value = 0.15 + cloud * 0.8; cu.uCam.value.copy(cam.position);
       cu.uSun.value.setRGB(lerp(0.12, 1, day) * lerp(1, 0.75, cloud), lerp(0.13, 0.95, day) * lerp(1, 0.75, cloud) * lerp(1, 0.8, warm), lerp(0.18, 0.92, day) * lerp(1, 0.78, cloud) * lerp(1, 0.6, warm));
       cu.uShade.value.setRGB(lerp(0.05, 0.55, day), lerp(0.06, 0.58, day), lerp(0.09, 0.64, day)).multiplyScalar(1 - cloud * 0.35);
@@ -204,3 +213,5 @@ export class Environment {
   get cloud() { return this.cur.cloud; }
   get rainAmt() { return this.cur.rain; }
 }
+
+function cu0(m: THREE.ShaderMaterial, sun: THREE.Vector3) { m.uniforms.uSunDir.value.copy(sun); }
