@@ -3,6 +3,7 @@ import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
+import { N8AOPass } from 'n8ao';
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
 import { Input } from '../core/input';
 import { CameraRig } from '../core/camera';
@@ -73,6 +74,7 @@ export class Game {
     progress(0.1, 'Lighting the sky'); await tick();
     this.env = new Environment(this.renderer, this.q); this.scene = this.env.scene;
     this.env.onThunder = () => { this.audio.thunder(); this.cam.addShake(0.08); };
+    progress(0.15, 'Loading HDRI skies'); await this.env.loadHdris();
     progress(0.2, 'Raising Bahía Verde'); await tick();
     this.world = new World(this.q); this.scene.add(this.world.group);
     this.water = new Water(this.q.waterSegs); this.scene.add(this.water.mesh);
@@ -100,14 +102,32 @@ export class Game {
 
   // ------------------------------------------------------------------ rendering
   private setupPost() {
-    this.composer?.dispose(); this.composer = null;
-    if (!this.q.bloom) return;
+    this.composer?.dispose(); this.composer = null; this.vignette = null;
+    if (this.q.name === 'LOW') return;
     const rt = new THREE.WebGLRenderTarget(innerWidth, innerHeight, { type: THREE.HalfFloatType, samples: this.q.antialias ? 4 : 0 });
     const c = new EffectComposer(this.renderer, rt);
-    c.addPass(new RenderPass(this.scene, this.cam.cam));
-    c.addPass(new UnrealBloomPass(new THREE.Vector2(innerWidth / 2, innerHeight / 2), 0.35, 0.5, 0.95));
+    if (this.q.name === 'HIGH' || this.q.name === 'ULTRA') {
+      // screen-space ambient occlusion: contact shadows in corners, under cars, between buildings
+      const ao = new N8AOPass(this.scene, this.cam.cam, innerWidth, innerHeight);
+      ao.configuration.aoRadius = 2.2; ao.configuration.distanceFalloff = 1.2; ao.configuration.intensity = 2.6; ao.configuration.halfRes = this.q.name === 'HIGH'; ao.configuration.gammaCorrection = false; ao.configuration.aoSamples = this.q.name === 'ULTRA' ? 16 : 10; ao.configuration.denoiseSamples = 6;
+      c.addPass(ao);
+    } else c.addPass(new RenderPass(this.scene, this.cam.cam));
+    if (this.q.bloom) c.addPass(new UnrealBloomPass(new THREE.Vector2(innerWidth / 2, innerHeight / 2), 0.28, 0.45, 0.97));
     c.addPass(new OutputPass());
-    this.vignette = new ShaderPass({ uniforms: { tDiffuse: { value: null }, uAmt: { value: 0.32 }, uHurt: { value: 0 } }, vertexShader: 'varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.); }', fragmentShader: `uniform sampler2D tDiffuse; uniform float uAmt, uHurt; varying vec2 vUv; void main(){ vec4 c = texture2D(tDiffuse, vUv); vec2 d = vUv-0.5; float v = 1.0 - dot(d,d)*uAmt*2.2; c.rgb *= v; c.rgb = mix(c.rgb, vec3(dot(c.rgb, vec3(0.3,0.59,0.11))), uHurt*0.6); c.r += uHurt*0.08*(1.0-v); gl_FragColor = c; }` });
+    // cinematic grade: filmic contrast curve, teal/orange split toning, vignette, subtle grain
+    this.vignette = new ShaderPass({ uniforms: { tDiffuse: { value: null }, uHurt: { value: 0 }, uT: { value: 0 }, uNight: { value: 0 } }, vertexShader: 'varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.); }',
+      fragmentShader: `uniform sampler2D tDiffuse; uniform float uHurt, uT, uNight; varying vec2 vUv;
+        float h(vec2 p){ return fract(sin(dot(p, vec2(12.9898,78.233)))*43758.5453); }
+        void main(){ vec3 c = texture2D(tDiffuse, vUv).rgb;
+          float l = dot(c, vec3(0.2126,0.7152,0.0722));
+          c = mix(vec3(l), c, 1.12);                                     // saturation
+          c = c + (c - 0.5) * 0.10 * (1.0 - abs(c - 0.5) * 2.0);          // S-curve contrast
+          vec3 shadowT = mix(vec3(0.0,0.035,0.06), vec3(0.0,0.03,0.09), uNight), hiT = vec3(0.05,0.02,-0.03);
+          c += shadowT * (1.0 - smoothstep(0.0, 0.5, l)) + hiT * smoothstep(0.55, 1.0, l);
+          vec2 d = vUv - 0.5; c *= 1.0 - dot(d, d) * 0.55;
+          c = mix(c, vec3(dot(c, vec3(0.3,0.59,0.11))), uHurt * 0.65); c.r += uHurt * 0.06;
+          c += (h(vUv * 1000.0 + uT) - 0.5) * 0.018;
+          gl_FragColor = vec4(c, 1.0); }` });
     c.addPass(this.vignette);
     this.composer = c;
   }
@@ -228,7 +248,7 @@ export class Game {
     const v = P.vehicle; let sirenD = 999; for (const c of this.police.cars) if (c.siren) sirenD = Math.min(sirenD, Math.hypot(c.x - P.x, c.z - P.z));
     const zone = L.zoneAt(P.x, P.z);
     this.audio.update(rawDt, { inCar: !!v, rpm: v?.rpm ?? 0, throttle: v?.throttle ?? 0, slip: v?.slip ?? 0, speed: v?.speed ?? 0, sirenDist: sirenD, rain: this.interiors.active ? 0 : this.env.rainAmt, wind: this.env.cur.wind, coast: clamp(1 - Math.abs(P.x - L.coastX(P.z)) / 200, 0, 1), city: zone === L.Zone.Downtown || zone === L.Zone.Midtown ? 1 : 0.4, swamp: zone === L.Zone.Swamp ? 1 : 0, night: this.env.night, radio: !!v && this.audio.station < 2, heavy: !!v && (v.def.cls === 'pickup' || v.def.cls === 'van' || v.def.cls === 'suv' || v.def.cls === 'muscle') });
-    if (this.vignette) this.vignette.uniforms.uHurt.value = clamp(1 - P.hp / (P.maxHp * 0.4), 0, 1);
+    if (this.vignette) { this.vignette.uniforms.uHurt.value = clamp(1 - P.hp / (P.maxHp * 0.4), 0, 1); this.vignette.uniforms.uT.value = this.time % 100; this.vignette.uniforms.uNight.value = this.env.night; }
     this.hud.update(rawDt);
     this.saves.update(rawDt);
     if (P.mode === 'dead' && P.deadT2 > 4.5) this.respawnHospital();

@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { Sky } from 'three/examples/jsm/objects/Sky.js';
 import { clamp, lerp, rng, smoothstep } from '../core/math';
 import type { Quality } from '../game/settings';
+import { loadHdris, HdriName } from './assets';
 
 export type Weather = 'clear' | 'cloudy' | 'rain' | 'storm' | 'fog';
 interface WParams { cloud: number; rain: number; fog: number; wind: number }
@@ -32,6 +33,8 @@ export class Environment {
   private moon: THREE.Mesh;
   private rainMat!: THREE.ShaderMaterial; private cloudMat!: THREE.ShaderMaterial;
   onThunder: (() => void) | null = null;
+  hdris: Partial<Record<HdriName, THREE.Texture>> = {};
+  async loadHdris() { this.hdris = await loadHdris(this.pmrem); this.envT = 999; }
   private thunderT = 10;
 
   constructor(private renderer: THREE.WebGLRenderer, public q: Quality) {
@@ -153,7 +156,7 @@ export class Environment {
     const warm = smoothstep(0.45, 0.02, elev);
     const sunCol = new THREE.Color().setRGB(1, lerp(0.97, 0.62, warm), lerp(0.92, 0.38, warm));
     const lightDir = elev > -0.05 ? this.sunDir : moonDir;
-    const sunI = elev > -0.05 ? smoothstep(-0.05, 0.25, elev) * 3.2 * (1 - cloud * 0.7) : 0.25;
+    const sunI = elev > -0.05 ? smoothstep(-0.05, 0.25, elev) * 3.0 * (1 - cloud * 0.7) : 0.22;
     this.sun.color.copy(elev > -0.05 ? sunCol : new THREE.Color(0.55, 0.65, 1));
     this.sun.intensity = sunI + this.lightning * 6;
     // shadow camera follows focus, snapped to texels to avoid shimmer
@@ -161,7 +164,7 @@ export class Environment {
     const fx = Math.round(focus.x / texel) * texel, fz = Math.round(focus.z / texel) * texel;
     this.sun.position.set(fx + lightDir.x * 400, lightDir.y * 400 + 5, fz + lightDir.z * 400);
     this.sun.target.position.set(fx, 0, fz); this.sun.target.updateMatrixWorld();
-    this.hemi.intensity = lerp(0.12, 0.9, day) * (1 - cloud * 0.15) + this.lightning * 2;
+    this.hemi.intensity = lerp(0.06, 0.35, day) * (1 - cloud * 0.15) + this.lightning * 2;
     this.hemi.color.setRGB(lerp(0.25, 0.72, day), lerp(0.3, 0.82, day), lerp(0.5, 1, day));
     this.hemi.groundColor.setRGB(lerp(0.06, 0.42, day), lerp(0.06, 0.36, day), lerp(0.08, 0.3, day));
     // fog colour approximates sky horizon
@@ -170,7 +173,7 @@ export class Environment {
     const fog = this.scene.fog as THREE.Fog; fog.color.copy(this.fogColor);
     const fogK = Math.max(this.cur.fog, this.cur.rain * 0.5);
     fog.far = lerp(this.q.fogFar, 170, fogK); fog.near = lerp(80, 5, fogK);
-    this.renderer.toneMappingExposure = lerp(0.55, 0.62, day) + (1 - day) * 0.1;
+    this.renderer.toneMappingExposure = lerp(0.75, 0.62, day);
     // stars / moon
     (this.stars.material as THREE.PointsMaterial).opacity = this.night * (1 - cloud);
     this.stars.position.copy(cam.position);
@@ -188,16 +191,15 @@ export class Environment {
     // lightning
     this.lightning = Math.max(0, this.lightning - dt * 4);
     if (this.cur.rain > 0.85) { this.thunderT -= dt; if (this.thunderT < 0) { this.thunderT = 6 + Math.random() * 18; this.lightning = 1; setTimeout(() => this.onThunder?.(), 400 + Math.random() * 1500); } }
-    // image based lighting refresh
+    // image based lighting: real CC0 HDRIs chosen by time of day (falls back to the procedural sky)
     this.envT += dt;
-    if (this.envT > this.q.envEvery) {
-      this.envT = 0;
-      const old = this.envRT;
-      this.envRT = this.pmrem.fromScene(this.skyScene as any, 0, 0.1, 2000);
-      this.scene.environment = this.envRT.texture;
-      (this.scene as any).environmentIntensity = lerp(0.08, 0.75, day) * (1 - cloud * 0.3);
-      old?.dispose();
+    const h = this.hour; const pick: HdriName = h < 5.2 || h >= 20 ? 'night' : h < 7.5 ? 'sunrise' : h < 17.2 ? (cloud > 0.6 ? 'park' : 'city') : 'sunset';
+    const envTex = this.hdris[pick];
+    if (envTex) { this.scene.environment = envTex; }
+    else if (this.envT > this.q.envEvery) {
+      this.envT = 0; const old = this.envRT; this.envRT = this.pmrem.fromScene(this.skyScene as any, 0, 0.1, 2000); this.scene.environment = this.envRT.texture; old?.dispose();
     }
+    (this.scene as any).environmentIntensity = (envTex ? lerp(0.12, 0.55, day) : lerp(0.08, 0.6, day)) * (1 - cloud * 0.25) + this.lightning;
   }
   get cloud() { return this.cur.cloud; }
   get rainAmt() { return this.cur.rain; }

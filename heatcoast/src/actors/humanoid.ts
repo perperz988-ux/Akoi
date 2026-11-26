@@ -24,7 +24,9 @@ function capsule(r: number, len: number, seg = 7): THREE.BufferGeometry { seg = 
 let SEGQ = 1;
 function sphere(r: number, w = 10, h = 8) { w = Math.max(6, Math.round(w * SEGQ)); h = Math.max(4, Math.round(h * SEGQ)); const k = `s${r}_${w}_${h}`; let g = geoCache.get(k); if (!g) { g = new THREE.SphereGeometry(r, w, h); geoCache.set(k, g); } return g; }
 
-const skinMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.62, metalness: 0.0 });
+import { NORMALS } from '../render/assets';
+const clothN = NORMALS.cloth.clone(); clothN.repeat.set(1, 1);
+const skinMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.74, metalness: 0.0, normalMap: clothN, normalScale: new THREE.Vector2(0.35, 0.35) });
 const detailMats = new Map<number, THREE.MeshStandardMaterial>();
 const dmat = (c: number, r = 0.5, m = 0) => { const k = c * 7 + Math.round(r * 5) + m; let x = detailMats.get(k); if (!x) { x = new THREE.MeshStandardMaterial({ color: c, roughness: r, metalness: m }); detailMats.set(k, x); } return x; };
 
@@ -64,7 +66,14 @@ export class Humanoid {
     const add = (g: THREE.BufferGeometry, bone: BoneName, color: number, m: THREE.Matrix4) => {
       let gg = g.index ? g.toNonIndexed() : g.clone(); gg.deleteAttribute('uv'); gg.applyMatrix4(m);
       const n = gg.getAttribute('position').count, col = new Float32Array(n * 3), si = new Uint16Array(n * 4), sw = new Float32Array(n * 4), c = new THREE.Color(color), bi = BONES.indexOf(bone);
-      for (let i = 0; i < n; i++) { col[i * 3] = c.r; col[i * 3 + 1] = c.g; col[i * 3 + 2] = c.b; si[i * 4] = bi; sw[i * 4] = 1; }
+      const par = PARENT[bone], pi = par ? BONES.indexOf(par) : bi, jp = new THREE.Vector3(...J[bone]), pos = gg.getAttribute('position'), v = new THREE.Vector3();
+      // smooth skinning: vertices near the joint blend with the parent bone so elbows/knees/shoulders bend without seams
+      const blend = par && bone !== 'hips' && bone !== 'head' ? 0.09 * s : 0;
+      for (let i = 0; i < n; i++) {
+        col[i * 3] = c.r; col[i * 3 + 1] = c.g; col[i * 3 + 2] = c.b;
+        let w = 1; if (blend) { v.fromBufferAttribute(pos, i); const d = v.distanceTo(jp); w = Math.min(1, 0.5 + d / (blend * 2)); }
+        si[i * 4] = bi; sw[i * 4] = w; si[i * 4 + 1] = pi; sw[i * 4 + 1] = 1 - w;
+      }
       gg.setAttribute('color', new THREE.BufferAttribute(col, 3)); gg.setAttribute('skinIndex', new THREE.BufferAttribute(si, 4)); gg.setAttribute('skinWeight', new THREE.BufferAttribute(sw, 4));
       parts.push(gg);
     };
@@ -78,7 +87,8 @@ export class Humanoid {
     if (look.vest) add(sphere(1, 12, 8), 'chest', look.vest, M(0, 1.28 * s, 0, 0.215 * s * b, 0.21 * s, 0.14 * s * b));
     if (look.jacket) { add(capsule(0.03 * s, 0.32 * s), 'chest', look.jacket, M(0.07 * s, 1.3 * s, 0.11 * s, 1, 1, 1, 0, 0.1)); add(capsule(0.03 * s, 0.32 * s), 'chest', look.jacket, M(-0.07 * s, 1.3 * s, 0.11 * s, 1, 1, 1, 0, -0.1)); add(sphere(1, 10, 6), 'chest', look.top, M(0, 1.34 * s, 0.1 * s, 0.06 * s, 0.13 * s, 0.03 * s)); }
     // shoulders
-    for (const sd of [1, -1]) add(sphere(1, 10, 8), sd > 0 ? 'shL' : 'shR', top, M(sd * 0.165 * s * b, 1.42 * s, 0, 0.075 * s * b, 0.065 * s, 0.075 * s * b));
+    for (const sd of [1, -1]) add(sphere(1, 12, 8), sd > 0 ? 'shL' : 'shR', top, M(sd * 0.155 * s * b, 1.415 * s, 0, 0.066 * s * b, 0.058 * s, 0.07 * s * b));
+    add(sphere(1, 12, 8), 'neck', top, M(0, 1.47 * s, -0.005, 0.12 * s * b, 0.045 * s, 0.09 * s * b)); // trapezius
     // neck & head
     add(capsule(0.05 * s, 0.07 * s), 'neck', skin, M(0, 1.53 * s, 0));
     add(sphere(1, 16, 12), 'head', skin, M(0, 1.7 * s, 0.005, (fem ? 0.085 : 0.09) * s, 0.115 * s, 0.1 * s));
@@ -96,14 +106,17 @@ export class Humanoid {
     const longSleeve = !!look.jacket;
     for (const sd of [1, -1]) {
       const L = sd > 0 ? 'L' : 'R'; const x = sd * (fem ? 0.18 : 0.2) * s * b;
-      add(capsule(0.052 * s * b, 0.2 * s), ('arm' + L) as BoneName, top, M(x, 1.29 * s, 0));
-      add(capsule(0.042 * s * b, 0.19 * s), ('fore' + L) as BoneName, longSleeve ? top : skin, M(x, 1.03 * s, 0));
-      add(sphere(1, 8, 6), ('hand' + L) as BoneName, skin, M(x, 0.86 * s, 0.01, 0.035 * s, 0.06 * s, 0.022 * s));
-      add(capsule(0.012 * s, 0.03 * s), ('hand' + L) as BoneName, skin, M(x - sd * 0.0, 0.88 * s, 0.035 * s, 1, 1, 1, 0.6)); // thumb
+      add(capsule(0.046 * s * b, 0.21 * s), ('arm' + L) as BoneName, top, M(x, 1.29 * s, 0));
+      add(capsule(0.038 * s * b, 0.2 * s), ('fore' + L) as BoneName, longSleeve ? top : skin, M(x, 1.03 * s, 0));
+      if (longSleeve) add(capsule(0.033 * s, 0.03 * s), ('fore' + L) as BoneName, skin, M(x, 0.915 * s, 0)); // wrist
+      add(sphere(1, 10, 8), ('hand' + L) as BoneName, skin, M(x, 0.87 * s, 0.01, 0.03 * s, 0.045 * s, 0.018 * s)); // palm
+      for (let f = 0; f < 4; f++) add(capsule(0.0075 * s, 0.045 * s, 5), ('hand' + L) as BoneName, skin, M(x + sd * (f - 1.5) * 0.013 * s, 0.81 * s, 0.012 * s, 1, 1, 1, 0.15)); // fingers
+      add(capsule(0.009 * s, 0.03 * s, 5), ('hand' + L) as BoneName, skin, M(x - sd * 0.022 * s, 0.86 * s, 0.03 * s, 1, 1, 1, 0.7, sd * 0.5)); // thumb
       // legs
       const lx = sd * 0.095 * s;
-      add(capsule(0.075 * s * b, 0.3 * s), ('thigh' + L) as BoneName, look.bottom, M(lx, 0.73 * s, 0));
-      add(capsule(0.058 * s * b, 0.32 * s), ('shin' + L) as BoneName, look.bottom, M(lx, 0.31 * s, 0));
+      add(capsule((fem ? 0.072 : 0.07) * s * b, 0.3 * s), ('thigh' + L) as BoneName, look.bottom, M(lx, 0.73 * s, 0));
+      add(capsule(0.052 * s * b, 0.32 * s), ('shin' + L) as BoneName, look.bottom, M(lx, 0.31 * s, 0));
+      add(sphere(1, 10, 8), ('shin' + L) as BoneName, look.bottom, M(lx, 0.4 * s, -0.012 * s, 0.056 * s * b, 0.1 * s, 0.058 * s * b)); // calf
       add(sphere(1, 10, 8), ('foot' + L) as BoneName, look.shoes, M(lx, 0.05 * s, 0.05 * s, 0.055 * s, 0.045 * s, 0.13 * s));
     }
     const geo = mergeGeometries(parts)!; geo.computeVertexNormals();

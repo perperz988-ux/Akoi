@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { NORMALS } from './assets';
 
 /** All textures are generated procedurally at startup — no external assets, no licensing risk. */
 function canvasTex(w: number, h: number, draw: (c: CanvasRenderingContext2D) => void, repeat = true, srgb = true) {
@@ -19,8 +20,8 @@ export function roadTexture(lanes: number, kind: string) {
   return canvasTex(256, 512, (c) => {
     const W = 256, H = 512;
     if (kind === 'dirt') { c.fillStyle = '#8a7556'; c.fillRect(0, 0, W, H); speckle(c, W, H, 9000, [138, 117, 86], 50, 2); c.fillStyle = 'rgba(90,70,50,0.35)'; c.fillRect(W * 0.22, 0, W * 0.12, H); c.fillRect(W * 0.66, 0, W * 0.12, H); return; }
-    c.fillStyle = '#3c3e42'; c.fillRect(0, 0, W, H);
-    speckle(c, W, H, 14000, [60, 62, 66], 34, 1.4);
+    c.fillStyle = '#2e3033'; c.fillRect(0, 0, W, H);
+    speckle(c, W, H, 16000, [48, 50, 53], 30, 1.4);
     for (let i = 0; i < 40; i++) { c.fillStyle = `rgba(20,20,22,${Math.random() * 0.15})`; c.beginPath(); c.ellipse(Math.random() * W, Math.random() * H, 10 + Math.random() * 30, 20 + Math.random() * 60, 0, 0, 7); c.fill(); }
     // tyre tracks (darker) per lane
     const lw = W / (lanes * 2);
@@ -36,7 +37,7 @@ export function roadTexture(lanes: number, kind: string) {
 }
 export const TEX = {
   asphalt: canvasTex(256, 256, (c) => { c.fillStyle = '#3c3e42'; c.fillRect(0, 0, 256, 256); speckle(c, 256, 256, 9000, [60, 62, 66], 34, 1.4); }),
-  sidewalk: canvasTex(256, 256, (c) => { c.fillStyle = '#b9b5ad'; c.fillRect(0, 0, 256, 256); speckle(c, 256, 256, 9000, [185, 181, 173], 30, 1.5); c.strokeStyle = 'rgba(80,78,72,0.55)'; c.lineWidth = 2; for (let i = 0; i <= 256; i += 64) { c.beginPath(); c.moveTo(i, 0); c.lineTo(i, 256); c.stroke(); c.beginPath(); c.moveTo(0, i); c.lineTo(256, i); c.stroke(); } }),
+  sidewalk: canvasTex(256, 256, (c) => { c.fillStyle = '#8f8b84'; c.fillRect(0, 0, 256, 256); speckle(c, 256, 256, 9000, [143, 139, 132], 34, 1.5); for (let i = 0; i < 30; i++) { c.fillStyle = `rgba(40,36,30,${Math.random() * 0.12})`; c.beginPath(); c.arc(Math.random() * 256, Math.random() * 256, 4 + Math.random() * 20, 0, 7); c.fill(); } c.strokeStyle = 'rgba(80,78,72,0.55)'; c.lineWidth = 2; for (let i = 0; i <= 256; i += 64) { c.beginPath(); c.moveTo(i, 0); c.lineTo(i, 256); c.stroke(); c.beginPath(); c.moveTo(0, i); c.lineTo(256, i); c.stroke(); } }),
   ground: canvasTex(512, 512, (c) => {
     c.fillStyle = '#808080'; c.fillRect(0, 0, 512, 512);
     for (let i = 0; i < 26000; i++) { const v = 128 + (Math.random() - 0.5) * 90; c.fillStyle = `rgb(${v},${v},${v})`; const s = Math.random() * 2.5 + 0.5; c.fillRect(Math.random() * 512, Math.random() * 512, s, s * (1 + Math.random() * 3)); }
@@ -60,7 +61,8 @@ export const SHARED = { uNight: { value: 0 }, uWet: { value: 0 }, uTime: { value
  * aStyle = (style, seed); style < 0 => roof.
  */
 export function facadeMaterial() {
-  const m = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.8, metalness: 0.0, envMapIntensity: 1 });
+  const pl = NORMALS.plaster.clone(); pl.repeat.set(0.3, 0.3);
+  const m = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.86, metalness: 0.0, envMapIntensity: 1, normalMap: pl, normalScale: new THREE.Vector2(0.55, 0.55) });
   m.onBeforeCompile = (sh) => {
     sh.uniforms.uNight = SHARED.uNight; sh.uniforms.uWet = SHARED.uWet;
     sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nattribute vec2 aStyle; varying vec2 vStyle; varying vec2 vFac;')
@@ -101,19 +103,20 @@ export function facadeMaterial() {
         }
       }`)
       .replace('#include <roughnessmap_fragment>', `#include <roughnessmap_fragment>
-      roughnessFactor = mix(roughnessFactor, 0.06, gWin); roughnessFactor = mix(roughnessFactor, roughnessFactor * 0.6, uWet);`)
+      roughnessFactor = mix(roughnessFactor, 0.12, gWin); roughnessFactor = mix(roughnessFactor, roughnessFactor * 0.6, uWet);`)
       .replace('#include <metalnessmap_fragment>', `#include <metalnessmap_fragment>
-      metalnessFactor = mix(metalnessFactor, 0.85, gWin * (1.0 - uNight * 0.6));`)
+      metalnessFactor = mix(metalnessFactor, 0.55, gWin * (1.0 - uNight * 0.6));`)
       .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
       totalEmissiveRadiance += gLit * uNight * mix(vec3(1.0, 0.78, 0.48), vec3(0.75, 0.85, 1.0), fh(vec2(vStyle.y, 3.0))) * 1.25;`);
   };
-  m.customProgramCacheKey = () => 'facade1';
+  m.customProgramCacheKey = () => 'facade2';
   return m;
 }
 
 /** Ground material: vertex colours * tiling detail texture; roads / wetness affect roughness. */
 export function groundMaterial() {
-  const m = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.95, map: TEX.ground });
+  const gn = NORMALS.concrete.clone(); gn.repeat.set(1, 1);
+  const m = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.95, map: TEX.ground, normalMap: gn, normalScale: new THREE.Vector2(0.6, 0.6) });
   TEX.ground.repeat.set(1, 1);
   m.onBeforeCompile = (sh) => {
     sh.uniforms.uWet = SHARED.uWet;
@@ -128,7 +131,8 @@ export function groundMaterial() {
   return m;
 }
 export function roadMaterial(tex: THREE.Texture) {
-  const m = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.88, metalness: 0, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
+  const an = NORMALS.asphalt.clone(); an.repeat.set(3, 4);
+  const m = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.88, metalness: 0, normalMap: an, normalScale: new THREE.Vector2(0.7, 0.7), polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
   m.onBeforeCompile = (sh) => {
     sh.uniforms.uWet = SHARED.uWet;
     sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nuniform float uWet;')

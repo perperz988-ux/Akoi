@@ -10,6 +10,15 @@
     "build:single": "npm run build && node scripts/singlefile.mjs",
     "preview": "vite preview --host"
   },
-  "dependencies": { "three": "0.170.0" },
-  "devDependencies": { "@types/three": "0.170.0", "typescript": "5.6.3", "vite": "5.4.11" }
+  "dependencies": {
+    "@pmndrs/assets": "^1.7.0",
+    "n8ao": "^2.1.0",
+    "postprocessing": "^6.39.6",
+    "three": "0.170.0"
+  },
+  "devDependencies": {
+    "@types/three": "0.170.0",
+    "typescript": "5.6.3",
+    "vite": "5.4.11"
+  }
 }

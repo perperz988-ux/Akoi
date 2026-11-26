@@ -3,6 +3,7 @@ import * as L from './layout';
 import { BUILDINGS, Bldg, EDGES, NODES, POIS, SPOTS, Zone, HALF, HN, HRES, HEIGHTS, segHalfWidth, SIDEWALK_W, zoneAt, lightState } from './layout';
 import { facadeMaterial, groundMaterial, roadMaterial, getRoadTex, TEX, SHARED, mat } from '../render/materials';
 import * as GEO from '../render/geo';
+import { NORMALS } from '../render/assets';
 import { hash2, fbm } from '../core/math';
 import type { Quality } from '../game/settings';
 
@@ -43,7 +44,7 @@ export class World {
   private buildTerrain() {
     const n = HN, pos = new Float32Array(n * n * 3), col = new Float32Array(n * n * 3);
     const c = new THREE.Color();
-    const sand = new THREE.Color(0xd9c49a), wetSand = new THREE.Color(0xa8946e), grass = new THREE.Color(0x5f8a3e), dry = new THREE.Color(0x8f9455), concrete = new THREE.Color(0x9c9a94), mud = new THREE.Color(0x4a4a32), swampG = new THREE.Color(0x4b6234), lawn = new THREE.Color(0x6b9a45), tarmac = new THREE.Color(0x55575a), dirt = new THREE.Color(0x8a7556);
+    const sand = new THREE.Color(0xcdb88e), wetSand = new THREE.Color(0x9a8664), grass = new THREE.Color(0x4f7434), dry = new THREE.Color(0x7d8248), concrete = new THREE.Color(0x77746e), mud = new THREE.Color(0x4a4a32), swampG = new THREE.Color(0x4b6234), lawn = new THREE.Color(0x6b9a45), tarmac = new THREE.Color(0x55575a), dirt = new THREE.Color(0x8a7556);
     for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) {
       const x = -HALF + i * HRES, z = -HALF + j * HRES, h = HEIGHTS[j * n + i], k = j * n + i;
       pos[k * 3] = x; pos[k * 3 + 1] = h; pos[k * 3 + 2] = z;
@@ -113,7 +114,7 @@ export class World {
       const m = new THREE.Mesh(g, mats[k]); m.receiveShadow = true; m.frustumCulled = false; m.renderOrder = k === 'cross' ? 2 : 0; this.group.add(m);
     }
     const { mergeGeometries } = THREE_UTILS;
-    const sw = new THREE.Mesh(mergeGeometries(sideParts.map((g) => g.toNonIndexed()))!, new THREE.MeshStandardMaterial({ map: TEX.sidewalk, roughness: 0.9 }));
+    const sw = new THREE.Mesh(mergeGeometries(sideParts.map((g) => g.toNonIndexed()))!, new THREE.MeshStandardMaterial({ map: TEX.sidewalk, roughness: 0.9, normalMap: NORMALS.concrete, normalScale: new THREE.Vector2(0.5, 0.5) }));
     (sw.material as THREE.MeshStandardMaterial).map!.repeat.set(1, 1);
     sw.receiveShadow = true; sw.frustumCulled = false; this.group.add(sw);
   }
@@ -239,8 +240,8 @@ export class World {
       if (p.x < x0 || p.x >= x0 + CH || p.z < z0 || p.z >= z0 + CH) continue;
       // sign above the door
       const sign = makeSign(p.name, p.kind);
-      const sw = Math.min(p.w * 0.8, 3 + p.name.length * 0.9);
-      const sm = new THREE.Mesh(new THREE.PlaneGeometry(sw, sw / 4.5), sign); ch.group.userData.mats.push(sign);
+      const sw = Math.min(p.w * 0.7, 1.5 + p.name.length * 0.42);
+      const sm = new THREE.Mesh(new THREE.PlaneGeometry(sw, sw / 4.6), sign); ch.group.userData.mats.push(sign);
       const fx = Math.sin(p.face), fz = Math.cos(p.face);
       const sy = Math.min(p.h - 0.6, p.kind === 'gas' ? 3.6 : 4.6);
       sm.position.set(p.door.x - fx * 1.05, sy, p.door.z - fz * 1.05); sm.rotation.y = p.face; ch.group.add(sm);
