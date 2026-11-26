@@ -1,4 +1,6 @@
 <roblox xmlns:xmime="http://www.w3.org/2005/05/xmlmime" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.roblox.com/roblox.xsd" version="4">
+<External>null</External>
+<External>nil</External>
 <Item class="Workspace" referent="RBX00000000"><Properties><string name="Name">Workspace</string></Properties>
 
 </Item>
@@ -320,7 +322,7 @@ for i, pos in ipairs(Layout.SHELLS) do
 		addMoney(plr, SHELL_REWARD, "Concha dorada encontrada")
 		ShellRemote:FireClient(plr, "got", i)
 		if plr.leaderstats.Conchas.Value == #Layout.SHELLS then
-			addMoney(plr, 10000, "¡Encontraste TODAS las conchas!")
+			addMoney(plr, 10000, "\u{A1}Encontraste TODAS las conchas!")
 		end
 	end)
 end

@@ -176,7 +176,7 @@ for i, pos in ipairs(Layout.SHELLS) do
 		addMoney(plr, SHELL_REWARD, "Concha dorada encontrada")
 		ShellRemote:FireClient(plr, "got", i)
 		if plr.leaderstats.Conchas.Value == #Layout.SHELLS then
-			addMoney(plr, 10000, "¡Encontraste TODAS las conchas!")
+			addMoney(plr, 10000, "\u{A1}Encontraste TODAS las conchas!")
 		end
 	end)
 end

@@ -38,12 +38,14 @@ También hay calles con líneas, farolas que se encienden de noche, un ciclo de 
 - `src/ServerScriptService/Gameplay.server.luau`: dinero, conchas, trabajos y guardado
 - `src/StarterPlayerScripts/CarController.client.luau`: conducción arcade
 - `src/StarterPlayerScripts/HUD.client.luau`: interfaz (dinero, botones, velocímetro, misión)
-- `build.mjs`: genera `PortSolano.rbxlx`
-- `publish.mjs`: lo sube a tu experiencia con Roblox Open Cloud
+- `build-binary.mjs`: genera `PortSolano.rbxl` (binario), el que se sube a Roblox
+- `build.mjs`: genera `PortSolano.rbxlx` (XML, para abrir en Studio; Open Cloud no lo acepta)
+- `publish.mjs`: sube `PortSolano.rbxl` a tu experiencia con Roblox Open Cloud
 
 ```bash
-node roblox/build.mjs
-UNIVERSE_ID=... PLACE_ID=... ROBLOX_API_KEY=... node roblox/publish.mjs
+node roblox/build-binary.mjs
+UNIVERSE_ID=9680075881 PLACE_ID=108867858989474 ROBLOX_API_KEY=... node roblox/publish.mjs
+# o con curl:
+curl -X POST "https://apis.roblox.com/universes/v1/9680075881/places/108867858989474/versions?versionType=Published" \
+  -H "x-api-key: $ROBLOX_API_KEY" -H "Content-Type: application/octet-stream" --data-binary @roblox/PortSolano.rbxl
 ```
-
-Si tienes Studio, también puedes abrir `PortSolano.rbxlx` directamente.
