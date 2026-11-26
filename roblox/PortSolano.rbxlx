@@ -1,0 +1,1872 @@
+<roblox xmlns:xmime="http://www.w3.org/2005/05/xmlmime" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.roblox.com/roblox.xsd" version="4">
+<Item class="Workspace" referent="RBX00000000"><Properties><string name="Name">Workspace</string></Properties>
+
+</Item>
+<Item class="Lighting" referent="RBX00000001"><Properties><string name="Name">Lighting</string></Properties>
+
+</Item>
+<Item class="ReplicatedStorage" referent="RBX00000003"><Properties><string name="Name">ReplicatedStorage</string></Properties>
+<Item class="ModuleScript" referent="RBX00000002"><Properties><string name="Name">Layout</string><ProtectedString name="Source"><![CDATA[--!strict
+-- Layout: datos compartidos del mapa de Port Solano (servidor y cliente).
+-- El mapa mide ~1000 x 900 studs. Tierra firme: X -480..300, Z -400..480.
+-- Al este (X > 300) esta la playa Sunreef y el mar; al norte (Z < -400) el puerto.
+
+local Layout = {}
+
+Layout.LAND_MIN_X = -480
+Layout.LAND_MAX_X = 300
+Layout.LAND_MIN_Z = -400
+Layout.LAND_MAX_Z = 480
+Layout.WATER_Y = -2
+Layout.ROAD_WIDTH = 24
+
+-- Calles: lineas verticales (a lo largo de Z) en estas X, horizontales en estas Z.
+Layout.ROADS_X = { -420, -280, -140, 0, 140, 280 }
+Layout.ROADS_Z = { -360, -220, -80, 60, 200, 340 }
+
+-- Isla Coral Key y su puente
+Layout.ISLAND = { minX = 520, maxX = 720, minZ = -180, maxZ = 60 }
+Layout.BRIDGE_Z = -60
+
+export type District = {
+	name: string,
+	color: Color3,
+}
+
+local DISTRICTS: { [string]: District } = {
+	Downtown = { name = "Downtown", color = Color3.fromRGB(120, 190, 255) },
+	Port = { name = "Puerto Saltworks", color = Color3.fromRGB(255, 170, 80) },
+	Galleria = { name = "Galleria", color = Color3.fromRGB(255, 120, 200) },
+	Park = { name = "Parque Mirador", color = Color3.fromRGB(110, 220, 120) },
+	Suburbs = { name = "Palm Hollow", color = Color3.fromRGB(200, 230, 140) },
+	Ironside = { name = "Ironside", color = Color3.fromRGB(200, 140, 110) },
+	OceanMile = { name = "Ocean Mile", color = Color3.fromRGB(90, 230, 220) },
+	Beach = { name = "Playa Sunreef", color = Color3.fromRGB(255, 225, 140) },
+	Island = { name = "Coral Key", color = Color3.fromRGB(255, 210, 90) },
+	Sea = { name = "Mar de Solano", color = Color3.fromRGB(70, 150, 255) },
+}
+Layout.DISTRICTS = DISTRICTS
+
+-- Devuelve la clave del distrito en una posicion (X, Z).
+function Layout.districtKeyAt(x: number, z: number): string
+	local isl = Layout.ISLAND
+	if x >= isl.minX - 20 and x <= isl.maxX + 20 and z >= isl.minZ - 20 and z <= isl.maxZ + 20 then
+		return "Island"
+	end
+	if x > Layout.LAND_MAX_X then
+		if x < 400 and z >= Layout.LAND_MIN_Z and z <= Layout.LAND_MAX_Z then
+			return "Beach"
+		end
+		return "Sea"
+	end
+	if x < Layout.LAND_MIN_X or z > Layout.LAND_MAX_Z then
+		return "Sea"
+	end
+	if z < Layout.LAND_MIN_Z then
+		return if x < -140 then "Port" else "Sea"
+	end
+	if x > 210 then
+		return "OceanMile"
+	end
+	if z < -220 then
+		return if x < -140 then "Port" else "Galleria"
+	end
+	if x < -140 then
+		return if z < 60 then "Park" else "Suburbs"
+	end
+	if z < 200 then
+		return "Downtown"
+	end
+	return "Ironside"
+end
+
+function Layout.districtAt(x: number, z: number): District
+	return DISTRICTS[Layout.districtKeyAt(x, z)]
+end
+
+-- Destinos para los trabajos de reparto.
+export type Destination = { name: string, pos: Vector3 }
+Layout.DESTINATIONS = {
+	{ name = "Muelle del Puerto", pos = Vector3.new(-350, 1, -385) },
+	{ name = "Centro Comercial Galleria", pos = Vector3.new(0, 1, -300) },
+	{ name = "Torre Solano (Downtown)", pos = Vector3.new(70, 1, 60) },
+	{ name = "Parque Mirador", pos = Vector3.new(-280, 1, -80) },
+	{ name = "Casa en Palm Hollow", pos = Vector3.new(-350, 1, 200) },
+	{ name = "Esquina de Ironside", pos = Vector3.new(0, 1, 340) },
+	{ name = "Hotel Ocean Mile", pos = Vector3.new(280, 1, 130) },
+	{ name = "Chiringuito de Sunreef", pos = Vector3.new(330, 1, 300) },
+	{ name = "Mansion de Coral Key", pos = Vector3.new(620, 1, -60) },
+	{ name = "Cruce de la Ruta 9", pos = Vector3.new(-140, 1, 470) },
+} :: { Destination }
+
+-- Plaza de aparicion (Plaza Solano, en Downtown)
+Layout.SPAWN = Vector3.new(-70, 0.5, -10)
+
+-- Coches aparcados al iniciar el servidor: posicion y angulo (grados, 0 = mirando a -Z)
+Layout.CAR_SPOTS = {
+	{ pos = Vector3.new(-62, 0, 52), yaw = 90 },
+	{ pos = Vector3.new(-40, 0, 52), yaw = 90 },
+	{ pos = Vector3.new(8, 0, -40), yaw = 0 },
+	{ pos = Vector3.new(272, 0, -150), yaw = 180 },
+	{ pos = Vector3.new(272, 0, 100), yaw = 180 },
+	{ pos = Vector3.new(-280 + 8, 0, -140), yaw = 0 },
+	{ pos = Vector3.new(-350, 0, -372 + 4), yaw = 90 },
+	{ pos = Vector3.new(-350, 0, 192), yaw = 90 },
+	{ pos = Vector3.new(-8, 0, 300), yaw = 180 },
+	{ pos = Vector3.new(60, 0, -290), yaw = 0 },
+	{ pos = Vector3.new(80, 0, -290), yaw = 0 },
+	{ pos = Vector3.new(640, 0, -52), yaw = 90 },
+	{ pos = Vector3.new(148, 0, 400), yaw = 0 },
+	{ pos = Vector3.new(-420 + 8, 0, 420), yaw = 0 },
+}
+
+-- 25 conchas doradas escondidas por el mapa
+Layout.SHELLS = {
+	Vector3.new(320, 2, -300), Vector3.new(318, 2, 420), Vector3.new(312, 2, 150),
+	Vector3.new(620, 3, 20), Vector3.new(700, 3, -160), Vector3.new(410, 4, -60),
+	Vector3.new(-300, 3, -420), Vector3.new(-460, 3, -380), Vector3.new(-210, 3, -150),
+	Vector3.new(-350, 3, -10), Vector3.new(-460, 3, 460), Vector3.new(-280, 3, 410),
+	Vector3.new(0, 3, 470), Vector3.new(140, 3, 260), Vector3.new(-90, 3, 20),
+	Vector3.new(70, 3, -220), Vector3.new(280, 3, -390), Vector3.new(-420, 3, 60),
+	Vector3.new(210, 3, 340), Vector3.new(550, 3, -170), Vector3.new(-140, 3, -390),
+	Vector3.new(140, 3, -80), Vector3.new(325, 2, -200), Vector3.new(0, 3, 200),
+	Vector3.new(-420, 3, 340),
+}
+
+-- Altura de la arena en la playa (losa inclinada 3 grados)
+function Layout.beachY(x: number): number
+	return -3.46 + (368 - x) * math.tan(math.rad(3))
+end
+
+return Layout
+]]></ProtectedString></Properties></Item>
+</Item>
+<Item class="ServerScriptService" referent="RBX00000007"><Properties><string name="Name">ServerScriptService</string></Properties>
+<Item class="Script" referent="RBX00000004"><Properties><string name="Name">Gameplay</string><bool name="Disabled">false</bool><ProtectedString name="Source"><![CDATA[-- Gameplay: dinero, conchas doradas coleccionables, trabajos de reparto
+-- y guardado de progreso (DataStore).
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local DataStoreService = game:GetService("DataStoreService")
+
+local Layout = require(ReplicatedStorage:WaitForChild("Layout"))
+
+local function getRemote(name)
+	local f = ReplicatedStorage:FindFirstChild("Remotes")
+	if not f then
+		f = Instance.new("Folder")
+		f.Name = "Remotes"
+		f.Parent = ReplicatedStorage
+	end
+	local r = f:FindFirstChild(name)
+	if not r then
+		r = Instance.new("RemoteEvent")
+		r.Name = name
+		r.Parent = f
+	end
+	return r
+end
+local ShellRemote = getRemote("Shells") -- servidor -> cliente: ("state", {indices}) / ("got", i)
+local JobRemote = getRemote("Job") -- cliente -> servidor: "start"/"cancel"; servidor -> cliente: estado
+local NotifyRemote = getRemote("Notify") -- servidor -> cliente: texto
+
+local SHELL_REWARD = 250
+local START_MONEY = 500
+
+----------------------------------------------------------------------
+-- Datos de jugador
+----------------------------------------------------------------------
+local store = nil
+pcall(function()
+	store = DataStoreService:GetDataStore("PortSolano_v1")
+end)
+
+local data = {} -- [player] = { money = n, shells = { [i] = true } }
+
+local function save(plr)
+	local d = data[plr]
+	if not (store and d and d.loaded) then
+		return
+	end
+	local list = {}
+	for i in pairs(d.shells) do
+		table.insert(list, i)
+	end
+	pcall(function()
+		store:SetAsync("u" .. plr.UserId, { money = d.money, shells = list })
+	end)
+end
+
+local function updateStats(plr)
+	local d = data[plr]
+	local ls = plr:FindFirstChild("leaderstats")
+	if not (d and ls) then
+		return
+	end
+	ls.Dinero.Value = d.money
+	local n = 0
+	for _ in pairs(d.shells) do
+		n += 1
+	end
+	ls.Conchas.Value = n
+end
+
+local function addMoney(plr, amount, reason)
+	local d = data[plr]
+	if not d then
+		return
+	end
+	d.money += amount
+	updateStats(plr)
+	if reason then
+		NotifyRemote:FireClient(plr, ("+$%d  %s"):format(amount, reason))
+	end
+end
+
+Players.PlayerAdded:Connect(function(plr)
+	local ls = Instance.new("Folder")
+	ls.Name = "leaderstats"
+	local money = Instance.new("IntValue")
+	money.Name = "Dinero"
+	money.Parent = ls
+	local shells = Instance.new("IntValue")
+	shells.Name = "Conchas"
+	shells.Parent = ls
+	ls.Parent = plr
+
+	local d = { money = START_MONEY, shells = {}, loaded = false }
+	data[plr] = d
+	if store then
+		local ok, saved = pcall(function()
+			return store:GetAsync("u" .. plr.UserId)
+		end)
+		if ok and type(saved) == "table" then
+			d.money = tonumber(saved.money) or START_MONEY
+			for _, i in ipairs(saved.shells or {}) do
+				d.shells[i] = true
+			end
+		end
+		d.loaded = ok
+	end
+	updateStats(plr)
+	local list = {}
+	for i in pairs(d.shells) do
+		table.insert(list, i)
+	end
+	ShellRemote:FireClient(plr, "state", list)
+	NotifyRemote:FireClient(plr, "Bienvenido a Port Solano")
+end)
+
+Players.PlayerRemoving:Connect(function(plr)
+	save(plr)
+	data[plr] = nil
+end)
+
+game:BindToClose(function()
+	for _, plr in ipairs(Players:GetPlayers()) do
+		save(plr)
+	end
+end)
+
+task.spawn(function()
+	while true do
+		task.wait(120)
+		for _, plr in ipairs(Players:GetPlayers()) do
+			save(plr)
+		end
+	end
+end)
+
+----------------------------------------------------------------------
+-- Conchas doradas
+----------------------------------------------------------------------
+while not workspace:GetAttribute("MapReady") do
+	task.wait(0.2)
+end
+
+local shellFolder = Instance.new("Folder")
+shellFolder.Name = "Conchas"
+shellFolder.Parent = workspace
+
+for i, pos in ipairs(Layout.SHELLS) do
+	local p = Instance.new("Part")
+	p.Name = "Concha" .. i
+	p.Shape = Enum.PartType.Ball
+	p.Size = Vector3.new(2.6, 2.6, 2.6)
+	p.Position = pos
+	p.Anchored = true
+	p.CanCollide = false
+	p.Material = Enum.Material.Neon
+	p.Color = Color3.fromRGB(255, 200, 40)
+	p:SetAttribute("Index", i)
+	local light = Instance.new("PointLight")
+	light.Color = p.Color
+	light.Range = 10
+	light.Brightness = 2
+	light.Parent = p
+	local sparkle = Instance.new("Sparkles")
+	sparkle.SparkleColor = p.Color
+	sparkle.Parent = p
+	p.Parent = shellFolder
+
+	p.Touched:Connect(function(hit)
+		local char = hit:FindFirstAncestorOfClass("Model")
+		local plr = char and Players:GetPlayerFromCharacter(char)
+		local d = plr and data[plr]
+		if not d or d.shells[i] then
+			return
+		end
+		d.shells[i] = true
+		addMoney(plr, SHELL_REWARD, "Concha dorada encontrada")
+		ShellRemote:FireClient(plr, "got", i)
+		if plr.leaderstats.Conchas.Value == #Layout.SHELLS then
+			addMoney(plr, 10000, "¡Encontraste TODAS las conchas!")
+		end
+	end)
+end
+
+----------------------------------------------------------------------
+-- Trabajos de reparto
+----------------------------------------------------------------------
+local jobs = {} -- [player] = { dest, name, reward, deadline, started }
+
+local function flatDist(a, b)
+	return Vector3.new(a.X - b.X, 0, a.Z - b.Z).Magnitude
+end
+
+JobRemote.OnServerEvent:Connect(function(plr, action)
+	local root = plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
+	if action == "cancel" then
+		if jobs[plr] then
+			jobs[plr] = nil
+			JobRemote:FireClient(plr, "cancel")
+		end
+		return
+	end
+	if action ~= "start" or jobs[plr] or not root then
+		return
+	end
+	local options = {}
+	for _, d in ipairs(Layout.DESTINATIONS) do
+		if flatDist(d.pos, root.Position) > 200 then
+			table.insert(options, d)
+		end
+	end
+	if #options == 0 then
+		options = Layout.DESTINATIONS
+	end
+	local dest = options[math.random(1, #options)]
+	local dist = flatDist(dest.pos, root.Position)
+	local timeLimit = math.floor(dist / 35 + 25)
+	local job = {
+		pos = dest.pos,
+		name = dest.name,
+		reward = math.floor(dist * 1.5 / 10) * 10 + 150,
+		deadline = os.clock() + timeLimit,
+	}
+	jobs[plr] = job
+	JobRemote:FireClient(plr, "start", job.name, job.pos, job.reward, timeLimit)
+end)
+
+Players.PlayerRemoving:Connect(function(plr)
+	jobs[plr] = nil
+end)
+
+while true do
+	task.wait(0.25)
+	for plr, job in pairs(jobs) do
+		local root = plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
+		if root and flatDist(root.Position, job.pos) < 18 then
+			jobs[plr] = nil
+			local onTime = os.clock() <= job.deadline
+			local pay = if onTime then job.reward else math.floor(job.reward / 2)
+			addMoney(plr, pay, if onTime then "Entrega a tiempo" else "Entrega tarde (mitad de pago)")
+			JobRemote:FireClient(plr, "done", pay, onTime)
+		end
+	end
+end
+]]></ProtectedString></Properties></Item>
+<Item class="Script" referent="RBX00000005"><Properties><string name="Name">Vehicles</string><bool name="Disabled">false</bool><ProtectedString name="Source"><![CDATA[-- Vehicles: fabrica de coches, coches aparcados por el mapa y coche personal
+-- (boton "Coche" en pantalla). La conduccion la hace el cliente (CarController)
+-- y el servidor le da la propiedad de red del coche mientras conduce.
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local Layout = require(ReplicatedStorage:WaitForChild("Layout"))
+
+local function getRemote(name)
+	local f = ReplicatedStorage:FindFirstChild("Remotes")
+	if not f then
+		f = Instance.new("Folder")
+		f.Name = "Remotes"
+		f.Parent = ReplicatedStorage
+	end
+	local r = f:FindFirstChild(name)
+	if not r then
+		r = Instance.new("RemoteEvent")
+		r.Name = name
+		r.Parent = f
+	end
+	return r
+end
+local SpawnCarRemote = getRemote("SpawnCar")
+
+while not workspace:GetAttribute("MapReady") do
+	task.wait(0.2)
+end
+
+local carsFolder = Instance.new("Folder")
+carsFolder.Name = "Coches"
+carsFolder.Parent = workspace
+
+local M = Enum.Material
+local rng = Random.new()
+
+local CAR_COLORS = {
+	Color3.fromRGB(220, 40, 60),
+	Color3.fromRGB(255, 140, 30),
+	Color3.fromRGB(250, 210, 40),
+	Color3.fromRGB(40, 190, 120),
+	Color3.fromRGB(30, 150, 230),
+	Color3.fromRGB(120, 70, 210),
+	Color3.fromRGB(255, 110, 180),
+	Color3.fromRGB(245, 245, 245),
+	Color3.fromRGB(30, 30, 34),
+	Color3.fromRGB(80, 230, 230),
+}
+
+local CAR_NAMES = { "Solano GT", "Vela Cruiser", "Reef Runner", "Palmetto", "Bayshore S", "Coral Sport" }
+
+local function weldPart(model, chassis, size, offset, color, material, props)
+	local p = Instance.new("Part")
+	p.Size = size
+	p.CFrame = chassis.CFrame * offset
+	p.Color = color
+	p.Material = material
+	p.Massless = true
+	p.TopSurface = Enum.SurfaceType.Smooth
+	p.BottomSurface = Enum.SurfaceType.Smooth
+	if props then
+		for k, v in pairs(props) do
+			p[k] = v
+		end
+	end
+	p.Parent = model
+	local w = Instance.new("WeldConstraint")
+	w.Part0 = chassis
+	w.Part1 = p
+	w.Parent = p
+	return p
+end
+
+-- groundCF: CFrame a nivel del suelo; el frente del coche mira a -Z
+local function buildCar(groundCF, color, sporty)
+	local model = Instance.new("Model")
+	model.Name = CAR_NAMES[rng:NextInteger(1, #CAR_NAMES)]
+
+	local chassis = Instance.new("Part")
+	chassis.Name = "Chassis"
+	chassis.Size = Vector3.new(6, 1.7, 11) -- al conducir flota 0.25 sobre el suelo
+	chassis.CFrame = groundCF * CFrame.new(0, 1.1, 0)
+	chassis.Transparency = 1
+	chassis.CustomPhysicalProperties = PhysicalProperties.new(3, 0.6, 0.1)
+	chassis.RootPriority = 10
+	chassis.Parent = model
+	model.PrimaryPart = chassis
+
+	local bodyH = if sporty then 1.6 else 2
+	local cabinH = if sporty then 1.4 else 1.9
+	-- carroceria (coordenadas relativas al centro del chasis, que esta a 1.1 del suelo)
+	weldPart(model, chassis, Vector3.new(6.2, bodyH, 11.4), CFrame.new(0, 0.1 + bodyH / 2, 0), color, M.SmoothPlastic, { Reflectance = 0.08 })
+	weldPart(model, chassis, Vector3.new(5.4, cabinH, if sporty then 5 else 6), CFrame.new(0, 0.1 + bodyH + cabinH / 2, 0.8), Color3.fromRGB(40, 50, 60), M.Glass, { Transparency = 0.35 })
+	weldPart(model, chassis, Vector3.new(5.6, 0.3, if sporty then 5.2 else 6.2), CFrame.new(0, 0.1 + bodyH + cabinH + 0.15, 0.8), color, M.SmoothPlastic)
+	-- parachoques
+	weldPart(model, chassis, Vector3.new(6.4, 0.8, 0.6), CFrame.new(0, 0.5, -5.8), Color3.fromRGB(40, 40, 44), M.SmoothPlastic)
+	weldPart(model, chassis, Vector3.new(6.4, 0.8, 0.6), CFrame.new(0, 0.5, 5.8), Color3.fromRGB(40, 40, 44), M.SmoothPlastic)
+	-- faros y pilotos
+	for _, x in ipairs({ -2.2, 2.2 }) do
+		weldPart(model, chassis, Vector3.new(1.2, 0.5, 0.2), CFrame.new(x, 0.1 + bodyH - 0.5, -5.75), Color3.fromRGB(255, 250, 220), M.Neon)
+		weldPart(model, chassis, Vector3.new(1.2, 0.5, 0.2), CFrame.new(x, 0.1 + bodyH - 0.5, 5.75), Color3.fromRGB(255, 30, 30), M.Neon)
+	end
+	-- ruedas (cilindros, eje X), solo decorativas
+	for _, x in ipairs({ -2.9, 2.9 }) do
+		for _, z in ipairs({ -3.6, 3.6 }) do
+			weldPart(model, chassis, Vector3.new(1, 2.5, 2.5), CFrame.new(x, 0.15, z), Color3.fromRGB(25, 25, 25), M.SmoothPlastic, { Shape = Enum.PartType.Cylinder, CanCollide = false })
+			weldPart(model, chassis, Vector3.new(1.05, 1.4, 1.4), CFrame.new(x, 0.15, z), Color3.fromRGB(190, 190, 195), M.Metal, { Shape = Enum.PartType.Cylinder, CanCollide = false })
+		end
+	end
+
+	local seat = Instance.new("VehicleSeat")
+	seat.Name = "DriveSeat"
+	seat.Size = Vector3.new(2, 0.5, 2)
+	seat.CFrame = chassis.CFrame * CFrame.new(-1.3, 0.9, 0.6)
+	seat.Transparency = 1
+	seat.CanCollide = false
+	seat.Massless = true
+	seat.MaxSpeed = 0
+	seat.Torque = 0
+	seat.HeadsUpDisplay = false
+	seat:SetAttribute("PSCar", true)
+	seat.Parent = model
+	local sw = Instance.new("WeldConstraint")
+	sw.Part0 = chassis
+	sw.Part1 = seat
+	sw.Parent = seat
+
+	-- fuerzas que usa el CarController del cliente
+	local att = Instance.new("Attachment")
+	att.Name = "DriveAttachment"
+	att.Parent = chassis
+	local lv = Instance.new("LinearVelocity")
+	lv.Name = "Drive"
+	lv.Attachment0 = att
+	lv.RelativeTo = Enum.ActuatorRelativeTo.World
+	lv.VelocityConstraintMode = Enum.VelocityConstraintMode.Vector
+	lv.ForceLimitMode = Enum.ForceLimitMode.PerAxis
+	lv.MaxAxesForce = Vector3.zero
+	lv.VectorVelocity = Vector3.zero
+	lv.Enabled = false
+	lv.Parent = chassis
+	local ao = Instance.new("AlignOrientation")
+	ao.Name = "Steer"
+	ao.Mode = Enum.OrientationAlignmentMode.OneAttachment
+	ao.Attachment0 = att
+	ao.MaxTorque = 1e8
+	ao.Responsiveness = 40
+	ao.CFrame = CFrame.new()
+	ao.Enabled = false
+	ao.Parent = chassis
+
+	-- boton para subirse (comodo en movil)
+	local prompt = Instance.new("ProximityPrompt")
+	prompt.ActionText = "Conducir"
+	prompt.ObjectText = model.Name
+	prompt.HoldDuration = 0
+	prompt.MaxActivationDistance = 12
+	prompt.RequiresLineOfSight = false
+	prompt.Parent = chassis
+	prompt.Triggered:Connect(function(plr)
+		local hum = plr.Character and plr.Character:FindFirstChildOfClass("Humanoid")
+		if hum and hum.Health > 0 and not seat.Occupant and not hum.SeatPart then
+			seat:Sit(hum)
+		end
+	end)
+
+	seat:GetPropertyChangedSignal("Occupant"):Connect(function()
+		local occ = seat.Occupant
+		if occ then
+			local plr = Players:GetPlayerFromCharacter(occ.Parent)
+			prompt.Enabled = false
+			model:SetAttribute("LastUsed", os.clock())
+			if plr and chassis:CanSetNetworkOwnership() then
+				chassis:SetNetworkOwner(plr)
+			end
+		else
+			prompt.Enabled = true
+			model:SetAttribute("LastUsed", os.clock())
+			if chassis:CanSetNetworkOwnership() then
+				chassis:SetNetworkOwnershipAuto()
+			end
+		end
+	end)
+
+	model:SetAttribute("LastUsed", os.clock())
+	model.Parent = carsFolder
+	return model, seat
+end
+
+-- Coches aparcados (reaparecen si se destruyen o se hunden)
+local parked = {}
+local function spawnParked(i)
+	local spot = Layout.CAR_SPOTS[i]
+	local cf = CFrame.new(spot.pos) * CFrame.Angles(0, math.rad(spot.yaw), 0)
+	local car = buildCar(cf, CAR_COLORS[rng:NextInteger(1, #CAR_COLORS)], rng:NextNumber() < 0.3)
+	car:SetAttribute("SpotIndex", i)
+	parked[i] = car
+end
+for i = 1, #Layout.CAR_SPOTS do
+	spawnParked(i)
+end
+
+-- Coche personal
+local personal = {}
+local lastSpawn = {}
+SpawnCarRemote.OnServerEvent:Connect(function(plr)
+	local now = os.clock()
+	if lastSpawn[plr] and now - lastSpawn[plr] < 4 then
+		return
+	end
+	local char = plr.Character
+	local hum = char and char:FindFirstChildOfClass("Humanoid")
+	local root = char and char:FindFirstChild("HumanoidRootPart")
+	if not (hum and root and hum.Health > 0) or hum.SeatPart then
+		return
+	end
+	lastSpawn[plr] = now
+
+	if personal[plr] then
+		personal[plr]:Destroy()
+		personal[plr] = nil
+	end
+
+	local look = root.CFrame.LookVector * Vector3.new(1, 0, 1)
+	if look.Magnitude < 0.1 then
+		look = Vector3.new(0, 0, -1)
+	end
+	look = look.Unit
+	local right = look:Cross(Vector3.yAxis)
+	local spot = root.Position + right * 8
+	local params = RaycastParams.new()
+	params.FilterDescendantsInstances = { char, carsFolder }
+	params.FilterType = Enum.RaycastFilterType.Exclude
+	local hit = workspace:Raycast(spot + Vector3.new(0, 20, 0), Vector3.new(0, -60, 0), params)
+	local groundY = if hit then hit.Position.Y else root.Position.Y - 3
+	local cf = CFrame.lookAt(Vector3.new(spot.X, groundY + 0.2, spot.Z), Vector3.new(spot.X, groundY + 0.2, spot.Z) + look)
+
+	local car, seat = buildCar(cf, CAR_COLORS[rng:NextInteger(1, #CAR_COLORS)], rng:NextNumber() < 0.5)
+	car.Name = "Coche de " .. plr.DisplayName
+	car:SetAttribute("Owner", plr.UserId)
+	personal[plr] = car
+	task.wait(0.3)
+	if hum.Parent and hum.Health > 0 and not seat.Occupant then
+		seat:Sit(hum)
+	end
+end)
+
+Players.PlayerRemoving:Connect(function(plr)
+	if personal[plr] then
+		personal[plr]:Destroy()
+		personal[plr] = nil
+	end
+	lastSpawn[plr] = nil
+end)
+
+-- Limpieza: coches hundidos en el mar y coches abandonados lejos de su sitio
+while true do
+	task.wait(5)
+	for _, car in ipairs(carsFolder:GetChildren()) do
+		local chassis = car.PrimaryPart
+		local seat = car:FindFirstChild("DriveSeat")
+		local sunk = not chassis or chassis.Position.Y < -25
+		local idle = seat and not seat.Occupant and os.clock() - (car:GetAttribute("LastUsed") or 0) > 180
+		local spotIndex = car:GetAttribute("SpotIndex")
+		local moved = false
+		if spotIndex and chassis then
+			moved = (chassis.Position - Layout.CAR_SPOTS[spotIndex].pos).Magnitude > 30
+		end
+		if sunk or (idle and (moved or car:GetAttribute("Owner"))) then
+			if seat and seat.Occupant then
+				seat.Occupant.Sit = false
+			end
+			car:Destroy()
+			if spotIndex and parked[spotIndex] == car then
+				spawnParked(spotIndex)
+			end
+			for plr, c in pairs(personal) do
+				if c == car then
+					personal[plr] = nil
+				end
+			end
+		end
+	end
+end
+]]></ProtectedString></Properties></Item>
+<Item class="Script" referent="RBX00000006"><Properties><string name="Name">World</string><bool name="Disabled">false</bool><ProtectedString name="Source"><![CDATA[-- World: construye todo el mapa de Port Solano al arrancar el servidor
+-- (suelo, mar, playa, calles, edificios, puerto, parque, isla, farolas)
+-- y controla el ciclo de dia y noche.
+
+local Players = game:GetService("Players")
+local Lighting = game:GetService("Lighting")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+Players.CharacterAutoLoads = false -- esperamos a que el mapa exista
+
+local Layout = require(ReplicatedStorage:WaitForChild("Layout"))
+
+local rng = Random.new(2026)
+local M = Enum.Material
+
+local map = Instance.new("Folder")
+map.Name = "PortSolano"
+map.Parent = workspace
+
+local function folder(name)
+	local f = Instance.new("Folder")
+	f.Name = name
+	f.Parent = map
+	return f
+end
+
+local fGround = folder("Suelo")
+local fRoads = folder("Calles")
+local fBuildings = folder("Edificios")
+local fProps = folder("Decoracion")
+local fLights = folder("Farolas")
+
+local built = 0
+local function block(parent, size, cf, color, material, props)
+	local p = Instance.new("Part")
+	p.Anchored = true
+	p.Size = size
+	p.CFrame = cf
+	p.Color = color
+	p.Material = material or M.SmoothPlastic
+	p.TopSurface = Enum.SurfaceType.Smooth
+	p.BottomSurface = Enum.SurfaceType.Smooth
+	if props then
+		for k, v in pairs(props) do
+			p[k] = v
+		end
+	end
+	p.Parent = parent
+	built += 1
+	if built % 400 == 0 then
+		task.wait()
+	end
+	return p
+end
+
+-- Caja apoyada en el suelo: centro (x, z), ancho w (X), fondo d (Z), desde y0 con altura h
+local function box(parent, x, z, w, d, y0, h, color, material, props)
+	return block(parent, Vector3.new(w, h, d), CFrame.new(x, y0 + h / 2, z), color, material, props)
+end
+
+local function wedge(parent, size, cf, color, material)
+	local w = Instance.new("WedgePart")
+	w.Anchored = true
+	w.Size = size
+	w.CFrame = cf
+	w.Color = color
+	w.Material = material or M.SmoothPlastic
+	w.Parent = parent
+	built += 1
+	return w
+end
+
+local function cylinderUp(parent, pos, height, diameter, color, material)
+	return block(
+		parent,
+		Vector3.new(height, diameter, diameter),
+		CFrame.new(pos + Vector3.new(0, height / 2, 0)) * CFrame.Angles(0, 0, math.rad(90)),
+		color,
+		material,
+		{ Shape = Enum.PartType.Cylinder }
+	)
+end
+
+local function sign(part, face, text, textColor, bgColor)
+	local gui = Instance.new("SurfaceGui")
+	gui.Face = face
+	gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
+	gui.PixelsPerStud = 20
+	gui.LightInfluence = 0
+	local label = Instance.new("TextLabel")
+	label.Size = UDim2.fromScale(1, 1)
+	label.BackgroundColor3 = bgColor or Color3.new(0, 0, 0)
+	label.BackgroundTransparency = bgColor and 0 or 1
+	label.TextColor3 = textColor
+	label.TextScaled = true
+	label.Font = Enum.Font.FredokaOne
+	label.Text = text
+	label.Parent = gui
+	gui.Parent = part
+end
+
+----------------------------------------------------------------------
+-- Iluminacion
+----------------------------------------------------------------------
+Lighting.Ambient = Color3.fromRGB(70, 70, 80)
+Lighting.OutdoorAmbient = Color3.fromRGB(140, 130, 130)
+Lighting.Brightness = 2.5
+Lighting.ClockTime = 9
+Lighting.GeographicLatitude = 25
+Lighting.EnvironmentDiffuseScale = 0.5
+Lighting.EnvironmentSpecularScale = 0.6
+
+local atmosphere = Instance.new("Atmosphere")
+atmosphere.Density = 0.28
+atmosphere.Haze = 1.2
+atmosphere.Color = Color3.fromRGB(255, 220, 200)
+atmosphere.Decay = Color3.fromRGB(255, 140, 120)
+atmosphere.Parent = Lighting
+
+local bloom = Instance.new("BloomEffect")
+bloom.Intensity = 0.6
+bloom.Size = 30
+bloom.Threshold = 1.6
+bloom.Parent = Lighting
+
+local cc = Instance.new("ColorCorrectionEffect")
+cc.Saturation = 0.15
+cc.Contrast = 0.08
+cc.TintColor = Color3.fromRGB(255, 244, 232)
+cc.Parent = Lighting
+
+local rays = Instance.new("SunRaysEffect")
+rays.Intensity = 0.06
+rays.Parent = Lighting
+
+----------------------------------------------------------------------
+-- Mar (agua de Terrain) y fondo marino
+----------------------------------------------------------------------
+local terrain = workspace.Terrain
+terrain.WaterColor = Color3.fromRGB(30, 170, 190)
+terrain.WaterTransparency = 0.6
+terrain.WaterReflectance = 0.6
+terrain.WaterWaveSize = 0.2
+terrain.WaterWaveSpeed = 8
+
+terrain:FillBlock(CFrame.new(100, -45, 0), Vector3.new(1600, 10, 1400), M.Sand)
+local WATER_TOP = Layout.WATER_Y
+local waterH = WATER_TOP + 40
+local wy = -40 + waterH / 2
+terrain:FillBlock(CFrame.new(600, wy, 0), Vector3.new(600, waterH, 1400), M.Water) -- este
+terrain:FillBlock(CFrame.new(-200, wy, -550), Vector3.new(1000, waterH, 300), M.Water) -- norte
+terrain:FillBlock(CFrame.new(-200, wy, 590), Vector3.new(1000, waterH, 220), M.Water) -- sur
+terrain:FillBlock(CFrame.new(-590, wy, 40), Vector3.new(220, waterH, 880), M.Water) -- oeste
+
+----------------------------------------------------------------------
+-- Tierra firme, playa e isla
+----------------------------------------------------------------------
+local GRASS = Color3.fromRGB(96, 158, 72)
+local SAND = Color3.fromRGB(236, 214, 160)
+local ASPHALT = Color3.fromRGB(48, 48, 54)
+local SIDEWALK = Color3.fromRGB(196, 190, 180)
+
+local landW = Layout.LAND_MAX_X - Layout.LAND_MIN_X
+local landD = Layout.LAND_MAX_Z - Layout.LAND_MIN_Z
+local landCX = (Layout.LAND_MAX_X + Layout.LAND_MIN_X) / 2
+local landCZ = (Layout.LAND_MAX_Z + Layout.LAND_MIN_Z) / 2
+box(fGround, landCX, landCZ, landW, landD, -40, 40, GRASS, M.Grass)
+
+-- Playa Sunreef: losa de arena inclinada 3 grados que se mete en el mar
+local slope = math.rad(3)
+block(
+	fGround,
+	Vector3.new(144, 4, landD),
+	CFrame.new(368, -3.46 - 2 / math.cos(slope), landCZ) * CFrame.Angles(0, 0, -slope),
+	SAND,
+	M.Sand
+)
+
+-- Isla Coral Key
+local isl = Layout.ISLAND
+local islCX, islCZ = (isl.minX + isl.maxX) / 2, (isl.minZ + isl.maxZ) / 2
+local islW, islD = isl.maxX - isl.minX, isl.maxZ - isl.minZ
+box(fGround, islCX, islCZ, islW + 40, islD + 40, -40, 39.6, SAND, M.Sand)
+box(fGround, islCX, islCZ, islW, islD, -40, 40, GRASS, M.Grass)
+
+----------------------------------------------------------------------
+-- Calles
+----------------------------------------------------------------------
+local RW = Layout.ROAD_WIDTH
+local DASH = Color3.fromRGB(240, 200, 60)
+
+local function isNearRoad(v, list)
+	for _, r in ipairs(list) do
+		if math.abs(v - r) < RW / 2 + 1 then
+			return true
+		end
+	end
+	return false
+end
+
+for _, x in ipairs(Layout.ROADS_X) do
+	box(fRoads, x, landCZ, RW, landD, -0.2, 0.4, ASPHALT, M.Asphalt)
+	for z = Layout.LAND_MIN_Z + 10, Layout.LAND_MAX_Z - 10, 20 do
+		if not isNearRoad(z, Layout.ROADS_Z) then
+			box(fRoads, x, z, 0.6, 8, 0.2, 0.05, DASH, M.SmoothPlastic, { CanCollide = false })
+		end
+	end
+end
+for _, z in ipairs(Layout.ROADS_Z) do
+	box(fRoads, landCX, z, landW, RW, -0.2, 0.42, ASPHALT, M.Asphalt)
+	for x = Layout.LAND_MIN_X + 10, Layout.LAND_MAX_X - 10, 20 do
+		if not isNearRoad(x, Layout.ROADS_X) then
+			box(fRoads, x, z, 8, 0.6, 0.22, 0.05, DASH, M.SmoothPlastic, { CanCollide = false })
+		end
+	end
+end
+
+-- Puente a Coral Key
+local BZ = Layout.BRIDGE_Z
+local bridgeX0, bridgeX1 = 292, isl.minX + 10
+local bridgeLen = bridgeX1 - bridgeX0
+local bridgeCX = (bridgeX0 + bridgeX1) / 2
+box(fRoads, bridgeCX, BZ, bridgeLen, RW + 4, -1.6, 1.8, Color3.fromRGB(150, 150, 155), M.Concrete)
+box(fRoads, bridgeCX, BZ, bridgeLen, RW - 4, 0.2, 0.05, ASPHALT, M.Asphalt)
+for side = -1, 1, 2 do
+	box(fRoads, bridgeCX, BZ + side * (RW / 2 + 1.5), bridgeLen, 1, 0.2, 3, Color3.fromRGB(235, 235, 240), M.Concrete)
+end
+for x = bridgeX0 + 40, bridgeX1 - 20, 40 do
+	box(fRoads, x, BZ, 6, 6, -40, 38.4, Color3.fromRGB(140, 140, 145), M.Concrete)
+end
+
+-- Calle de la isla
+box(fRoads, islCX, BZ, islW - 10, RW, -0.2, 0.4, ASPHALT, M.Asphalt)
+box(fRoads, islCX + 15, islCZ, RW, islD - 20, -0.2, 0.42, ASPHALT, M.Asphalt)
+
+----------------------------------------------------------------------
+-- Farolas
+----------------------------------------------------------------------
+local lamps = {}
+local function streetLight(pos, facing)
+	local pole = Color3.fromRGB(60, 60, 66)
+	box(fLights, pos.X, pos.Z, 0.6, 0.6, 0, 14, pole, M.Metal)
+	local arm = block(fLights, Vector3.new(0.4, 0.4, 4), CFrame.lookAt(pos + Vector3.new(0, 14, 0), pos + Vector3.new(0, 14, 0) + facing) * CFrame.new(0, 0, -2), pole, M.Metal)
+	local lamp = block(fLights, Vector3.new(1.4, 0.5, 1.4), arm.CFrame * CFrame.new(0, -0.4, -2), Color3.fromRGB(255, 230, 170), M.SmoothPlastic, { CanCollide = false })
+	local light = Instance.new("PointLight")
+	light.Range = 36
+	light.Brightness = 1.6
+	light.Color = Color3.fromRGB(255, 210, 150)
+	light.Enabled = false
+	light.Parent = lamp
+	table.insert(lamps, lamp)
+end
+
+for _, x in ipairs(Layout.ROADS_X) do
+	local i = 0
+	for z = Layout.LAND_MIN_Z + 40, Layout.LAND_MAX_Z - 20, 80 do
+		if not isNearRoad(z, Layout.ROADS_Z) then
+			i += 1
+			local side = if i % 2 == 0 then 1 else -1
+			streetLight(Vector3.new(x + side * (RW / 2 + 1.5), 0.3, z), Vector3.new(-side, 0, 0))
+		end
+	end
+end
+for _, z in ipairs(Layout.ROADS_Z) do
+	local i = 0
+	for x = Layout.LAND_MIN_X + 40, Layout.LAND_MAX_X - 20, 80 do
+		if not isNearRoad(x, Layout.ROADS_X) then
+			i += 1
+			local side = if i % 2 == 0 then 1 else -1
+			streetLight(Vector3.new(x, 0.3, z + side * (RW / 2 + 1.5)), Vector3.new(0, 0, -side))
+		end
+	end
+end
+for x = bridgeX0 + 20, bridgeX1 - 10, 60 do
+	streetLight(Vector3.new(x, 0.2, BZ + RW / 2 - 1), Vector3.new(0, 0, -1))
+end
+
+----------------------------------------------------------------------
+-- Decoracion reutilizable
+----------------------------------------------------------------------
+local LEAF = Color3.fromRGB(56, 140, 60)
+local TRUNK = Color3.fromRGB(130, 95, 60)
+
+local function palm(pos)
+	local h = rng:NextNumber(14, 22)
+	cylinderUp(fProps, pos, h, 1.4, TRUNK, M.Wood)
+	local top = pos + Vector3.new(0, h, 0)
+	for i = 1, 7 do
+		local a = math.rad(i * (360 / 7) + rng:NextNumber(-10, 10))
+		block(
+			fProps,
+			Vector3.new(2.4, 0.3, 9),
+			CFrame.new(top) * CFrame.Angles(0, a, 0) * CFrame.new(0, -0.6, -4) * CFrame.Angles(math.rad(-22), 0, 0),
+			LEAF,
+			M.Grass,
+			{ CanCollide = false }
+		)
+	end
+	block(fProps, Vector3.new(1.6, 1.6, 1.6), CFrame.new(top - Vector3.new(0, 0.6, 0)), Color3.fromRGB(110, 80, 40), M.Wood, { Shape = Enum.PartType.Ball, CanCollide = false })
+end
+
+local function tree(pos)
+	local h = rng:NextNumber(6, 10)
+	cylinderUp(fProps, pos, h, 1.6, TRUNK, M.Wood)
+	local s = rng:NextNumber(10, 15)
+	block(fProps, Vector3.new(s, s, s), CFrame.new(pos + Vector3.new(0, h + s / 3, 0)), LEAF:Lerp(Color3.fromRGB(90, 170, 70), rng:NextNumber()), M.Grass, { Shape = Enum.PartType.Ball })
+end
+
+local function bench(pos, yaw)
+	local cf = CFrame.new(pos) * CFrame.Angles(0, math.rad(yaw), 0)
+	block(fProps, Vector3.new(6, 0.4, 2), cf * CFrame.new(0, 1.6, 0), Color3.fromRGB(150, 100, 60), M.Wood)
+	block(fProps, Vector3.new(6, 1.6, 0.3), cf * CFrame.new(0, 2.6, 0.9), Color3.fromRGB(150, 100, 60), M.Wood)
+	block(fProps, Vector3.new(0.4, 1.4, 1.8), cf * CFrame.new(-2.6, 0.7, 0), Color3.fromRGB(50, 50, 50), M.Metal)
+	block(fProps, Vector3.new(0.4, 1.4, 1.8), cf * CFrame.new(2.6, 0.7, 0), Color3.fromRGB(50, 50, 50), M.Metal)
+end
+
+local function umbrella(pos, color)
+	cylinderUp(fProps, pos, 7, 0.3, Color3.fromRGB(240, 240, 240), M.SmoothPlastic)
+	block(fProps, Vector3.new(0.6, 8, 8), CFrame.new(pos + Vector3.new(0, 7, 0)) * CFrame.Angles(0, 0, math.rad(90)), color, M.Fabric, { Shape = Enum.PartType.Cylinder, CanCollide = false })
+	block(fProps, Vector3.new(3, 0.1, 6), CFrame.new(pos + Vector3.new(2.5, 0.1, 0)), color:Lerp(Color3.new(1, 1, 1), 0.4), M.Fabric, { CanCollide = false })
+end
+
+----------------------------------------------------------------------
+-- Edificios por distrito
+----------------------------------------------------------------------
+local GLASS = {
+	Color3.fromRGB(110, 160, 200),
+	Color3.fromRGB(80, 120, 160),
+	Color3.fromRGB(150, 190, 210),
+	Color3.fromRGB(90, 140, 140),
+	Color3.fromRGB(170, 160, 200),
+}
+local PASTEL = {
+	Color3.fromRGB(255, 210, 200),
+	Color3.fromRGB(255, 240, 190),
+	Color3.fromRGB(200, 235, 230),
+	Color3.fromRGB(230, 210, 240),
+	Color3.fromRGB(250, 250, 245),
+	Color3.fromRGB(200, 225, 255),
+}
+local BRICK = {
+	Color3.fromRGB(150, 80, 60),
+	Color3.fromRGB(120, 90, 80),
+	Color3.fromRGB(170, 120, 90),
+	Color3.fromRGB(100, 100, 110),
+}
+local CONTAINER = {
+	Color3.fromRGB(200, 60, 50),
+	Color3.fromRGB(40, 110, 180),
+	Color3.fromRGB(230, 160, 40),
+	Color3.fromRGB(60, 150, 80),
+	Color3.fromRGB(220, 220, 220),
+	Color3.fromRGB(120, 60, 130),
+}
+local function pick(list)
+	return list[rng:NextInteger(1, #list)]
+end
+
+local function tower(x, z, w, d, h)
+	local color = pick(GLASS)
+	box(fBuildings, x, z, w, d, 0.3, h, color, M.Glass, { Reflectance = 0.15 })
+	local frame = color:Lerp(Color3.new(0.15, 0.15, 0.18), 0.6)
+	for y = 12, h - 4, 12 do
+		box(fBuildings, x, z, w + 0.4, d + 0.4, y, 1, frame, M.Concrete)
+	end
+	box(fBuildings, x, z, w + 1, d + 1, h + 0.3, 2, frame, M.Concrete)
+	if h > 150 then
+		box(fBuildings, x, z, 1, 1, h + 2.3, 24, Color3.fromRGB(200, 200, 200), M.Metal)
+		box(fBuildings, x, z, 1.4, 1.4, h + 26, 1.4, Color3.fromRGB(255, 40, 40), M.Neon)
+	end
+end
+
+local function house(x, z, yaw)
+	local w, d, h = rng:NextNumber(20, 26), rng:NextNumber(16, 20), rng:NextNumber(10, 13)
+	local cf = CFrame.new(x, 0.35, z) * CFrame.Angles(0, math.rad(yaw), 0)
+	local wall = pick(PASTEL)
+	block(fBuildings, Vector3.new(w, h, d), cf * CFrame.new(0, h / 2, 0), wall, M.Plaster)
+	local roofColor = pick({ Color3.fromRGB(180, 90, 60), Color3.fromRGB(90, 90, 100), Color3.fromRGB(150, 110, 80) })
+	local rh = 5
+	-- dos cunas forman un tejado a dos aguas (la parte alta del WedgePart esta en +Z)
+	wedge(fBuildings, Vector3.new(w + 1, rh, d / 2 + 0.5), cf * CFrame.new(0, h + rh / 2, -d / 4 - 0.25), roofColor, M.Slate)
+	wedge(fBuildings, Vector3.new(w + 1, rh, d / 2 + 0.5), cf * CFrame.new(0, h + rh / 2, d / 4 + 0.25) * CFrame.Angles(0, math.pi, 0), roofColor, M.Slate)
+	-- puerta y ventanas (mirando a -Z local)
+	block(fBuildings, Vector3.new(3.5, 7, 0.3), cf * CFrame.new(0, 3.5, -d / 2 - 0.1), Color3.fromRGB(120, 80, 50), M.Wood)
+	for _, ox in ipairs({ -w / 2 + 4, w / 2 - 4 }) do
+		block(fBuildings, Vector3.new(4, 3.5, 0.3), cf * CFrame.new(ox, 6, -d / 2 - 0.1), Color3.fromRGB(160, 210, 240), M.Glass)
+	end
+	-- garaje/coche del vecino no; un buzon
+	block(fProps, Vector3.new(1, 3.5, 1), cf * CFrame.new(w / 2 - 1, 1.75, -d / 2 - 8), Color3.fromRGB(60, 60, 200), M.Metal)
+end
+
+local function hotel(x, z, w, d, h)
+	local color = pick(PASTEL)
+	box(fBuildings, x, z, w, d, 0.3, h, color, M.Concrete)
+	for y = 10, h - 4, 10 do
+		box(fBuildings, x, z, w + 3, d + 3, y, 0.8, Color3.fromRGB(250, 250, 250), M.Concrete)
+		box(fBuildings, x, z, w + 0.2, d + 0.2, y + 2, 5, Color3.fromRGB(120, 190, 220), M.Glass, { Transparency = 0.1 })
+	end
+	box(fBuildings, x, z, w + 2, d + 2, h + 0.3, 1.5, Color3.fromRGB(255, 255, 255), M.Concrete)
+end
+
+local function lowBuilding(x, z, w, d, h, label)
+	local color = pick(BRICK)
+	local b = box(fBuildings, x, z, w, d, 0.3, h, color, M.Brick)
+	box(fBuildings, x, z, w + 0.6, d + 0.6, h + 0.3, 1.2, color:Lerp(Color3.new(0, 0, 0), 0.3), M.Concrete)
+	-- escaparate
+	box(fBuildings, x, z - d / 2 - 0.15, w - 4, 0.3, 0.6, 7, Color3.fromRGB(120, 160, 180), M.Glass)
+	if label then
+		local s = box(fBuildings, x, z - d / 2 - 0.4, w - 4, 0.4, 8.5, 3.5, Color3.fromRGB(20, 20, 20), M.SmoothPlastic)
+		sign(s, Enum.NormalId.Front, label, pick({ Color3.fromRGB(255, 90, 180), Color3.fromRGB(90, 230, 255), Color3.fromRGB(255, 220, 80) }))
+	end
+	return b
+end
+
+local function container(x, y, z, yaw)
+	block(fBuildings, Vector3.new(8, 8.5, 20), CFrame.new(x, y + 4.25, z) * CFrame.Angles(0, math.rad(yaw), 0), pick(CONTAINER), M.CorrodedMetal)
+end
+
+local function crane(x)
+	local yellow = Color3.fromRGB(230, 180, 30)
+	for _, ox in ipairs({ -10, 10 }) do
+		for _, z in ipairs({ -392, -412 }) do
+			box(fBuildings, x + ox, z, 2, 2, -10, 70, yellow, M.Metal)
+		end
+	end
+	box(fBuildings, x, -402, 24, 24, 58, 3, yellow, M.Metal)
+	box(fBuildings, x, -420, 4, 90, 56, 3, yellow, M.Metal)
+	box(fBuildings, x, -402, 8, 8, 61, 6, Color3.fromRGB(240, 240, 240), M.Metal)
+end
+
+-- Rellena una manzana segun su distrito
+local function fillCell(x0, x1, z0, z1)
+	local w, d = x1 - x0, z1 - z0
+	if w < 30 or d < 20 then
+		return
+	end
+	local cx, cz = (x0 + x1) / 2, (z0 + z1) / 2
+	local key = Layout.districtKeyAt(cx, cz)
+	local isPlaza = math.abs(cx - Layout.SPAWN.X) < 1 and math.abs(cz - Layout.SPAWN.Z) < 1
+
+	-- acera
+	box(fGround, cx, cz, w, d, -0.2, 0.5, SIDEWALK, M.Concrete)
+	local m = 6
+	local ix0, ix1, iz0, iz1 = x0 + m, x1 - m, z0 + m, z1 - m
+	local iw, id = ix1 - ix0, iz1 - iz0
+
+	local small = id < 50 or iw < 30
+
+	if small and not isPlaza then
+		local paved = key == "Port" or key == "Galleria" or key == "OceanMile"
+		box(fGround, cx, cz, iw, id, 0, 0.35, if paved then Color3.fromRGB(150, 148, 140) else GRASS, if paved then M.Concrete else M.Grass)
+		if not paved then
+			for px = ix0 + 6, ix1 - 6, 30 do
+				palm(Vector3.new(px, 0.35, cz))
+			end
+		end
+	elseif isPlaza then
+		-- Plaza Solano: fuente, bancos y palmeras (punto de aparicion)
+		box(fGround, cx, cz, iw, id, 0, 0.35, Color3.fromRGB(225, 200, 170), M.Pavement)
+		cylinderUp(fProps, Vector3.new(cx, 0.35, cz + 25), 1.6, 22, Color3.fromRGB(230, 230, 230), M.Marble)
+		cylinderUp(fProps, Vector3.new(cx, 0.4, cz + 25), 1.7, 19, Color3.fromRGB(60, 170, 220), M.Glass)
+		cylinderUp(fProps, Vector3.new(cx, 0.4, cz + 25), 7, 2, Color3.fromRGB(230, 230, 230), M.Marble)
+		for i = 0, 3 do
+			local a = math.rad(i * 90 + 45)
+			palm(Vector3.new(cx + math.cos(a) * 42, 0.35, cz + math.sin(a) * 42))
+			bench(Vector3.new(cx + math.cos(a) * 18, 0.35, cz - 10 + math.sin(a) * 12), i * 90)
+		end
+		local spawn = Instance.new("SpawnLocation")
+		spawn.Anchored = true
+		spawn.Size = Vector3.new(10, 0.4, 10)
+		spawn.CFrame = CFrame.new(cx, 0.55, cz - 10)
+		spawn.Color = Color3.fromRGB(255, 200, 80)
+		spawn.Material = M.Neon
+		spawn.Transparency = 0.4
+		spawn.CanCollide = true
+		spawn.Duration = 3
+		spawn.Parent = map
+		local sp = box(fProps, cx, cz + 50, 40, 1, 0.35, 8, Color3.fromRGB(30, 30, 40), M.SmoothPlastic)
+		sign(sp, Enum.NormalId.Back, "PORT SOLANO", Color3.fromRGB(255, 200, 80))
+		sign(sp, Enum.NormalId.Front, "PORT SOLANO", Color3.fromRGB(255, 200, 80))
+	elseif key == "Downtown" then
+		local hw, hd = iw / 2, id / 2
+		for qx = 0, 1 do
+			for qz = 0, 1 do
+				local tx = ix0 + hw * (qx + 0.5)
+				local tz = iz0 + hd * (qz + 0.5)
+				tower(tx, tz, hw - rng:NextNumber(6, 14), hd - rng:NextNumber(6, 14), rng:NextNumber(70, 230))
+			end
+		end
+	elseif key == "Galleria" then
+		if cx < 0 then
+			local mall = box(fBuildings, cx, cz, iw - 10, id - 16, 0.3, 26, Color3.fromRGB(245, 235, 225), M.Concrete)
+			box(fBuildings, cx, cz, iw - 6, id - 12, 26.3, 2, Color3.fromRGB(255, 120, 200), M.Neon)
+			box(fBuildings, cx, cz + (id - 16) / 2 + 0.2, 30, 0.4, 0.3, 12, Color3.fromRGB(120, 180, 220), M.Glass)
+			local s = box(fBuildings, cx, cz + (id - 16) / 2 + 0.4, 50, 0.4, 15, 8, Color3.fromRGB(30, 30, 30), M.SmoothPlastic)
+			sign(s, Enum.NormalId.Back, "GALLERIA", Color3.fromRGB(255, 120, 200))
+			sign(mall, Enum.NormalId.Top, "GALLERIA", Color3.fromRGB(255, 120, 200))
+		else
+			box(fGround, cx, cz, iw, id, 0, 0.32, Color3.fromRGB(60, 60, 66), M.Asphalt)
+			for px = ix0 + 6, ix1 - 6, 12 do
+				box(fGround, px, cz, 0.5, id - 10, 0.32, 0.04, Color3.fromRGB(240, 240, 240), M.SmoothPlastic, { CanCollide = false })
+			end
+		end
+	elseif key == "Port" then
+		box(fGround, cx, cz, iw, id, 0, 0.33, Color3.fromRGB(140, 140, 135), M.Concrete)
+		for px = ix0 + 8, ix1 - 8, 14 do
+			for pz = iz0 + 14, iz1 - 14, 30 do
+				if rng:NextNumber() < 0.8 then
+					local stack = rng:NextInteger(1, 3)
+					for s = 0, stack - 1 do
+						container(px, 0.33 + s * 8.5, pz, 0)
+					end
+				end
+			end
+		end
+	elseif key == "Park" then
+		box(fGround, cx, cz, iw, id, 0, 0.35, GRASS:Lerp(Color3.fromRGB(120, 190, 90), 0.4), M.Grass)
+		box(fGround, cx, cz, iw, 6, 0, 0.36, Color3.fromRGB(210, 190, 150), M.Ground)
+		if w > 80 and rng:NextNumber() < 0.6 then
+			cylinderUp(fProps, Vector3.new(cx + 20, 0, cz + 22), 0.42, 30, Color3.fromRGB(60, 140, 200), M.Glass)
+		end
+		for _ = 1, math.floor(iw * id / 900) do
+			local tx, tz = rng:NextNumber(ix0 + 4, ix1 - 4), rng:NextNumber(iz0 + 4, iz1 - 4)
+			if math.abs(tz - cz) > 6 then
+				tree(Vector3.new(tx, 0.35, tz))
+			end
+		end
+		bench(Vector3.new(cx - 15, 0.36, cz + 5), 180)
+		bench(Vector3.new(cx + 15, 0.36, cz - 5), 0)
+	elseif key == "Suburbs" then
+		box(fGround, cx, cz, iw, id, 0, 0.35, GRASS, M.Grass)
+		local cols = if iw > 70 then 2 else 1
+		local rows = if id > 70 then 2 else 1
+		for qx = 0, cols - 1 do
+			for qz = 0, rows - 1 do
+				local hx = ix0 + iw / cols * (qx + 0.5)
+				local hz = iz0 + id / rows * (qz + 0.5)
+				local yaw = if qz == 0 then 180 else 0
+				house(hx, hz, yaw)
+				palm(Vector3.new(hx + 14, 0.35, hz + (if qz == 0 then -14 else 14)))
+			end
+		end
+	elseif key == "Ironside" then
+		local labels = { "TACOS", "TALLER", "BODEGA", "BARBERIA", "PIZZA", "LAVANDERIA", nil, nil }
+		local n = math.max(1, math.floor(iw / 34))
+		local bw = iw / n
+		for i = 0, n - 1 do
+			for _, row in ipairs({ iz0 + 12, iz1 - 12 }) do
+				local bd = math.min(22, id / 2 - 4)
+				lowBuilding(ix0 + bw * (i + 0.5), row, bw - 4, bd, rng:NextNumber(14, 40), labels[rng:NextInteger(1, #labels)])
+			end
+		end
+	elseif key == "OceanMile" then
+		box(fGround, cx, cz, iw, id, 0, 0.35, Color3.fromRGB(235, 225, 200), M.Pavement)
+		hotel(cx - 10, cz, iw - 40, id - 30, rng:NextNumber(50, 130))
+		box(fGround, cx + iw / 2 - 12, cz, 14, id - 40, 0.35, 0.3, Color3.fromRGB(60, 200, 230), M.Glass, { Transparency = 0.2 })
+		for pz = iz0 + 6, iz1 - 6, 18 do
+			palm(Vector3.new(ix1 - 2, 0.35, pz))
+		end
+	else
+		box(fGround, cx, cz, iw, id, 0, 0.35, GRASS, M.Grass)
+		for _ = 1, math.floor(iw * id / 1500) do
+			palm(Vector3.new(rng:NextNumber(ix0, ix1), 0.35, rng:NextNumber(iz0, iz1)))
+		end
+	end
+end
+
+local function edges(list, minV, maxV)
+	local out = {}
+	local prev = minV
+	for _, r in ipairs(list) do
+		table.insert(out, { prev, r - RW / 2 })
+		prev = r + RW / 2
+	end
+	table.insert(out, { prev, maxV })
+	return out
+end
+
+for _, ex in ipairs(edges(Layout.ROADS_X, Layout.LAND_MIN_X, Layout.LAND_MAX_X)) do
+	for _, ez in ipairs(edges(Layout.ROADS_Z, Layout.LAND_MIN_Z, Layout.LAND_MAX_Z)) do
+		fillCell(ex[1], ex[2], ez[1], ez[2])
+	end
+end
+
+----------------------------------------------------------------------
+-- Muelles y gruas del puerto
+----------------------------------------------------------------------
+local WOOD = Color3.fromRGB(140, 105, 70)
+box(fGround, -320, -420, 320, 40, -1, 1.3, WOOD, M.WoodPlanks)
+for x = -470, -170, 20 do
+	for _, z in ipairs({ -405, -435 }) do
+		box(fGround, x, z, 1.6, 1.6, -40, 39, Color3.fromRGB(90, 70, 50), M.Wood)
+	end
+end
+crane(-400)
+crane(-250)
+-- barco carguero amarrado
+box(fBuildings, -320, -470, 140, 24, -8, 12, Color3.fromRGB(150, 40, 40), M.Metal)
+box(fBuildings, -320, -470, 140, 24, 4, 1, Color3.fromRGB(80, 80, 80), M.Metal)
+box(fBuildings, -380, -470, 18, 20, 5, 14, Color3.fromRGB(240, 240, 240), M.Metal)
+for x = -350, -260, 22 do
+	container(x, 5, -470, 90)
+end
+
+----------------------------------------------------------------------
+-- Playa Sunreef
+----------------------------------------------------------------------
+local UMBRELLA = { Color3.fromRGB(255, 90, 90), Color3.fromRGB(255, 200, 60), Color3.fromRGB(80, 180, 255), Color3.fromRGB(120, 230, 140) }
+for z = Layout.LAND_MIN_Z + 20, Layout.LAND_MAX_Z - 20, 26 do
+	if math.abs(z - BZ) > 24 and math.abs(z - 300) > 16 then
+		local px = rng:NextNumber(302, 310)
+		palm(Vector3.new(px, Layout.beachY(px) - 0.3, z))
+		if rng:NextNumber() < 0.7 then
+			local ux = rng:NextNumber(316, 330)
+			umbrella(Vector3.new(ux, Layout.beachY(ux) - 0.2, z + rng:NextNumber(-6, 6)), pick(UMBRELLA))
+		end
+	end
+end
+-- Chiringuito
+do
+	local x, z = 318, 300
+	local y = Layout.beachY(x + 6)
+	box(fBuildings, x, z, 14, 12, y - 1, 1.6, WOOD, M.WoodPlanks)
+	for _, o in ipairs({ { -6, -5 }, { 6, -5 }, { -6, 5 }, { 6, 5 } }) do
+		box(fBuildings, x + o[1], z + o[2], 0.8, 0.8, y, 9, WOOD, M.Wood)
+	end
+	box(fBuildings, x, z, 17, 15, y + 9, 1.2, Color3.fromRGB(210, 180, 110), M.Fabric)
+	local bar = box(fBuildings, x, z - 4, 10, 2, y + 0.6, 3.5, Color3.fromRGB(110, 80, 50), M.Wood)
+	sign(bar, Enum.NormalId.Front, "CHIRINGUITO", Color3.fromRGB(255, 240, 120))
+end
+-- Torre de socorrista
+do
+	local x, z = 324, -250
+	local y = Layout.beachY(x)
+	for _, o in ipairs({ { -2, -2 }, { 2, -2 }, { -2, 2 }, { 2, 2 } }) do
+		box(fBuildings, x + o[1], z + o[2], 0.6, 0.6, y - 0.5, 8, Color3.fromRGB(240, 240, 240), M.Wood)
+	end
+	box(fBuildings, x, z, 6, 6, y + 7.5, 0.6, Color3.fromRGB(240, 240, 240), M.Wood)
+	box(fBuildings, x, z, 6, 6, y + 8.1, 4, Color3.fromRGB(230, 70, 60), M.Wood)
+end
+
+----------------------------------------------------------------------
+-- Coral Key: mansiones
+----------------------------------------------------------------------
+local function mansion(x, z)
+	box(fGround, x, z, 56, 46, 0, 0.3, Color3.fromRGB(235, 230, 220), M.Pavement)
+	box(fBuildings, x, z + 6, 40, 26, 0.3, 12, Color3.fromRGB(250, 250, 248), M.Plaster)
+	box(fBuildings, x + 6, z + 8, 26, 20, 12.3, 10, Color3.fromRGB(250, 250, 248), M.Plaster)
+	box(fBuildings, x, z + 6, 42, 28, 12.3, 0.6, Color3.fromRGB(60, 60, 64), M.Concrete)
+	box(fBuildings, x + 6, z + 8, 28, 22, 22.3, 0.6, Color3.fromRGB(60, 60, 64), M.Concrete)
+	box(fBuildings, x, z - 7.1, 30, 0.3, 1, 9, Color3.fromRGB(120, 180, 220), M.Glass)
+	box(fGround, x, z - 15, 26, 10, 0.3, 0.3, Color3.fromRGB(40, 200, 230), M.Glass, { Transparency = 0.2 })
+	palm(Vector3.new(x - 24, 0.3, z - 18))
+	palm(Vector3.new(x + 24, 0.3, z - 18))
+end
+mansion(580, -120)
+mansion(580, 10)
+mansion(690, -125)
+mansion(695, 15)
+for _ = 1, 22 do
+	local a = rng:NextNumber(0, math.pi * 2)
+	local px = islCX + math.cos(a) * (islW / 2 + 8)
+	local pz = islCZ + math.sin(a) * (islD / 2 + 8)
+	palm(Vector3.new(px, -0.4, pz))
+end
+do
+	local s = box(fProps, isl.minX + 6, BZ - 20, 1, 6, 0.3, 4, Color3.fromRGB(255, 255, 255), M.Wood)
+	sign(s, Enum.NormalId.Left, "CORAL KEY", Color3.fromRGB(30, 120, 160))
+end
+
+----------------------------------------------------------------------
+-- Listo: deja entrar a los jugadores
+----------------------------------------------------------------------
+print(("[Port Solano] Mapa construido: %d piezas"):format(built))
+workspace:SetAttribute("MapReady", true)
+Players.CharacterAutoLoads = true
+for _, plr in ipairs(Players:GetPlayers()) do
+	if not plr.Character then
+		task.spawn(function()
+			plr:LoadCharacter()
+		end)
+	end
+end
+Players.PlayerAdded:Connect(function(plr)
+	if not plr.Character then
+		task.defer(function()
+			if not plr.Character then
+				plr:LoadCharacter()
+			end
+		end)
+	end
+end)
+
+----------------------------------------------------------------------
+-- Ciclo de dia y noche (un dia completo = 12 minutos)
+----------------------------------------------------------------------
+local DAY_SECONDS = 12 * 60
+local lampsOn = nil
+while true do
+	local dt = task.wait(0.5)
+	Lighting.ClockTime = (Lighting.ClockTime + dt * 24 / DAY_SECONDS) % 24
+	local t = Lighting.ClockTime
+	local night = t < 6.3 or t > 18.2
+	if night ~= lampsOn then
+		lampsOn = night
+		for _, lamp in ipairs(lamps) do
+			lamp.Material = if night then M.Neon else M.SmoothPlastic
+			local l = lamp:FindFirstChildOfClass("PointLight")
+			if l then
+				l.Enabled = night
+			end
+		end
+	end
+end
+]]></ProtectedString></Properties></Item>
+</Item>
+<Item class="StarterPlayer" referent="RBX0000000B"><Properties><string name="Name">StarterPlayer</string></Properties>
+<Item class="StarterPlayerScripts" referent="RBX0000000A"><Properties><string name="Name">StarterPlayerScripts</string></Properties>
+<Item class="LocalScript" referent="RBX00000008"><Properties><string name="Name">CarController</string><bool name="Disabled">false</bool><ProtectedString name="Source"><![CDATA[-- CarController: conduccion arcade de los coches de Port Solano.
+-- Funciona con teclado (WASD / flechas), mando y joystick tactil del movil.
+-- El coche "flota" a 0.25 studs sobre el suelo (raycast), asi no se atasca en bordillos.
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+
+local player = Players.LocalPlayer
+
+local controls = nil
+task.spawn(function()
+	local ok, mod = pcall(function()
+		return require(player:WaitForChild("PlayerScripts"):WaitForChild("PlayerModule"))
+	end)
+	if ok and mod then
+		controls = mod:GetControls()
+	end
+end)
+
+local MAX_FWD = 110 -- studs/s (aprox. km/h en el velocimetro)
+local MAX_REV = 35
+local ACCEL = 42
+local BRAKE = 95
+local DRAG = 18
+local TURN = math.rad(95)
+local HOVER = 1.1 -- altura del centro del chasis sobre el suelo
+
+local conn = nil
+local current = nil
+
+local function stopDriving()
+	if conn then
+		conn:Disconnect()
+		conn = nil
+	end
+	if current then
+		current.lv.Enabled = false
+		current.ao.Enabled = false
+		current = nil
+	end
+	player:SetAttribute("CarSpeed", nil)
+end
+
+local function startDriving(seat)
+	stopDriving()
+	local model = seat.Parent
+	local chassis = model and model:FindFirstChild("Chassis")
+	local lv = chassis and chassis:FindFirstChild("Drive")
+	local ao = chassis and chassis:FindFirstChild("Steer")
+	if not (lv and ao) then
+		return
+	end
+	local look = chassis.CFrame.LookVector
+	local state = {
+		lv = lv,
+		ao = ao,
+		speed = 0,
+		yaw = math.atan2(-look.X, -look.Z),
+	}
+	current = state
+
+	local params = RaycastParams.new()
+	params.FilterType = Enum.RaycastFilterType.Exclude
+	params.IgnoreWater = false
+
+	lv.Enabled = true
+	ao.Enabled = true
+
+	conn = RunService.Heartbeat:Connect(function(dt)
+		if not chassis.Parent then
+			stopDriving()
+			return
+		end
+		local throttle, steer = 0, 0
+		if controls then
+			local mv = controls:GetMoveVector()
+			throttle, steer = -mv.Z, mv.X
+		end
+		if math.abs(seat.ThrottleFloat) > math.abs(throttle) then
+			throttle = seat.ThrottleFloat
+		end
+		if math.abs(seat.SteerFloat) > math.abs(steer) then
+			steer = seat.SteerFloat
+		end
+
+		-- velocidad
+		local s = state.speed
+		if throttle > 0.05 then
+			s = if s < 0 then s + BRAKE * dt else s + ACCEL * throttle * dt
+		elseif throttle < -0.05 then
+			s = if s > 0 then s - BRAKE * dt else s + ACCEL * throttle * dt
+		else
+			local d = DRAG * dt
+			s = if math.abs(s) <= d then 0 else s - math.sign(s) * d
+		end
+		s = math.clamp(s, -MAX_REV, MAX_FWD)
+
+		-- si chocamos con algo, la velocidad real manda
+		local fwd = CFrame.Angles(0, state.yaw, 0).LookVector
+		local actual = chassis.AssemblyLinearVelocity:Dot(fwd)
+		if math.abs(s - actual) > 25 then
+			s = actual
+		end
+
+		-- giro
+		local grip = math.clamp(math.abs(s) / 20, 0, 1) * (1 - 0.45 * math.min(math.abs(s) / MAX_FWD, 1))
+		state.yaw -= steer * TURN * grip * math.sign(s) * dt
+
+		-- suelo / agua
+		params.FilterDescendantsInstances = { model, player.Character }
+		local hit = workspace:Raycast(chassis.Position + Vector3.new(0, 2, 0), Vector3.new(0, -2 - HOVER - 4, 0), params)
+		local vy, fy = 0, 0
+		local mass = chassis.AssemblyMass
+		if hit then
+			if hit.Instance == workspace.Terrain and hit.Material == Enum.Material.Water then
+				s *= 1 - math.min(dt * 2, 1) -- al agua: el coche se hunde
+			else
+				local target = hit.Position.Y + HOVER
+				vy = math.clamp((target - chassis.Position.Y) * 10, -40, 25)
+				fy = mass * 400
+			end
+		end
+		state.speed = s
+
+		fwd = CFrame.Angles(0, state.yaw, 0).LookVector
+		lv.VectorVelocity = Vector3.new(fwd.X * s, vy, fwd.Z * s)
+		lv.MaxAxesForce = Vector3.new(mass * 500, fy, mass * 500)
+		ao.CFrame = CFrame.Angles(0, state.yaw, 0)
+		player:SetAttribute("CarSpeed", math.abs(s))
+	end)
+end
+
+local function onCharacter(char)
+	stopDriving()
+	local hum = char:WaitForChild("Humanoid")
+	hum.Seated:Connect(function(active, seat)
+		if active and seat and seat:IsA("VehicleSeat") and seat:GetAttribute("PSCar") then
+			startDriving(seat)
+		else
+			stopDriving()
+		end
+	end)
+	hum.Died:Connect(stopDriving)
+end
+
+if player.Character then
+	task.spawn(onCharacter, player.Character)
+end
+player.CharacterAdded:Connect(onCharacter)
+]]></ProtectedString></Properties></Item>
+<Item class="LocalScript" referent="RBX00000009"><Properties><string name="Name">HUD</string><bool name="Disabled">false</bool><ProtectedString name="Source"><![CDATA[-- HUD: interfaz pensada para movil. Dinero, conchas, nombre del distrito,
+-- botones grandes (Coche / Trabajo), mision activa con baliza y velocimetro.
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
+
+local player = Players.LocalPlayer
+local Layout = require(ReplicatedStorage:WaitForChild("Layout"))
+local Remotes = ReplicatedStorage:WaitForChild("Remotes")
+local SpawnCar = Remotes:WaitForChild("SpawnCar")
+local JobRemote = Remotes:WaitForChild("Job")
+local ShellRemote = Remotes:WaitForChild("Shells")
+local NotifyRemote = Remotes:WaitForChild("Notify")
+
+local FONT = Enum.Font.FredokaOne
+local GOLD = Color3.fromRGB(255, 200, 80)
+
+local gui = Instance.new("ScreenGui")
+gui.Name = "PortSolanoHUD"
+gui.ResetOnSpawn = false
+gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+gui.Parent = player:WaitForChild("PlayerGui")
+
+local function label(parent, props)
+	local l = Instance.new("TextLabel")
+	l.BackgroundTransparency = 1
+	l.Font = FONT
+	l.TextColor3 = Color3.new(1, 1, 1)
+	l.TextStrokeTransparency = 0.4
+	l.TextScaled = true
+	for k, v in pairs(props) do
+		l[k] = v
+	end
+	l.Parent = parent
+	return l
+end
+
+local function corner(parent, r)
+	local c = Instance.new("UICorner")
+	c.CornerRadius = UDim.new(0, r or 12)
+	c.Parent = parent
+end
+
+-- Panel de dinero / conchas (arriba a la izquierda, debajo del menu de Roblox)
+local stats = Instance.new("Frame")
+stats.Size = UDim2.new(0, 190, 0, 70)
+stats.Position = UDim2.new(0, 12, 0, 50)
+stats.BackgroundColor3 = Color3.fromRGB(15, 20, 30)
+stats.BackgroundTransparency = 0.35
+stats.Parent = gui
+corner(stats)
+local moneyLabel = label(stats, {
+	Size = UDim2.new(1, -16, 0.55, 0),
+	Position = UDim2.new(0, 8, 0, 4),
+	TextXAlignment = Enum.TextXAlignment.Left,
+	TextColor3 = Color3.fromRGB(120, 255, 140),
+	Text = "$ 0",
+})
+local shellLabel = label(stats, {
+	Size = UDim2.new(1, -16, 0.38, 0),
+	Position = UDim2.new(0, 8, 0.58, 0),
+	TextXAlignment = Enum.TextXAlignment.Left,
+	TextColor3 = GOLD,
+	Text = "Conchas 0/" .. #Layout.SHELLS,
+})
+
+local function formatMoney(n)
+	local s = tostring(math.floor(n))
+	local out = s:reverse():gsub("(%d%d%d)", "%1,"):reverse()
+	if out:sub(1, 1) == "," then
+		out = out:sub(2)
+	end
+	return "$ " .. out
+end
+
+task.spawn(function()
+	local ls = player:WaitForChild("leaderstats")
+	local money = ls:WaitForChild("Dinero")
+	local shells = ls:WaitForChild("Conchas")
+	local function refresh()
+		moneyLabel.Text = formatMoney(money.Value)
+		shellLabel.Text = ("Conchas %d/%d"):format(shells.Value, #Layout.SHELLS)
+	end
+	money.Changed:Connect(refresh)
+	shells.Changed:Connect(refresh)
+	refresh()
+end)
+
+-- Nombre del distrito (aparece al cambiar de zona)
+local districtLabel = label(gui, {
+	Size = UDim2.new(0, 420, 0, 44),
+	AnchorPoint = Vector2.new(0.5, 0),
+	Position = UDim2.new(0.5, 0, 0, 50),
+	Text = "",
+	TextTransparency = 1,
+	TextStrokeTransparency = 1,
+})
+
+-- Notificaciones
+local toast = label(gui, {
+	Size = UDim2.new(0, 460, 0, 34),
+	AnchorPoint = Vector2.new(0.5, 0),
+	Position = UDim2.new(0.5, 0, 0, 140),
+	TextColor3 = Color3.fromRGB(120, 255, 140),
+	Text = "",
+	TextTransparency = 1,
+	TextStrokeTransparency = 1,
+})
+local toastId = 0
+local function notify(text, color)
+	toastId += 1
+	local id = toastId
+	toast.Text = text
+	toast.TextColor3 = color or Color3.fromRGB(120, 255, 140)
+	toast.TextTransparency = 0
+	toast.TextStrokeTransparency = 0.4
+	task.delay(3, function()
+		if id == toastId then
+			TweenService:Create(toast, TweenInfo.new(0.6), { TextTransparency = 1, TextStrokeTransparency = 1 }):Play()
+		end
+	end)
+end
+NotifyRemote.OnClientEvent:Connect(function(text)
+	notify(text)
+end)
+
+-- Botones grandes (derecha, encima del boton de salto del movil)
+local function bigButton(text, color, y)
+	local b = Instance.new("TextButton")
+	b.Size = UDim2.new(0, 130, 0, 54)
+	b.AnchorPoint = Vector2.new(1, 0.5)
+	b.Position = UDim2.new(1, -14, 0.5, y)
+	b.BackgroundColor3 = color
+	b.Font = FONT
+	b.TextScaled = true
+	b.TextColor3 = Color3.new(1, 1, 1)
+	b.TextStrokeTransparency = 0.5
+	b.Text = text
+	b.AutoButtonColor = true
+	b.Parent = gui
+	corner(b, 14)
+	local pad = Instance.new("UIPadding")
+	pad.PaddingTop = UDim.new(0, 8)
+	pad.PaddingBottom = UDim.new(0, 8)
+	pad.Parent = b
+	return b
+end
+
+local carButton = bigButton("Coche", Color3.fromRGB(40, 140, 230), -100)
+local jobButton = bigButton("Trabajo", Color3.fromRGB(240, 140, 30), -36)
+
+carButton.Activated:Connect(function()
+	SpawnCar:FireServer()
+end)
+
+-- Mision de reparto
+local jobPanel = Instance.new("Frame")
+jobPanel.Size = UDim2.new(0, 380, 0, 54)
+jobPanel.AnchorPoint = Vector2.new(0.5, 0)
+jobPanel.Position = UDim2.new(0.5, 0, 0, 96)
+jobPanel.BackgroundColor3 = Color3.fromRGB(15, 20, 30)
+jobPanel.BackgroundTransparency = 0.3
+jobPanel.Visible = false
+jobPanel.Parent = gui
+corner(jobPanel)
+local jobTitle = label(jobPanel, {
+	Size = UDim2.new(1, -16, 0.5, 0),
+	Position = UDim2.new(0, 8, 0, 3),
+	TextColor3 = Color3.fromRGB(255, 180, 70),
+	Text = "",
+})
+local jobInfo = label(jobPanel, {
+	Size = UDim2.new(1, -16, 0.42, 0),
+	Position = UDim2.new(0, 8, 0.52, 0),
+	Text = "",
+})
+
+local job = nil
+local beacon = nil
+
+local function clearJob()
+	job = nil
+	jobPanel.Visible = false
+	jobButton.Text = "Trabajo"
+	jobButton.BackgroundColor3 = Color3.fromRGB(240, 140, 30)
+	if beacon then
+		beacon:Destroy()
+		beacon = nil
+	end
+end
+
+jobButton.Activated:Connect(function()
+	JobRemote:FireServer(if job then "cancel" else "start")
+end)
+
+JobRemote.OnClientEvent:Connect(function(kind, a, b, c, d)
+	if kind == "start" then
+		clearJob()
+		job = { name = a, pos = b, reward = c, deadline = os.clock() + d }
+		jobTitle.Text = "Entrega: " .. a .. "  ($" .. c .. ")"
+		jobPanel.Visible = true
+		jobButton.Text = "Cancelar"
+		jobButton.BackgroundColor3 = Color3.fromRGB(170, 60, 60)
+		-- baliza solo visible para ti
+		beacon = Instance.new("Part")
+		beacon.Name = "BalizaEntrega"
+		beacon.Anchored = true
+		beacon.CanCollide = false
+		beacon.CanQuery = false
+		beacon.CanTouch = false
+		beacon.Shape = Enum.PartType.Cylinder
+		beacon.Size = Vector3.new(300, 14, 14)
+		beacon.CFrame = CFrame.new(b + Vector3.new(0, 150, 0)) * CFrame.Angles(0, 0, math.rad(90))
+		beacon.Material = Enum.Material.Neon
+		beacon.Color = Color3.fromRGB(255, 170, 40)
+		beacon.Transparency = 0.55
+		local bb = Instance.new("BillboardGui")
+		bb.AlwaysOnTop = true
+		bb.Size = UDim2.new(0, 160, 0, 40)
+		bb.StudsOffsetWorldSpace = Vector3.new(0, -140, 0)
+		bb.Adornee = beacon
+		local t = label(bb, { Size = UDim2.fromScale(1, 1), Text = "ENTREGA", TextColor3 = Color3.fromRGB(255, 190, 70) })
+		t.Name = "Text"
+		bb.Parent = beacon
+		beacon.Parent = workspace
+		notify("Nuevo trabajo: lleva el paquete a " .. a, Color3.fromRGB(255, 190, 70))
+	elseif kind == "done" then
+		clearJob()
+	elseif kind == "cancel" then
+		clearJob()
+		notify("Trabajo cancelado", Color3.fromRGB(255, 120, 120))
+	end
+end)
+
+-- Velocimetro
+local speedo = label(gui, {
+	Size = UDim2.new(0, 220, 0, 50),
+	AnchorPoint = Vector2.new(0.5, 1),
+	Position = UDim2.new(0.5, 0, 1, -20),
+	TextColor3 = Color3.new(1, 1, 1),
+	Text = "",
+	Visible = false,
+})
+
+-- Conchas: ocultar las que ya tienes y hacerlas girar
+local collected = {}
+local shellFolder = workspace:WaitForChild("Conchas", 60)
+local function hideShell(i)
+	collected[i] = true
+	if not shellFolder then
+		return
+	end
+	local p = shellFolder:FindFirstChild("Concha" .. i)
+	if p then
+		p.Transparency = 1
+		local l = p:FindFirstChildOfClass("PointLight")
+		if l then
+			l.Enabled = false
+		end
+		local s = p:FindFirstChildOfClass("Sparkles")
+		if s then
+			s.Enabled = false
+		end
+	end
+end
+ShellRemote.OnClientEvent:Connect(function(kind, data)
+	if kind == "state" then
+		for _, i in ipairs(data) do
+			hideShell(i)
+		end
+	elseif kind == "got" then
+		hideShell(data)
+	end
+end)
+
+-- Bucle de interfaz
+local lastDistrict = nil
+local districtTween = nil
+local bob = 0
+RunService.RenderStepped:Connect(function(dt)
+	local char = player.Character
+	local root = char and char:FindFirstChild("HumanoidRootPart")
+	if root then
+		local pos = root.Position
+		local district = Layout.districtAt(pos.X, pos.Z)
+		if district ~= lastDistrict then
+			lastDistrict = district
+			districtLabel.Text = district.name
+			districtLabel.TextColor3 = district.color
+			districtLabel.TextTransparency = 0
+			districtLabel.TextStrokeTransparency = 0.3
+			if districtTween then
+				districtTween:Cancel()
+			end
+			districtTween = TweenService:Create(districtLabel, TweenInfo.new(1.2, Enum.EasingStyle.Quad, Enum.EasingDirection.In, 0, false, 2.5), { TextTransparency = 1, TextStrokeTransparency = 1 })
+			districtTween:Play()
+		end
+		if job then
+			local flat = Vector3.new(job.pos.X - pos.X, 0, job.pos.Z - pos.Z)
+			local left = math.max(0, math.ceil(job.deadline - os.clock()))
+			jobInfo.Text = ("%d m   |   %d:%02d"):format(math.floor(flat.Magnitude * 0.28), left // 60, left % 60)
+			jobInfo.TextColor3 = if left > 0 then Color3.new(1, 1, 1) else Color3.fromRGB(255, 110, 110)
+		end
+	end
+
+	local speed = player:GetAttribute("CarSpeed")
+	if speed then
+		speedo.Visible = true
+		speedo.Text = ("%d km/h"):format(math.floor(speed))
+	else
+		speedo.Visible = false
+	end
+
+	if shellFolder then
+		bob += dt
+		for _, p in ipairs(shellFolder:GetChildren()) do
+			local i = p:GetAttribute("Index")
+			if i and not collected[i] then
+				local base = Layout.SHELLS[i]
+				p.CFrame = CFrame.new(base + Vector3.new(0, math.sin(bob * 2 + i) * 0.5, 0)) * CFrame.Angles(0, bob * 2, 0)
+			end
+		end
+	end
+end)
+]]></ProtectedString></Properties></Item>
+</Item>
+</Item>
+</roblox>
