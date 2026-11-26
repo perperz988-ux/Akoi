@@ -50,9 +50,10 @@ const folder = (name: string, parent: Inst) => { const i: Inst = { cls: 'Folder'
 
 const workspace = svc('Workspace', { StreamingEnabled: B(true) });
 svc('Lighting');
+const rf = svc('ReplicatedFirst');
 const rs = svc('ReplicatedStorage');
 const sss = svc('ServerScriptService');
-const sp = svc('StarterPlayer');
+const sp = svc('StarterPlayer', { LoadCharacterAppearance: B(false) }); // cuerpo de bloques: el protagonista del original
 const sps: Inst = { cls: 'StarterPlayerScripts', props: { Name: S('StarterPlayerScripts') }, parent: sp };
 insts.push(sps);
 
@@ -237,6 +238,7 @@ function addScripts(sub: string, parent: Inst) {
 }
 insts.push({ cls: 'ModuleScript', props: { Name: S('LayoutData'), Source: S(layoutData) }, parent: rs });
 addScripts('ReplicatedStorage', rs);
+addScripts('ReplicatedFirst', rf);
 addScripts('ServerScriptService', sss);
 addScripts('StarterPlayerScripts', sps);
 

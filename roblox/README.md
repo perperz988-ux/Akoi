@@ -8,6 +8,14 @@ Distritos: Downtown Solano, Midtown, Bellavista Heights, Ocean Mile, Sunreef Bea
 Ironside, Saltworks Port, Galleria District, Solano International (aeropuerto), Cypress Flats,
 Mirador Park, Rio Lento (río con puentes), Vela Marina y Coral Key, además de la Route 9 y la Bayshore Expressway.
 
+## Igual que el original
+
+- **Pantalla de carga**: fondo negro, PORT **SOLANO** y barra amarilla (`src/ReplicatedFirst/Boot.client.luau`).
+- **Menú de inicio**: cámara girando sobre Downtown, Continue / New Game (Story) / Free Roam / Load Game / Settings
+  y 3 slots de guardado (`src/StarterPlayerScripts/TitleScreen.client.luau`).
+- **Personaje**: todos juegan como el protagonista del original: camiseta azul petróleo, pantalón negro,
+  tenis blancos y pelo negro (`src/ServerScriptService/Character.server.luau`).
+
 ## Cómo se juega
 
 - **Coche**: aparece tu coche al lado. Hay 77 coches aparcados por la ciudad (botón *Conducir*).

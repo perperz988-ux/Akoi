@@ -28,29 +28,57 @@ local NotifyRemote = getRemote("Notify") -- servidor -> cliente: texto
 
 local SHELL_REWARD = 250
 local START_MONEY = 500
+local SLOT_COUNT = 3
+local SlotsRemote = getRemote("Slots") -- menu de inicio: lista de slots / empezar partida
 
 ----------------------------------------------------------------------
--- Datos de jugador
+-- Datos de jugador: 3 slots de guardado, como el juego original
 ----------------------------------------------------------------------
 local store = nil
 pcall(function()
-	store = DataStoreService:GetDataStore("PortSolano_v2")
+	store = DataStoreService:GetDataStore("PortSolano_v3")
 end)
 
-local data = {} -- [player] = { money = n, shells = { [i] = true } }
+-- data[player] = { record = { slots = {...}, last = n }, loaded, slot, free, money, shells, started }
+local data = {}
 
-local function save(plr)
-	local d = data[plr]
-	if not (store and d and d.loaded) then
+local function slotSummaries(d)
+	local out = {}
+	for s = 1, SLOT_COUNT do
+		local sl = d.record.slots[tostring(s)]
+		if sl then
+			table.insert(out, { slot = s, used = true, money = sl.money, chapter = if sl.free then "Free Roam" else "Story", playTime = sl.playTime or 0, time = sl.time or 0 })
+		else
+			table.insert(out, { slot = s, used = false })
+		end
+	end
+	return out, d.record.last
+end
+
+local function writeSlot(d)
+	if not d.slot then
 		return
 	end
 	local list = {}
 	for i in pairs(d.shells) do
 		table.insert(list, i)
 	end
-	pcall(function()
-		store:SetAsync("u" .. plr.UserId, { money = d.money, shells = list })
-	end)
+	local playTime = d.playTime + (os.clock() - d.started)
+	d.record.slots[tostring(d.slot)] = { money = d.money, shells = list, playTime = math.floor(playTime), time = os.time(), free = d.free }
+	d.record.last = d.slot
+end
+
+local function save(plr)
+	local d = data[plr]
+	if not (d and d.slot) then
+		return
+	end
+	writeSlot(d)
+	if store and d.loaded then
+		pcall(function()
+			store:SetAsync("u" .. plr.UserId, d.record)
+		end)
+	end
 end
 
 local function updateStats(plr)
@@ -69,7 +97,7 @@ end
 
 local function addMoney(plr, amount, reason)
 	local d = data[plr]
-	if not d then
+	if not (d and d.slot) then
 		return
 	end
 	d.money += amount
@@ -90,26 +118,63 @@ Players.PlayerAdded:Connect(function(plr)
 	shells.Parent = ls
 	ls.Parent = plr
 
-	local d = { money = START_MONEY, shells = {}, loaded = false }
+	local d = { record = { slots = {} }, loaded = not store, money = 0, shells = {}, playTime = 0, started = os.clock() }
 	data[plr] = d
 	if store then
 		local ok, saved = pcall(function()
 			return store:GetAsync("u" .. plr.UserId)
 		end)
-		if ok and type(saved) == "table" then
-			d.money = tonumber(saved.money) or START_MONEY
-			for _, i in ipairs(saved.shells or {}) do
-				d.shells[i] = true
-			end
+		if ok and type(saved) == "table" and type(saved.slots) == "table" then
+			d.record = saved
 		end
 		d.loaded = ok
 	end
+	d.ready = true
+	SlotsRemote:FireClient(plr, "list", slotSummaries(d))
+end)
+
+SlotsRemote.OnServerEvent:Connect(function(plr, action, slot, mode)
+	local d = data[plr]
+	if not (d and d.ready) then
+		return
+	end
+	if action == "list" then
+		SlotsRemote:FireClient(plr, "list", slotSummaries(d))
+		return
+	end
+	if action ~= "play" or d.slot then
+		return
+	end
+	slot = tonumber(slot)
+	if not slot or slot < 1 or slot > SLOT_COUNT or slot ~= math.floor(slot) then
+		return
+	end
+	local saved = d.record.slots[tostring(slot)]
+	if mode == "load" and saved then
+		d.money = tonumber(saved.money) or START_MONEY
+		d.shells = {}
+		for _, i in ipairs(saved.shells or {}) do
+			d.shells[i] = true
+		end
+		d.playTime = tonumber(saved.playTime) or 0
+		d.free = saved.free == true
+	else
+		d.money = START_MONEY
+		d.shells = {}
+		d.playTime = 0
+		d.free = mode == "free"
+	end
+	d.slot = slot
+	d.started = os.clock()
+	plr:SetAttribute("FreeRoam", d.free)
 	updateStats(plr)
+	save(plr)
 	local list = {}
 	for i in pairs(d.shells) do
 		table.insert(list, i)
 	end
 	ShellRemote:FireClient(plr, "state", list)
+	SlotsRemote:FireClient(plr, "started", slot, d.free)
 	NotifyRemote:FireClient(plr, "Bienvenido a Port Solano")
 end)
 
@@ -168,7 +233,7 @@ for i, pos in ipairs(Layout.SHELLS) do
 		local char = hit:FindFirstAncestorOfClass("Model")
 		local plr = char and Players:GetPlayerFromCharacter(char)
 		local d = plr and data[plr]
-		if not d or d.shells[i] then
+		if not d or not d.slot or d.shells[i] then
 			return
 		end
 		d.shells[i] = true
@@ -198,7 +263,12 @@ JobRemote.OnServerEvent:Connect(function(plr, action)
 		end
 		return
 	end
-	if action ~= "start" or jobs[plr] or not root then
+	local d = data[plr]
+	if action ~= "start" or jobs[plr] or not root or not (d and d.slot) then
+		return
+	end
+	if d.free then
+		NotifyRemote:FireClient(plr, "Free Roam: no hay trabajos en este modo")
 		return
 	end
 	local options = {}

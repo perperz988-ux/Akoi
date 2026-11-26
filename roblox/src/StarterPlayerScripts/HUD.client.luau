@@ -14,14 +14,18 @@ local JobRemote = Remotes:WaitForChild("Job")
 local ShellRemote = Remotes:WaitForChild("Shells")
 local NotifyRemote = Remotes:WaitForChild("Notify")
 
-local FONT = Enum.Font.FredokaOne
-local GOLD = Color3.fromRGB(255, 200, 80)
+local FONT = Enum.Font.GothamBold
+local GOLD = Color3.fromRGB(0xff, 0xd1, 0x66)
 
 local gui = Instance.new("ScreenGui")
 gui.Name = "PortSolanoHUD"
 gui.ResetOnSpawn = false
 gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+gui.Enabled = player:GetAttribute("InGame") == true -- se muestra al salir del menu de inicio
 gui.Parent = player:WaitForChild("PlayerGui")
+player:GetAttributeChangedSignal("InGame"):Connect(function()
+	gui.Enabled = player:GetAttribute("InGame") == true
+end)
 
 local function label(parent, props)
 	local l = Instance.new("TextLabel")
@@ -150,6 +154,12 @@ end
 
 local carButton = bigButton("Coche", Color3.fromRGB(40, 140, 230), -100)
 local jobButton = bigButton("Trabajo", Color3.fromRGB(240, 140, 30), -36)
+
+local function updateFreeRoam()
+	jobButton.Visible = player:GetAttribute("FreeRoam") ~= true
+end
+updateFreeRoam()
+player:GetAttributeChangedSignal("FreeRoam"):Connect(updateFreeRoam)
 
 carButton.Activated:Connect(function()
 	SpawnCar:FireServer()
