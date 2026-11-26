@@ -5,3 +5,4 @@ android/build
 android/.gradle
 *.log
 .DS_Store
+dist-ps5

@@ -1,0 +1,23 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Models</title><style>body{margin:0;background:#222}canvas{display:block}</style></head>
+<body><canvas id="c"></canvas><script type="module">
+import * as THREE from 'three';
+import { loadAssets, MODELS, model } from './src/assets.js';
+import { Humanoid, Animated } from './src/rig.js';
+const r=new THREE.WebGLRenderer({canvas:document.getElementById('c'),antialias:true});r.setSize(innerWidth,innerHeight);r.shadowMap.enabled=true;
+const s=new THREE.Scene();s.background=new THREE.Color(0x8fb6d8);s.add(new THREE.HemisphereLight(0xffffff,0x445533,1.6));const d=new THREE.DirectionalLight(0xffffff,2);d.position.set(5,10,7);s.add(d);
+const g=new THREE.Mesh(new THREE.PlaneGeometry(200,200),new THREE.MeshLambertMaterial({color:0x667755}));g.rotation.x=-Math.PI/2;s.add(g);
+const cam=new THREE.PerspectiveCamera(45,innerWidth/innerHeight,0.1,500);
+await loadAssets();
+const mode=new URLSearchParams(location.search).get('m')||'grid';
+const chars=[];
+if(mode==='grid'){let i=0;for(const n of Object.keys(MODELS).sort()){const o=model(n,{length:2.2});const x=(i%8)*3-10.5,z=Math.floor(i/8)*3-8;o.position.set(x,0,z);s.add(o);i++;}
+ cam.position.set(0,22,18);cam.lookAt(0,0,-1);}
+else{const poses=['idle','walk','talk','sit','search','carry','wave','shock'];const names=['skater-male','male','survivor-female','survivor-male','skater-female','cyborg-female','survivor-male','skater-male'];
+ poses.forEach((p,i)=>{const h=new Humanoid(names[i]);h.root.position.set(i*1.6-5.6,0,0);s.add(h.root);chars.push([h,p]);});
+ const rb=new Animated('robot',{height:1.6});rb.root.position.set(-4,0,-3);rb.play('Dance');s.add(rb.root);chars.push([rb]);
+ const fx=new Animated('fox',{length:1.1});fx.root.position.set(3,0,-3);fx.play('Run');s.add(fx.root);chars.push([fx]);
+ const yaw=+(new URLSearchParams(location.search).get('yaw')||0);cam.position.set(Math.sin(yaw)*9,2.2,Math.cos(yaw)*9);cam.lookAt(0,1,-0.5);}
+const clk=new THREE.Clock();window.__t=0;
+function loop(){const dt=Math.min(clk.getDelta(),0.05);for(const [c,p] of chars){if(c.mixer)c.update(dt);else c.update(dt,p==='walk'?2.5:0,p==='walk'?'auto':p);}r.render(s,cam);requestAnimationFrame(loop);}loop();
+window.__ready=true;
+</script></body></html>

@@ -12,7 +12,9 @@
     "typecheck": "tsc --noEmit",
     "android:sync": "npm run build && npx cap sync android",
     "android:add": "npx cap add android",
-    "android:open": "npx cap open android"
+    "android:open": "npx cap open android",
+    "ps5:dev": "vite trash-to-ps5 --host",
+    "ps5:build": "vite build trash-to-ps5 && node trash-to-ps5/build-single.mjs"
   },
   "dependencies": {
     "@capacitor/android": "6.2.0",
