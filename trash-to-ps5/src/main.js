@@ -110,7 +110,7 @@ class Game {
       { id: 'gus', name: 'Old Gus', model: 'survivor-male', hat: 'hardhat', speed: 1.3, start: [34, 76], talk: (G) => (G.story.m === 1 && G.story.s === 1 ? 'gus_gate' : G.story.m === 3 ? 'gus_box' : 'gus_idle'), important: (G) => (G.story.m === 1 && G.story.s === 1) || G.story.m === 3,
         present: (G) => G.story.m < 9 || G.flags.ended,
         routine: (h, G) => {
-          if (G.flags.gusAtGate) return { at: [3, 97.4], anim: 'idle', ry: 0 };
+          if (G.flags.gusAtGate) return { at: [2.5, 98.7], anim: 'idle', ry: 0 };
           if (h < 7 || h >= 22) return { at: [37, 82], anim: 'sleep', ry: Math.PI };
           if (h < 10) return { at: [33.5, 79.2], anim: 'work', ry: Math.PI };
           if (h < 13) return { at: [20, 40], wander: 28 };
@@ -313,7 +313,7 @@ class Game {
       if (ang > lim) return; const score = ang + d * 0.05; if (score < bestScore) { bestScore = score; best = { label, it }; }
     };
     for (const it of this.world.inter) { if (!it.on) continue; if (Math.abs(it.x - P.x) > 12 || Math.abs(it.z - P.z) > 12) continue; const l = it.label(); if (l) consider(it.x, it.y, it.z, it.r, l, it); }
-    for (const n of Object.values(this.npcs)) if (n.visible && !n.script) consider(n.pos.x, 1.3, n.pos.z, 3.2, `💬 Talk to ${n.name}`, { npc: n });
+    for (const n of Object.values(this.npcs)) if (n.visible && !n.script) consider(n.pos.x, 1.3, n.pos.z, 4.2, `💬 Talk to ${n.name}`, { npc: n });
     this.ui.prompt(best ? best.label : null, best && best.it.hold ? 'hold' : 'tap');
     const i = this.input;
     if (!best) { this.holdT = 0; return; }

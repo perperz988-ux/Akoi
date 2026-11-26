@@ -58,10 +58,10 @@ export class NPC {
     const head = this.rig.b && this.rig.b.Head; if (!head) return;
     const g = new THREE.Group();
     const s = 1 / this.rig.root.userData.scale;
-    if (kind === 'hardhat') { const m = new THREE.Mesh(new THREE.SphereGeometry(0.2, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2), new THREE.MeshLambertMaterial({ color: 0xf2c400 })); const b = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.25, 0.03, 14), m.material); b.position.y = 0.01; g.add(m, b); g.position.y = 0.3; }
-    if (kind === 'cap') { const m = new THREE.Mesh(new THREE.SphereGeometry(0.19, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2), new THREE.MeshLambertMaterial({ color: 0x1f2f4f })); const v = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.025, 0.16), m.material); v.position.set(0, 0.01, 0.17); g.add(m, v); g.position.y = 0.29; }
-    if (kind === 'hood') { const m = new THREE.Mesh(new THREE.SphereGeometry(0.23, 12, 10, 0, Math.PI * 2, 0, Math.PI * 0.62), new THREE.MeshLambertMaterial({ color: 0x1a1a22 })); m.position.y = 0.17; m.position.z = -0.03; g.add(m); }
-    g.scale.setScalar(s * 1.05); head.add(g); this.hat = g;
+    if (kind === 'hardhat') { const m = new THREE.Mesh(new THREE.SphereGeometry(0.2, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2), new THREE.MeshLambertMaterial({ color: 0xf2c400 })); const b = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.25, 0.03, 14), m.material); b.position.y = 0.01; g.add(m, b); g.position.y = 0.42; }
+    if (kind === 'cap') { const m = new THREE.Mesh(new THREE.SphereGeometry(0.19, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2), new THREE.MeshLambertMaterial({ color: 0x1f2f4f })); const v = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.025, 0.16), m.material); v.position.set(0, 0.01, 0.17); g.add(m, v); g.position.y = 0.41; }
+    if (kind === 'hood') { const m = new THREE.Mesh(new THREE.SphereGeometry(0.23, 12, 10, 0, Math.PI * 2, 0, Math.PI * 0.62), new THREE.MeshLambertMaterial({ color: 0x1a1a22 })); m.position.y = 0.06; m.position.z = -0.03; g.add(m); g.position.y = 0.12; }
+    g.scale.setScalar(s * 1.3); g.position.multiplyScalar(s); head.add(g); this.hat = g;
   }
   setPos(x, z, yaw) { this.pos.set(x, 0, z); if (yaw != null) this.yaw = yaw; this.path = null; this.goalKey = ''; }
   goTo(x, z, key) {

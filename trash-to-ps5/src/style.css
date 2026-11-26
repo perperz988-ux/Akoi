@@ -231,7 +231,7 @@ button { font-family: var(--ui); cursor: pointer; }
 #touch .tb { position: absolute; pointer-events: auto; width: 64px; height: 64px; border-radius: 50%; border: 2px solid rgba(255,255,255,.35); background: rgba(0,0,0,.35); color: #fff; font-size: 26px; }
 #touch .tb.on { background: rgba(255,209,102,.6); }
 #tAct { right: 110px; bottom: 40px; width: 78px !important; height: 78px !important; } #tJump { right: 26px; bottom: 100px; } #tRun { right: 26px; bottom: 24px; }
-#tPhone { right: 200px; bottom: 30px; } #tPause { right: 14px; top: 200px; width: 44px !important; height: 44px !important; font-size: 18px !important; }
+#tPhone { right: 200px; bottom: 30px; } #tPause { right: auto; left: 50%; margin-left: -22px; top: 8px; width: 44px !important; height: 44px !important; font-size: 18px !important; }
 #joy { position: absolute; width: 120px; height: 120px; border-radius: 50%; border: 2px solid rgba(255,255,255,.35); background: rgba(255,255,255,.06); display: none; }
 #joy div { position: absolute; left: 35px; top: 35px; width: 50px; height: 50px; border-radius: 50%; background: rgba(255,255,255,.5); }
 @media (max-width: 760px), (max-height: 500px) {
