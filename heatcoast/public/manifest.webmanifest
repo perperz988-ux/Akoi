@@ -1,0 +1,1 @@
+{ "name": "Heat Coast", "short_name": "Heat Coast", "display": "fullscreen", "orientation": "landscape", "background_color": "#07080c", "theme_color": "#ff4f8b", "start_url": "./", "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml" }] }
