@@ -1,4 +1,6 @@
-# FÁBRICA DE MÓVILES (PHONE FACTORY) 📱🏭
+# MOVILMANÍA 📱🏭 — De garaje a imperio
+
+▶ **Jugar:** abre `release/movilmania.html` (un solo archivo, funciona sin internet).
 
 **Todo el juego está en español y se juega en horizontal.** En el móvil, al tocar la pantalla se pone a pantalla completa y se bloquea en horizontal. Si giras el móvil a vertical, aparece un aviso para que lo vuelvas a girar.
 
@@ -11,9 +13,9 @@
 
 ---
 
-# PHONE FACTORY 📱🏭
+## Systems (English reference)
 
-A complete smartphone-company tycoon game that runs in **one HTML file** (`release/phone-factory.html`, ~0.7 MB).
+A complete smartphone-company tycoon game that runs in **one HTML file** (`release/movilmania.html`, ~0.7 MB).
 It works offline in desktop browsers and on Android phones and tablets, with touch-friendly menus and a mobile layout.
 
 Start in a garage with $80,000, design your first phone and grow into the largest phone maker in the world.
@@ -42,7 +44,7 @@ Start in a garage with $80,000, design your first phone and grow into the larges
 ```bash
 npm install
 npm run pf:dev     # dev server
-npm run pf:build   # → release/phone-factory.html (single file)
+npm run pf:build   # → release/movilmania.html (single file)
 ```
 
 The code is in `phone-factory/src/`:

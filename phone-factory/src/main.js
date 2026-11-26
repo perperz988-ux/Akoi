@@ -1,4 +1,4 @@
-// PHONE FACTORY — game controller: title screen, time loop, saving, popups, cinematics.
+// MOVILMANÍA — game controller: title screen, time loop, saving, popups, cinematics.
 import * as S from './sim.js';
 import { UI, applyPreset } from './ui.js';
 import { Cinema } from './cine.js';
@@ -16,12 +16,12 @@ class Game {
   title() {
     const el = document.getElementById('title'); el.classList.add('on');
     const sb = !!localStorage.getItem('pf_sandbox'); const auto = this.slotInfo(0);
-    el.innerHTML = `<div class="tview" id="tview"></div><div class="tmenu"><div class="tlogo">FÁBRICA<span>DE MÓVILES</span></div><p class="tsub">Diséñalo. Fabrícalo. Véndelo. Conquista el mundo.</p>
+    el.innerHTML = `<div class="tview" id="tview"></div><div class="tmenu"><div class="tlogo">MOVIL<span>MANÍA</span></div><p class="tsub"><b>De garaje a imperio.</b> Diséñalo. Fabrícalo. Véndelo. Conquista el mundo.</p>
       ${auto ? `<button class="pri" data-t="cont">▶ Continuar <small>${auto.name} · ${S.dateOf(auto.day)}</small></button>` : ''}
       <button data-t="new" class="${auto ? '' : 'pri'}">✦ Nueva campaña</button><button data-t="load">📂 Cargar partida</button>
       <button data-t="sandbox" class="${sb ? '' : 'lockd'}">${sb ? '🏖️' : '🔒'} Modo libre ${sb ? '' : '<small>termina la campaña</small>'}</button></div>`;
-    const v = new Viewer(document.getElementById('tview'), { autoRotate: true }); const s0 = S.newState('Fábrica de Móviles'); const d = S.defaultDesign(1, 'Ω Infinito'); applyPreset(d, 'Futurista'); d.ext.color = '#ff3d71'; d.ext.frameColor = '#ffd6e0'; Object.assign(d.ext, { camCount: 4, camLayout: 'square', back: 'gloss' });
-    s0.os.wallpaper = 'aurora'; v.screen = 'home'; v.setDesign(d, s0.os, 'Fábrica de Móviles', (cv) => drawLogo(cv, { shape: 'circle', bg: '#ff3d71', fg: '#fff', glyph: 'P', font: 'bold' })); v.view('back34'); v.start(); this.titleViewer = v;
+    const v = new Viewer(document.getElementById('tview'), { autoRotate: true }); const s0 = S.newState('Movilmanía'); const d = S.defaultDesign(1, 'Ω Infinito'); applyPreset(d, 'Futurista'); d.ext.color = '#ff3d71'; d.ext.frameColor = '#ffd6e0'; Object.assign(d.ext, { camCount: 4, camLayout: 'square', back: 'gloss' });
+    s0.os.wallpaper = 'aurora'; v.screen = 'home'; v.setDesign(d, s0.os, 'Movilmanía', (cv) => drawLogo(cv, { shape: 'circle', bg: '#ff3d71', fg: '#fff', glyph: 'M', font: 'bold' })); v.view('back34'); v.start(); this.titleViewer = v;
     el.querySelectorAll('[data-t]').forEach((b) => (b.onclick = () => {
       this.sfx.init(); this.sfx.play('click'); const t = b.dataset.t;
       if (t === 'cont') return this.load(0);

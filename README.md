@@ -1,4 +1,4 @@
-> **Nuevo:** [FÁBRICA DE MÓVILES](phone-factory/README.md) — tycoon de empresa de móviles, en español y en horizontal, con modo «Probar teléfono» (`release/phone-factory.html`).
+> **Nuevo:** [MOVILMANÍA](phone-factory/README.md) — tycoon de empresa de móviles, en español y en horizontal, con modo «Probar teléfono» (`release/movilmania.html`).
 >
 > [TRASH TO PS5](trash-to-ps5/README.md) — aventura narrativa en primera persona en un solo HTML (`release/trash-to-ps5.html`).
 

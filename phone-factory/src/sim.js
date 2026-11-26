@@ -1,4 +1,4 @@
-// PHONE FACTORY — simulation core (pure logic, no DOM).
+// MOVILMANÍA — simulation core (pure logic, no DOM).
 import { HW, CPU, RAM, STORAGE, BATTERY, DISPLAY, CAMERA, SPEAKER, COOLING, MODEM, CHARGING, FRAMES, BACKS, RESEARCH, RES, AUDIENCES, REGIONS, AD_STYLES, RIVALS, FACTORIES, STAGES, ROLES, FIRST, LAST, TESTS, REVIEW_POS, REVIEW_NEG, REVIEWERS, EVENT_TYPES, PROMOTE } from './data.js';
 
 export const FLAG_ES = { fragile: 'frágil', overheat: 'se calienta', battery: 'batería floja', camera: 'cámara mala', leak: 'filtraciones', nowater: 'no resiste el agua', software: 'software con fallos', fake: 'publicidad engañosa' };

@@ -1,4 +1,4 @@
-// Inlines the built JS + CSS into one standalone HTML file: release/phone-factory.html
+// Inlines the built JS + CSS into one standalone HTML file: release/movilmania.html
 import fs from 'node:fs'; import path from 'node:path';
 const d = 'dist-pf'; let html = fs.readFileSync(path.join(d, 'index.html'), 'utf8');
 html = html.replace(/<link rel="stylesheet"[^>]*href="\.?\/?([^"]+)"[^>]*>/g, (_, f) => `<style>${fs.readFileSync(path.join(d, f), 'utf8')}</style>`);
@@ -11,4 +11,4 @@ html = html.replace(/(<link rel="(?:icon|apple-touch-icon)"[^>]*href=")\.?\/?([^
   return `${pre}data:${mime};base64,${fs.readFileSync(file).toString('base64')}"`;
 });
 fs.mkdirSync('release', { recursive: true });
-fs.writeFileSync('release/phone-factory.html', html); console.log('written release/phone-factory.html', (html.length / 1024).toFixed(0) + ' KB');
+fs.writeFileSync('release/movilmania.html', html); console.log('written release/movilmania.html', (html.length / 1024).toFixed(0) + ' KB');
