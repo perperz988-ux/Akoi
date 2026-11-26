@@ -82,7 +82,8 @@ export class Humanoid {
     // torso: chest + waist + hips (smooth stacked ellipsoids)
     add(sphere(1, 14, 10), 'chest', top, M(0, 1.33 * s, 0, (fem ? 0.17 : 0.2) * s * b, 0.2 * s, (fem ? 0.115 : 0.125) * s * b));
     if (fem) add(sphere(1, 12, 8), 'chest', look.top, M(0, 1.3 * s, 0.06 * s, 0.14 * s, 0.08 * s, 0.08 * s));
-    add(sphere(1, 14, 10), 'spine', look.top, M(0, 1.14 * s, 0, (fem ? 0.135 : 0.16) * s * b, 0.15 * s, 0.11 * s * b));
+    add(sphere(1, 14, 10), 'spine', look.jacket ?? look.top, M(0, 1.14 * s, 0, (fem ? 0.135 : 0.16) * s * b, 0.15 * s, 0.11 * s * b));
+    if (look.jacket) add(sphere(1, 12, 8), 'spine', look.top, M(0, 1.16 * s, 0.07 * s, 0.07 * s, 0.13 * s, 0.05 * s)); // shirt visible under open jacket
     add(sphere(1, 14, 10), 'hips', look.bottom, M(0, 0.97 * s, 0, (fem ? 0.165 : 0.155) * s * b, 0.12 * s, 0.115 * s * b));
     if (look.vest) add(sphere(1, 12, 8), 'chest', look.vest, M(0, 1.28 * s, 0, 0.215 * s * b, 0.21 * s, 0.14 * s * b));
     if (look.jacket) { add(capsule(0.03 * s, 0.32 * s), 'chest', look.jacket, M(0.07 * s, 1.3 * s, 0.11 * s, 1, 1, 1, 0, 0.1)); add(capsule(0.03 * s, 0.32 * s), 'chest', look.jacket, M(-0.07 * s, 1.3 * s, 0.11 * s, 1, 1, 1, 0, -0.1)); add(sphere(1, 10, 6), 'chest', look.top, M(0, 1.34 * s, 0.1 * s, 0.06 * s, 0.13 * s, 0.03 * s)); }
@@ -119,7 +120,7 @@ export class Humanoid {
       add(sphere(1, 10, 8), ('shin' + L) as BoneName, look.bottom, M(lx, 0.4 * s, -0.012 * s, 0.056 * s * b, 0.1 * s, 0.058 * s * b)); // calf
       add(sphere(1, 10, 8), ('foot' + L) as BoneName, look.shoes, M(lx, 0.05 * s, 0.05 * s, 0.055 * s, 0.045 * s, 0.13 * s));
     }
-    const geo = mergeGeometries(parts)!; geo.computeVertexNormals();
+    const geo = mergeGeometries(parts)!; // keep the primitives' smooth normals (recomputing on unindexed data gives faceted 'clay' shading)
     geo.boundingSphere = new THREE.Sphere(new THREE.Vector3(0, 0.9, 0), 1.3);
     this.mesh = new THREE.SkinnedMesh(geo, skinMat);
     this.mesh.add(this.bones.hips);
