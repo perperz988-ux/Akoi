@@ -157,3 +157,7 @@ canvas#chart { width: 100%; height: 160px; }
   #modal .box { max-height: 94vh; padding: 14px; } #cine .cap .t { font-size: 34px; } #toasts { top: 48px; }
   #try { grid-template-columns: 1fr 46%; } #try .tside { padding: 8px; gap: 6px; } #try .tbtns button { padding: 6px 4px; font-size: 12px; }
 }
+
+.ticon { width: 76px; height: 76px; border-radius: 18px; box-shadow: 0 8px 26px rgba(0,0,0,.55); }
+@media (max-height: 540px) { .ticon { width: 52px; height: 52px; border-radius: 12px; } }
+@media (max-height: 430px) { .ticon { display: none; } }

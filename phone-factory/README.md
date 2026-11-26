@@ -2,6 +2,8 @@
 
 ▶ **Jugar:** abre `release/movilmania.html` (un solo archivo, funciona sin internet).
 
+🎨 **Icono:** `phone-factory/icon.svg` + PNG en `phone-factory/icons/` (512, 192, 180, 64, 32 px), incrustado en el HTML como favicon / icono de inicio.
+
 **Todo el juego está en español y se juega en horizontal.** En el móvil, al tocar la pantalla se pone a pantalla completa y se bloquea en horizontal. Si giras el móvil a vertical, aparece un aviso para que lo vuelvas a girar.
 
 * **✏️ Nombre del teléfono:** hay un campo grande encima del modelo 3D, y al crear un modelo nuevo se te pregunta cómo se llama.

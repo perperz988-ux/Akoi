@@ -6,6 +6,8 @@ import { Sfx } from './audio.js';
 import { Viewer } from './phone3d.js';
 import { drawLogo } from './os.js';
 import { MISSIONS } from './sim.js';
+import iconSvg from '../icon.svg?raw';
+const ICON = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(iconSvg);
 
 const KEY = (i) => `pf_slot_${i}`;
 class Game {
@@ -16,7 +18,7 @@ class Game {
   title() {
     const el = document.getElementById('title'); el.classList.add('on');
     const sb = !!localStorage.getItem('pf_sandbox'); const auto = this.slotInfo(0);
-    el.innerHTML = `<div class="tview" id="tview"></div><div class="tmenu"><div class="tlogo">MOVIL<span>MANÍA</span></div><p class="tsub"><b>De garaje a imperio.</b> Diséñalo. Fabrícalo. Véndelo. Conquista el mundo.</p>
+    el.innerHTML = `<div class="tview" id="tview"></div><div class="tmenu"><img class="ticon" src="${ICON}" alt=""><div class="tlogo">MOVIL<span>MANÍA</span></div><p class="tsub"><b>De garaje a imperio.</b> Diséñalo. Fabrícalo. Véndelo. Conquista el mundo.</p>
       ${auto ? `<button class="pri" data-t="cont">▶ Continuar <small>${auto.name} · ${S.dateOf(auto.day)}</small></button>` : ''}
       <button data-t="new" class="${auto ? '' : 'pri'}">✦ Nueva campaña</button><button data-t="load">📂 Cargar partida</button>
       <button data-t="sandbox" class="${sb ? '' : 'lockd'}">${sb ? '🏖️' : '🔒'} Modo libre ${sb ? '' : '<small>termina la campaña</small>'}</button></div>`;
