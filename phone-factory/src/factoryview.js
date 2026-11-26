@@ -41,7 +41,7 @@ export class FactoryView {
       g.beginPath(); g.roundRect(x - w / 2, y - h / 2, w, h, 10 * dpr); g.fill(); g.stroke();
       g.font = `${C * 0.13}px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(STAGE_ICON[i], x - w * 0.32, y - h * 0.18);
       g.fillStyle = '#fff'; g.font = `600 ${Math.max(9 * dpr, C * 0.058)}px system-ui,sans-serif`; g.textAlign = 'left'; g.fillText(`${i + 1}. ${STAGES[i]}`.slice(0, 22), x - w * 0.18, y - h * 0.18);
-      g.fillStyle = '#9aa5b8'; g.font = `${Math.max(8 * dpr, C * 0.05)}px system-ui,sans-serif`; g.fillText(`queue ${Math.round(q[i])} · ${Math.round(fr.rates[i])}/day`, x - w * 0.42, y + h * 0.08);
+      g.fillStyle = '#9aa5b8'; g.font = `${Math.max(8 * dpr, C * 0.05)}px system-ui,sans-serif`; g.fillText(`cola ${Math.round(q[i])} · ${Math.round(fr.rates[i])}/día`, x - w * 0.42, y + h * 0.08);
       g.fillStyle = '#ffd166'; g.fillText('★'.repeat(maxLv(i)) + '☆'.repeat(5 - maxLv(i)), x - w * 0.42, y + h * 0.3);
       // workers
       const nw = Math.min(3, Math.max(1, Math.round(fr.staff * 3)));
@@ -58,7 +58,7 @@ export class FactoryView {
       const pw = (o.st >= 8 ? 9 : 6) * dpr, ph = (o.st >= 8 ? 9 : 11) * dpr; g.beginPath(); g.roundRect(x - pw / 2, y - ph / 2, pw, ph, 2 * dpr); g.fill(); g.stroke();
     }
     // sparks / rejects
-    for (let i = this.fx.length - 1; i >= 0; i--) { const f = this.fx[i]; f.t += dt; if (f.t > 0.6) { this.fx.splice(i, 1); continue; } g.fillStyle = f.spark ? `rgba(255,220,120,${1 - f.t / 0.6})` : `rgba(255,61,113,${1 - f.t / 0.6})`; g.beginPath(); g.arc(f.x + (f.spark ? Math.sin(f.t * 30) * 6 : 0), f.y - f.t * 30 * dpr, (f.spark ? 2 : 6) * dpr, 0, 7); g.fill(); if (!f.spark) { g.font = `bold ${11 * dpr}px sans-serif`; g.fillText('✖ reject', f.x, f.y - 14 * dpr - f.t * 30 * dpr); } }
-    if (!running) { g.fillStyle = 'rgba(0,0,0,0.35)'; g.fillRect(0, 0, W, H); g.fillStyle = '#fff'; g.font = `700 ${16 * dpr}px system-ui`; g.textAlign = 'center'; g.fillText('⏸ PAUSED', W / 2, H / 2); }
+    for (let i = this.fx.length - 1; i >= 0; i--) { const f = this.fx[i]; f.t += dt; if (f.t > 0.6) { this.fx.splice(i, 1); continue; } g.fillStyle = f.spark ? `rgba(255,220,120,${1 - f.t / 0.6})` : `rgba(255,61,113,${1 - f.t / 0.6})`; g.beginPath(); g.arc(f.x + (f.spark ? Math.sin(f.t * 30) * 6 : 0), f.y - f.t * 30 * dpr, (f.spark ? 2 : 6) * dpr, 0, 7); g.fill(); if (!f.spark) { g.font = `bold ${11 * dpr}px sans-serif`; g.fillText('✖ rechazo', f.x, f.y - 14 * dpr - f.t * 30 * dpr); } }
+    if (!running) { g.fillStyle = 'rgba(0,0,0,0.35)'; g.fillRect(0, 0, W, H); g.fillStyle = '#fff'; g.font = `700 ${16 * dpr}px system-ui`; g.textAlign = 'center'; g.fillText('⏸ EN PAUSA', W / 2, H / 2); }
   }
 }

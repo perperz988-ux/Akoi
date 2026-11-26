@@ -10,7 +10,7 @@ export class Cinema {
   push(c) { this.queue.push(c); if (!this.active) this.next(); }
   next() {
     const c = this.queue.shift(); if (!c) { this.active = false; this.el.classList.remove('on'); this.el.innerHTML = ''; if (this.v) { this.v.stop(); this.v.renderer.dispose(); this.v = null; } this.G.onCineEnd && this.G.onCineEnd(); return; }
-    this.active = true; this.el.classList.add('on'); this.el.innerHTML = `<div class="stage"></div><canvas class="fx"></canvas><div class="cap"><div class="k"></div><div class="t"></div><div class="s"></div></div><div class="lb top"></div><div class="lb bot"></div><button class="skip">Skip ▶▶</button>`;
+    this.active = true; this.el.classList.add('on'); this.el.innerHTML = `<div class="stage"></div><canvas class="fx"></canvas><div class="cap"><div class="k"></div><div class="t"></div><div class="s"></div></div><div class="lb top"></div><div class="lb bot"></div><button class="skip">Saltar ▶▶</button>`;
     this.el.querySelector('.skip').onclick = () => this.finish(); this.el.onclick = (e) => { if (e.target.classList.contains('skip')) return; if (this.elapsed > 1.2) this.finish(); };
     this.elapsed = 0; this.cur = c; this.fx = this.el.querySelector('.fx'); this.particles = [];
     const fn = this['c_' + c.name]; if (fn) fn.call(this, c); else this.finish();
@@ -37,20 +37,20 @@ export class Cinema {
     const d = this.design(c.design); const v = this.viewer(d, { screen: 'off' }); this.el.classList.add('dark'); this.G.sfx.play('whoosh');
     const D = v.fitDist; v.camera.position.set(0, -D * 0.3, D * 1.6); v.phone.position.y = -6; v.phone.rotation.y = Math.PI;
     const spot = new THREE.SpotLight(0xffffff, 300, 80, 0.35, 0.6); spot.position.set(0, 25, 10); v.scene.add(spot); spot.target = v.phone;
-    this.caption('PROTOTYPE #001', d.name.toUpperCase(), 'Hand-built in a garage. One of one.');
+    this.caption('PROTOTIPO #001', d.name.toUpperCase(), 'Hecho a mano en un garaje. Único en el mundo.');
     this.run(7, (t) => { const k = Math.min(1, t / 2.5); v.phone.position.y = -6 * (1 - k * k * (3 - 2 * k)); v.phone.rotation.y = Math.PI + t * 0.9; v.camera.position.lerp(new THREE.Vector3(D * 0.4, D * 0.15, D * 0.9), 0.01); v.camera.lookAt(0, 0, 0); });
   }
   c_boot(c) {
     const d = this.design(c.design); const v = this.viewer(d, { screen: 'off' }); const s = this.G.s; this.el.classList.add('dark');
     v.view('front'); v.camera.position.multiplyScalar(0.8); v.controls.update();
     const logo = drawLogo(Object.assign(document.createElement('canvas'), { width: 256, height: 256 }), s.company.logo);
-    this.caption('FIRST BOOT', 'Hold the power button…', ''); let phase = 0;
-    v.animScreen = (dt) => { v._b = (v._b || 0) + dt; const t = v._b; if (t < 1.2) { v.screen = 'off'; } else if (t < 5) { if (phase === 0) { phase = 1; this.G.sfx.play('boot'); this.caption('FIRST BOOT', 'It\'s alive!', `${s.os.name} 1.0 · ${s.company.name}`); } v.screen = 'boot'; v.drawScreen({ boot: (t - 1.2) / 3.8, logoCanvas: logo, t }); return; } else if (t < 6.5) v.screen = 'lock'; else { v.screen = 'home'; if (phase === 1) { phase = 2; this.caption('IT WORKS!', 'Your first phone just booted up.', 'Now test it, build it, sell it.'); } } if (Math.floor(t * 4) !== v._f) { v._f = Math.floor(t * 4); v.drawScreen(); } };
+    this.caption('PRIMER ARRANQUE', 'Mantén pulsado el botón de encendido…', ''); let phase = 0;
+    v.animScreen = (dt) => { v._b = (v._b || 0) + dt; const t = v._b; if (t < 1.2) { v.screen = 'off'; } else if (t < 5) { if (phase === 0) { phase = 1; this.G.sfx.play('boot'); this.caption('PRIMER ARRANQUE', '¡Está vivo!', `${s.os.name} 1.0 · ${s.company.name}`); } v.screen = 'boot'; v.drawScreen({ boot: (t - 1.2) / 3.8, logoCanvas: logo, t }); return; } else if (t < 6.5) v.screen = 'lock'; else { v.screen = 'home'; if (phase === 1) { phase = 2; this.caption('¡FUNCIONA!', 'Tu primer móvil acaba de encenderse.', 'Ahora pruébalo, fabrícalo y véndelo.'); } } if (Math.floor(t * 4) !== v._f) { v._f = Math.floor(t * 4); v.drawScreen(); } };
     this.run(9, (t) => { v.phone.rotation.y = Math.sin(t * 0.4) * 0.25; });
   }
   c_factory(c) {
     const F = FACTORIES.find((f) => f.id === c.type) || FACTORIES[1]; const st = this.el.querySelector('.stage'); const cv = document.createElement('canvas'); st.appendChild(cv); this.G.sfx.play('fanfare');
-    this.caption('GRAND OPENING', F.name.toUpperCase(), `${this.G.s.company.name} goes industrial. ${F.base} phones/day per line.`);
+    this.caption('GRAN INAUGURACIÓN', F.name.toUpperCase(), `${this.G.s.company.name} se vuelve industrial. ${F.base} móviles/día por línea.`);
     let cut = false;
     this.run(6.5, (t) => {
       cv.width = innerWidth; cv.height = innerHeight; const g = cv.getContext('2d'), W = cv.width, H = cv.height;
@@ -71,14 +71,14 @@ export class Cinema {
     this.el.classList.add('stagebg'); this.G.sfx.play('crowd'); this.flashes(16);
     const D = v.fitDist; v.camera.position.set(0, D * 0.1, D * 1.05); v.camera.lookAt(0, 0, 0);
     const spot = new THREE.SpotLight(0xffffff, 400, 90, 0.3, 0.5); spot.position.set(0, 30, 15); v.scene.add(spot); spot.target = v.phone;
-    this.caption('LAUNCH DAY', d.name.toUpperCase(), p ? `${fmtMoney(p.price)} · available now in ${p.regions.length} region${p.regions.length > 1 ? 's' : ''}` : '');
+    this.caption('DÍA DEL LANZAMIENTO', d.name.toUpperCase(), p ? `${fmtMoney(p.price)} · ya disponible en ${p.regions.length} región${p.regions.length > 1 ? 'es' : ''}` : '');
     setTimeout(() => { this.G.sfx.play('fanfare'); this.confetti(90); }, 3500);
     this.run(8, (t) => { v.phone.rotation.y = t * 0.8; v.phone.position.y = Math.sin(t * 1.5) * 0.3; });
   }
   c_milestone(c) {
     const st = this.el.querySelector('.stage'); st.innerHTML = '<div class="bignum">0</div>'; const el = st.querySelector('.bignum'); this.G.sfx.play('fanfare'); this.confetti(140);
-    this.caption('MILESTONE', `${fmtNum(c.n)} PHONES SOLD`, `${this.G.s.company.name} is on fire 🔥`);
-    this.run(5, (t) => { el.textContent = Math.round(c.n * Math.min(1, t / 2) ** 0.5).toLocaleString('en-US'); });
+    this.caption('HITO', `${fmtNum(c.n)} MÓVILES VENDIDOS`, `${this.G.s.company.name} está que arde 🔥`);
+    this.run(5, (t) => { el.textContent = Math.round(c.n * Math.min(1, t / 2) ** 0.5).toLocaleString('es-ES'); });
   }
   c_world() {
     const st = this.el.querySelector('.stage'); const v = new Viewer(st); v.controls.enabled = false; this.v = v; v.start();
@@ -86,12 +86,12 @@ export class Cinema {
     const dots = new THREE.Group(); for (let i = 0; i < 400; i++) { const u = Math.random() * 2 - 1, a = Math.random() * 6.28, r = Math.sqrt(1 - u * u); const m = new THREE.Mesh(new THREE.SphereGeometry(0.08, 6, 4), new THREE.MeshBasicMaterial({ color: Math.random() < 0.7 ? 0xff3d71 : 0xffd166 })); m.position.set(Math.cos(a) * r * 8.05, u * 8.05, Math.sin(a) * r * 8.05); dots.add(m); }
     globe.add(dots); v.scene.add(globe); v.camera.position.set(0, 4, 30); v.camera.lookAt(0, 0, 0);
     this.G.sfx.play('fanfare'); setTimeout(() => this.G.sfx.play('crowd'), 800); this.confetti(160);
-    this.caption('HISTORY MADE', '#1 PHONE COMPANY IN THE WORLD', `${this.G.s.company.name} now sells more phones than anyone on Earth.`);
+    this.caption('HAS HECHO HISTORIA', 'Nº1 MUNDIAL EN MÓVILES', `${this.G.s.company.name} vende más móviles que nadie en la Tierra.`);
     this.run(8, (t) => { globe.rotation.y = t * 0.5; dots.children.forEach((m, i) => m.scale.setScalar(Math.min(1, Math.max(0, t * 1.5 - i / 300)))); });
   }
   c_campaign() {
     const st = this.el.querySelector('.stage'); st.innerHTML = '<div class="bignum">🏆</div>'; this.G.sfx.play('fanfare'); this.confetti(200);
-    this.caption('CAMPAIGN COMPLETE', 'SANDBOX MODE UNLOCKED', 'Unlimited money. Every technology. Go build something ridiculous.');
+    this.caption('CAMPAÑA COMPLETADA', 'MODO LIBRE DESBLOQUEADO', 'Dinero infinito. Toda la tecnología. Ve y construye algo absurdo.');
     this.run(7);
   }
 }

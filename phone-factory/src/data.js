@@ -28,12 +28,12 @@ export const STORAGE = [
 ];
 // density = mAh per cm³ of usable volume; wpm = grams per 1000 mAh
 export const BATTERY = [
-  { id: 'bat1', name: 'Li-ion', density: 80, wpm: 18, costPer1k: 4, heat: 1 },
-  { id: 'bat2', name: 'Li-Polymer', density: 95, wpm: 16, costPer1k: 8, heat: 0.5, req: 'r_bat2' },
-  { id: 'bat3', name: 'Silicon-Carbon', density: 120, wpm: 14, costPer1k: 11, heat: 0.5, req: 'r_bat3' },
-  { id: 'bat4', name: 'Graphene Cell', density: 150, wpm: 11, costPer1k: 16, heat: 0, req: 'r_bat4' },
-  { id: 'bat5', name: 'Solid-State', density: 190, wpm: 9, costPer1k: 22, heat: -1, req: 'r_bat5' },
-  { id: 'bat6', name: 'Quantum Cell', density: 260, wpm: 6, costPer1k: 35, heat: -2, req: 'r_bat6' },
+  { id: 'bat1', name: 'Ion-litio', density: 80, wpm: 18, costPer1k: 4, heat: 1 },
+  { id: 'bat2', name: 'Polímero de litio', density: 95, wpm: 16, costPer1k: 8, heat: 0.5, req: 'r_bat2' },
+  { id: 'bat3', name: 'Silicio-carbono', density: 120, wpm: 14, costPer1k: 11, heat: 0.5, req: 'r_bat3' },
+  { id: 'bat4', name: 'Celda de grafeno', density: 150, wpm: 11, costPer1k: 16, heat: 0, req: 'r_bat4' },
+  { id: 'bat5', name: 'Estado sólido', density: 190, wpm: 9, costPer1k: 22, heat: -1, req: 'r_bat5' },
+  { id: 'bat6', name: 'Celda cuántica', density: 260, wpm: 6, costPer1k: 35, heat: -2, req: 'r_bat6' },
 ];
 export const DISPLAY = [
   { id: 'dsp1', name: 'LCD 480p', q: 15, power: 0.8, cost: 8, hz: 60 },
@@ -42,7 +42,7 @@ export const DISPLAY = [
   { id: 'dsp4', name: 'OLED 120 Hz', q: 64, power: 0.85, cost: 55, hz: 120, req: 'r_dsp4' },
   { id: 'dsp5', name: 'LTPO OLED 2K', q: 80, power: 0.6, cost: 85, hz: 120, req: 'r_dsp5' },
   { id: 'dsp6', name: 'MicroLED 4K', q: 92, power: 0.5, cost: 130, hz: 144, req: 'r_dsp6' },
-  { id: 'dsp7', name: 'Holo-Light Panel', q: 100, power: 0.45, cost: 210, hz: 240, req: 'r_dsp7' },
+  { id: 'dsp7', name: 'Panel Holo-Luz', q: 100, power: 0.45, cost: 210, hz: 240, req: 'r_dsp7' },
 ];
 export const CAMERA = [
   { id: 'cam1', name: '2 MP', q: 8, cost: 4 },
@@ -50,132 +50,132 @@ export const CAMERA = [
   { id: 'cam3', name: '12 MP', q: 36, cost: 16, req: 'r_cam3' },
   { id: 'cam4', name: '48 MP', q: 52, cost: 26, req: 'r_cam4' },
   { id: 'cam5', name: '108 MP', q: 66, cost: 40, req: 'r_cam5' },
-  { id: 'cam6', name: '200 MP Periscope', q: 80, cost: 60, req: 'r_cam6' },
-  { id: 'cam7', name: 'AI Quantum Sensor', q: 95, cost: 95, req: 'r_cam7' },
+  { id: 'cam6', name: '200 MP periscopio', q: 80, cost: 60, req: 'r_cam6' },
+  { id: 'cam7', name: 'Sensor cuántico IA', q: 95, cost: 95, req: 'r_cam7' },
 ];
 export const SPEAKER = [
-  { id: 'spk1', name: 'Buzzer', q: 15, cost: 2 }, { id: 'spk2', name: 'Clear Sound', q: 40, cost: 6, req: 'r_spk2' },
-  { id: 'spk3', name: 'Hi-Fi', q: 68, cost: 12, req: 'r_spk3' }, { id: 'spk4', name: 'Spatial 3D Audio', q: 92, cost: 22, req: 'r_spk4' },
+  { id: 'spk1', name: 'Zumbador', q: 15, cost: 2 }, { id: 'spk2', name: 'Sonido claro', q: 40, cost: 6, req: 'r_spk2' },
+  { id: 'spk3', name: 'Hi-Fi', q: 68, cost: 12, req: 'r_spk3' }, { id: 'spk4', name: 'Audio espacial 3D', q: 92, cost: 22, req: 'r_spk4' },
 ];
 export const COOLING = [
-  { id: 'cool0', name: 'None', cap: 0, cost: 0, w: 0 },
-  { id: 'cool1', name: 'Graphite Sheet', cap: 5, cost: 3, w: 2, req: 'r_cool1' },
-  { id: 'cool2', name: 'Copper Heat Pipe', cap: 9, cost: 7, w: 6, req: 'r_cool2' },
-  { id: 'cool3', name: 'Vapor Chamber', cap: 14, cost: 14, w: 8, req: 'r_cool3' },
-  { id: 'cool4', name: 'Micro Fan', cap: 20, cost: 22, w: 12, thick: 1.5, req: 'r_cool4' },
-  { id: 'cool5', name: 'Cryo-Gel Loop', cap: 28, cost: 40, w: 10, req: 'r_cool5' },
+  { id: 'cool0', name: 'Ninguna', cap: 0, cost: 0, w: 0 },
+  { id: 'cool1', name: 'Lámina de grafito', cap: 5, cost: 3, w: 2, req: 'r_cool1' },
+  { id: 'cool2', name: 'Tubo de cobre', cap: 9, cost: 7, w: 6, req: 'r_cool2' },
+  { id: 'cool3', name: 'Cámara de vapor', cap: 14, cost: 14, w: 8, req: 'r_cool3' },
+  { id: 'cool4', name: 'Microventilador', cap: 20, cost: 22, w: 12, thick: 1.5, req: 'r_cool4' },
+  { id: 'cool5', name: 'Circuito crio-gel', cap: 28, cost: 40, w: 10, req: 'r_cool5' },
 ];
 export const MODEM = [
   { id: 'mod1', name: '3G', q: 12, power: 0.3, cost: 5 }, { id: 'mod2', name: '4G LTE', q: 35, power: 0.35, cost: 10, req: 'r_mod2' },
-  { id: 'mod3', name: '4G+ Carrier', q: 50, power: 0.35, cost: 15, req: 'r_mod3' }, { id: 'mod4', name: '5G', q: 72, power: 0.45, cost: 28, req: 'r_mod4' },
-  { id: 'mod5', name: '5G Advanced', q: 86, power: 0.4, cost: 40, req: 'r_mod5' }, { id: 'mod6', name: '6G + Satellite', q: 100, power: 0.4, cost: 65, sat: true, req: 'r_sat' },
+  { id: 'mod3', name: '4G+ agregación', q: 50, power: 0.35, cost: 15, req: 'r_mod3' }, { id: 'mod4', name: '5G', q: 72, power: 0.45, cost: 28, req: 'r_mod4' },
+  { id: 'mod5', name: '5G avanzado', q: 86, power: 0.4, cost: 40, req: 'r_mod5' }, { id: 'mod6', name: '6G + satélite', q: 100, power: 0.4, cost: 65, sat: true, req: 'r_sat' },
 ];
 export const CHARGING = [
   { id: 'chg1', name: '5 W', watts: 5, heat: 0, cost: 2 }, { id: 'chg2', name: '10 W', watts: 10, heat: 1, cost: 3, req: 'r_chg2' },
-  { id: 'chg3', name: '25 W Fast', watts: 25, heat: 2, cost: 6, req: 'r_chg3' }, { id: 'chg4', name: '65 W Turbo', watts: 65, heat: 4, cost: 11, req: 'r_chg4' },
-  { id: 'chg5', name: '120 W Hyper', watts: 120, heat: 6, cost: 18, req: 'r_chg5' }, { id: 'chg6', name: '240 W Warp', watts: 240, heat: 8, cost: 28, req: 'r_chg6' },
+  { id: 'chg3', name: '25 W rápida', watts: 25, heat: 2, cost: 6, req: 'r_chg3' }, { id: 'chg4', name: '65 W turbo', watts: 65, heat: 4, cost: 11, req: 'r_chg4' },
+  { id: 'chg5', name: '120 W hiper', watts: 120, heat: 6, cost: 18, req: 'r_chg5' }, { id: 'chg6', name: '240 W warp', watts: 240, heat: 8, cost: 28, req: 'r_chg6' },
 ];
 export const HW = { cpu: CPU, ram: RAM, storage: STORAGE, battery: BATTERY, display: DISPLAY, camera: CAMERA, speaker: SPEAKER, cooling: COOLING, modem: MODEM, charging: CHARGING };
-export const HW_LABEL = { cpu: 'Processor', ram: 'RAM', storage: 'Storage', battery: 'Battery', display: 'Display', camera: 'Camera sensor', speaker: 'Speakers', cooling: 'Cooling', modem: 'Modem', charging: 'Charging' };
+export const HW_LABEL = { cpu: 'Procesador', ram: 'RAM', storage: 'Almacenamiento', battery: 'Batería', display: 'Pantalla', camera: 'Sensor de cámara', speaker: 'Altavoces', cooling: 'Refrigeración', modem: 'Módem', charging: 'Carga' };
 
 // ---------- exterior options (req = research) ----------
 export const FRAMES = [
-  { id: 'plastic', name: 'Plastic', density: 1.2, strength: 40, cost: 3, prem: 10, color: null },
-  { id: 'aluminum', name: 'Aluminum', density: 2.7, strength: 60, cost: 12, prem: 45, req: 'r_alu' },
-  { id: 'steel', name: 'Stainless Steel', density: 7.8, strength: 80, cost: 22, prem: 65, req: 'r_steel' },
-  { id: 'titanium', name: 'Titanium', density: 4.5, strength: 90, cost: 40, prem: 85, req: 'r_titan' },
-  { id: 'ceramic', name: 'Ceramic', density: 3.9, strength: 70, cost: 45, prem: 90, req: 'r_ceramic' },
+  { id: 'plastic', name: 'Plástico', density: 1.2, strength: 40, cost: 3, prem: 10, color: null },
+  { id: 'aluminum', name: 'Aluminio', density: 2.7, strength: 60, cost: 12, prem: 45, req: 'r_alu' },
+  { id: 'steel', name: 'Acero inoxidable', density: 7.8, strength: 80, cost: 22, prem: 65, req: 'r_steel' },
+  { id: 'titanium', name: 'Titanio', density: 4.5, strength: 90, cost: 40, prem: 85, req: 'r_titan' },
+  { id: 'ceramic', name: 'Cerámica', density: 3.9, strength: 70, cost: 45, prem: 90, req: 'r_ceramic' },
 ];
 export const BACKS = [
-  { id: 'plastic', name: 'Plastic', strength: 45, cost: 2, prem: 10 },
-  { id: 'gloss', name: 'Glossy Glass', strength: 30, cost: 8, prem: 55, req: 'r_glass' },
-  { id: 'matte', name: 'Matte Glass', strength: 35, cost: 10, prem: 65, req: 'r_glass' },
-  { id: 'leather', name: 'Vegan Leather', strength: 55, cost: 9, prem: 60, req: 'r_glass' },
-  { id: 'transparent', name: 'Transparent', strength: 30, cost: 14, prem: 80, req: 'r_transp' },
-  { id: 'sapphire', name: 'Sapphire Crystal', strength: 75, cost: 35, prem: 95, req: 'r_sapph' },
+  { id: 'plastic', name: 'Plástico', strength: 45, cost: 2, prem: 10 },
+  { id: 'gloss', name: 'Cristal brillante', strength: 30, cost: 8, prem: 55, req: 'r_glass' },
+  { id: 'matte', name: 'Cristal mate', strength: 35, cost: 10, prem: 65, req: 'r_glass' },
+  { id: 'leather', name: 'Cuero vegano', strength: 55, cost: 9, prem: 60, req: 'r_glass' },
+  { id: 'transparent', name: 'Transparente', strength: 30, cost: 14, prem: 80, req: 'r_transp' },
+  { id: 'sapphire', name: 'Cristal de zafiro', strength: 75, cost: 35, prem: 95, req: 'r_sapph' },
 ];
 export const SCREEN_SHAPES = [
-  { id: 'bezel', name: 'Top bezel', min: 0 }, { id: 'notch', name: 'Notch', req: 'r_notch' }, { id: 'drop', name: 'Water-drop', req: 'r_notch' },
-  { id: 'punch', name: 'Punch-hole', req: 'r_punch' }, { id: 'pill', name: 'Pill island', req: 'r_punch' }, { id: 'none', name: 'Under-display cam', req: 'r_udc' },
+  { id: 'bezel', name: 'Marco superior', min: 0 }, { id: 'notch', name: 'Notch', req: 'r_notch' }, { id: 'drop', name: 'Gota', req: 'r_notch' },
+  { id: 'punch', name: 'Perforación', req: 'r_punch' }, { id: 'pill', name: 'Isla píldora', req: 'r_punch' }, { id: 'none', name: 'Cámara bajo pantalla', req: 'r_udc' },
 ];
 export const CAM_LAYOUTS = [
-  { id: 'single', name: 'Corner stack' }, { id: 'vertical', name: 'Vertical strip' }, { id: 'horizontal', name: 'Horizontal bar' }, { id: 'square', name: 'Square island' },
-  { id: 'circle', name: 'Circle module' }, { id: 'triangle', name: 'Triangle' }, { id: 'center', name: 'Center ring' }, { id: 'grid', name: 'Grid (many!)' },
+  { id: 'single', name: 'Esquina' }, { id: 'vertical', name: 'Tira vertical' }, { id: 'horizontal', name: 'Barra horizontal' }, { id: 'square', name: 'Isla cuadrada' },
+  { id: 'circle', name: 'Módulo circular' }, { id: 'triangle', name: 'Triángulo' }, { id: 'center', name: 'Anillo central' }, { id: 'grid', name: 'Cuadrícula (¡muchas!)' },
 ];
-export const FINGERPRINT = [{ id: 'none', name: 'None' }, { id: 'back', name: 'Back sensor', req: 'r_fp' }, { id: 'side', name: 'Side button', req: 'r_fp' }, { id: 'under', name: 'Under display', req: 'r_fpud' }];
-export const FACE = [{ id: 'none', name: 'None' }, { id: '2d', name: '2D face unlock', req: 'r_face2d' }, { id: '3d', name: '3D depth face ID', req: 'r_face3d' }];
-export const PORTS = [{ id: 'micro', name: 'Micro-USB' }, { id: 'usbc', name: 'USB-C', req: 'r_usbc' }, { id: 'magnetic', name: 'Magnetic pins', req: 'r_mag' }, { id: 'none', name: 'Portless (wireless only)', req: 'r_portless' }];
-export const SPEAKER_LAYOUT = [{ id: 'mono', name: 'Mono' }, { id: 'stereo', name: 'Stereo', req: 'r_spk2' }, { id: 'quad', name: 'Quad', req: 'r_spk3' }];
-export const FOLD = [{ id: 'none', name: 'Bar (no fold)' }, { id: 'book', name: 'Book fold', req: 'r_fold' }, { id: 'flip', name: 'Flip fold', req: 'r_fold' }];
-export const FLASH = [{ id: 'none', name: 'None' }, { id: 'single', name: 'Single LED' }, { id: 'dual', name: 'Dual-tone', req: 'r_cam3' }, { id: 'ring', name: 'Ring light', req: 'r_cam5' }];
+export const FINGERPRINT = [{ id: 'none', name: 'Ninguno' }, { id: 'back', name: 'Sensor trasero', req: 'r_fp' }, { id: 'side', name: 'Botón lateral', req: 'r_fp' }, { id: 'under', name: 'Bajo la pantalla', req: 'r_fpud' }];
+export const FACE = [{ id: 'none', name: 'Ninguno' }, { id: '2d', name: 'Facial 2D', req: 'r_face2d' }, { id: '3d', name: 'Facial 3D con profundidad', req: 'r_face3d' }];
+export const PORTS = [{ id: 'micro', name: 'Micro-USB' }, { id: 'usbc', name: 'USB-C', req: 'r_usbc' }, { id: 'magnetic', name: 'Pines magnéticos', req: 'r_mag' }, { id: 'none', name: 'Sin puerto (solo inalámbrica)', req: 'r_portless' }];
+export const SPEAKER_LAYOUT = [{ id: 'mono', name: 'Mono' }, { id: 'stereo', name: 'Estéreo', req: 'r_spk2' }, { id: 'quad', name: 'Cuádruple', req: 'r_spk3' }];
+export const FOLD = [{ id: 'none', name: 'Barra (sin plegar)' }, { id: 'book', name: 'Plegable libro', req: 'r_fold' }, { id: 'flip', name: 'Plegable concha', req: 'r_fold' }];
+export const FLASH = [{ id: 'none', name: 'Ninguno' }, { id: 'single', name: 'LED simple' }, { id: 'dual', name: 'Doble tono', req: 'r_cam3' }, { id: 'ring', name: 'Aro de luz', req: 'r_cam5' }];
 
 // ---------- research tree ----------
 // rp = research points, cost = money, pre = prerequisites, unlock text for UI, cat for grouping
 const R = (id, name, cat, rp, cost, pre = [], desc = '') => ({ id, name, cat, rp, cost, pre, desc });
 export const RESEARCH = [
-  R('r_cpu2', 'Spark S2 Chip', 'Chips', 12, 2000), R('r_cpu3', 'Quanta Q3', 'Chips', 40, 8000, ['r_cpu2']), R('r_cpu4', 'Quanta Q5', 'Chips', 110, 25000, ['r_cpu3']),
+  R('r_cpu2', 'Chip Spark S2', 'Chips', 12, 2000), R('r_cpu3', 'Quanta Q3', 'Chips', 40, 8000, ['r_cpu2']), R('r_cpu4', 'Quanta Q5', 'Chips', 110, 25000, ['r_cpu3']),
   R('r_cpu5', 'Helix H7 (7nm)', 'Chips', 260, 70000, ['r_cpu4']), R('r_cpu6', 'Helix H9 AI', 'Chips', 520, 160000, ['r_cpu5', 'r_ai']), R('r_cpu7', 'Nova X1 (3nm)', 'Chips', 900, 350000, ['r_cpu6']),
-  R('r_cpu8', 'Photon Ω (1nm)', 'Future', 1600, 900000, ['r_cpu7', 'r_quantum']),
-  R('r_ram4', '4 GB memory', 'Memory', 15, 2500), R('r_ram8', '8 GB memory', 'Memory', 60, 12000, ['r_ram4']), R('r_ram12', '12 GB memory', 'Memory', 160, 40000, ['r_ram8']),
-  R('r_ram16', '16 GB memory', 'Memory', 340, 100000, ['r_ram12']), R('r_ram32', '32 GB / 2 TB', 'Memory', 700, 260000, ['r_ram16']),
-  R('r_bat2', 'Li-Polymer', 'Battery', 18, 3000), R('r_bat3', 'Silicon-Carbon', 'Battery', 120, 30000, ['r_bat2']), R('r_bat4', 'Graphene Cells', 'Battery', 380, 120000, ['r_bat3']),
-  R('r_bat5', 'Solid-State', 'Battery', 800, 320000, ['r_bat4']), R('r_bat6', 'Quantum Cell', 'Future', 1500, 800000, ['r_bat5', 'r_quantum']),
-  R('r_dsp2', 'HD LCD', 'Display', 10, 1500), R('r_dsp3', 'OLED', 'Display', 70, 15000, ['r_dsp2']), R('r_dsp4', '120 Hz OLED', 'Display', 180, 45000, ['r_dsp3']),
-  R('r_dsp5', 'LTPO 2K', 'Display', 420, 130000, ['r_dsp4']), R('r_dsp6', 'MicroLED 4K', 'Display', 850, 340000, ['r_dsp5']), R('r_dsp7', 'Holo-Light Panel', 'Future', 1500, 850000, ['r_dsp6', 'r_quantum']),
-  R('r_cam2', '8 MP sensor', 'Camera', 10, 1500), R('r_cam3', '12 MP + dual flash', 'Camera', 45, 9000, ['r_cam2']), R('r_cam4', '48 MP sensor', 'Camera', 130, 32000, ['r_cam3']),
-  R('r_cam5', '108 MP + ring flash', 'Camera', 300, 90000, ['r_cam4']), R('r_cam6', '200 MP Periscope', 'Camera', 620, 220000, ['r_cam5']), R('r_cam7', 'AI Quantum Sensor', 'Future', 1200, 600000, ['r_cam6', 'r_ai']),
-  R('r_multicam', 'Multi-camera (4)', 'Camera', 60, 12000, ['r_cam3']), R('r_camarray', 'Camera array (8)', 'Camera', 350, 100000, ['r_multicam']),
-  R('r_spk2', 'Stereo speakers', 'Audio', 20, 3000), R('r_spk3', 'Hi-Fi quad', 'Audio', 120, 25000, ['r_spk2']), R('r_spk4', 'Spatial audio', 'Audio', 400, 110000, ['r_spk3']),
-  R('r_cool1', 'Graphite cooling', 'Cooling', 12, 1500), R('r_cool2', 'Copper heat pipes', 'Cooling', 60, 10000, ['r_cool1']), R('r_cool3', 'Vapor chamber', 'Cooling', 200, 50000, ['r_cool2']),
-  R('r_cool4', 'Micro fan', 'Cooling', 380, 100000, ['r_cool3']), R('r_cool5', 'Cryo-gel loop', 'Future', 900, 380000, ['r_cool4']),
-  R('r_mod2', '4G LTE', 'Network', 25, 4000), R('r_mod3', '4G+ Carrier', 'Network', 90, 20000, ['r_mod2']), R('r_mod4', '5G', 'Network', 260, 80000, ['r_mod3']),
-  R('r_mod5', '5G Advanced', 'Network', 550, 200000, ['r_mod4']), R('r_sat', 'Satellite communication', 'Future', 1000, 450000, ['r_mod5']),
-  R('r_chg2', '10 W charging', 'Charging', 8, 1000), R('r_chg3', '25 W fast charge', 'Charging', 50, 9000, ['r_chg2']), R('r_chg4', '65 W turbo', 'Charging', 180, 40000, ['r_chg3']),
-  R('r_chg5', '120 W hyper', 'Charging', 420, 120000, ['r_chg4']), R('r_chg6', '240 W warp', 'Charging', 800, 300000, ['r_chg5']), R('r_wireless', 'Wireless charging', 'Charging', 110, 25000, ['r_chg3']),
-  R('r_alu', 'Aluminum frame', 'Materials', 15, 2500), R('r_glass', 'Glass & leather backs', 'Materials', 25, 4000), R('r_steel', 'Stainless steel', 'Materials', 90, 20000, ['r_alu']),
-  R('r_titan', 'Titanium', 'Materials', 300, 90000, ['r_steel']), R('r_ceramic', 'Ceramic body', 'Materials', 260, 80000, ['r_glass']), R('r_transp', 'Transparent back', 'Materials', 220, 60000, ['r_glass']),
-  R('r_sapph', 'Sapphire crystal', 'Materials', 500, 180000, ['r_ceramic']), R('r_ip', 'IP68 water sealing', 'Materials', 140, 35000, ['r_alu']),
-  R('r_bezel1', 'Thin bezels (3 mm)', 'Design', 30, 5000), R('r_bezel2', 'Edge-to-edge (1 mm)', 'Design', 240, 70000, ['r_bezel1', 'r_punch']),
-  R('r_notch', 'Notch & water-drop', 'Design', 35, 6000), R('r_punch', 'Punch-hole display', 'Design', 140, 30000, ['r_notch']), R('r_udc', 'Under-display camera', 'Design', 700, 260000, ['r_punch', 'r_dsp5']),
-  R('r_fold', 'Foldable screens', 'Design', 650, 250000, ['r_dsp4', 'r_titan']),
-  R('r_fp', 'Fingerprint sensor', 'Security', 20, 3000), R('r_fpud', 'Under-display fingerprint', 'Security', 180, 50000, ['r_fp', 'r_dsp3']),
-  R('r_face2d', '2D face unlock', 'Security', 40, 7000), R('r_face3d', '3D depth face ID', 'Security', 330, 100000, ['r_face2d']),
-  R('r_usbc', 'USB-C port', 'Design', 20, 3000), R('r_mag', 'Magnetic connector', 'Design', 150, 30000, ['r_usbc']), R('r_portless', 'Portless design', 'Design', 500, 150000, ['r_mag', 'r_wireless']),
-  R('r_ai', 'On-device AI (NPU)', 'Software', 300, 90000, ['r_cpu4']), R('r_os2', 'OS 2.0 smooth engine', 'Software', 40, 6000), R('r_os3', 'OS 3.0 widgets & gestures', 'Software', 200, 50000, ['r_os2']),
-  R('r_os4', 'OS 4.0 AI assistant', 'Software', 600, 200000, ['r_os3', 'r_ai']),
-  R('r_auto', 'Factory automation', 'Industry', 160, 40000), R('r_robots', 'Robot gigafactory', 'Industry', 700, 300000, ['r_auto']),
-  R('r_global', 'Global logistics', 'Industry', 80, 20000),
-  R('r_quantum', 'Quantum materials', 'Future', 1100, 500000, ['r_bat4', 'r_cpu6']),
+  R('r_cpu8', 'Photon Ω (1nm)', 'Futuro', 1600, 900000, ['r_cpu7', 'r_quantum']),
+  R('r_ram4', 'Memoria de 4 GB', 'Memoria', 15, 2500), R('r_ram8', 'Memoria de 8 GB', 'Memoria', 60, 12000, ['r_ram4']), R('r_ram12', 'Memoria de 12 GB', 'Memoria', 160, 40000, ['r_ram8']),
+  R('r_ram16', 'Memoria de 16 GB', 'Memoria', 340, 100000, ['r_ram12']), R('r_ram32', '32 GB / 2 TB', 'Memoria', 700, 260000, ['r_ram16']),
+  R('r_bat2', 'Polímero de litio', 'Batería', 18, 3000), R('r_bat3', 'Silicio-carbono', 'Batería', 120, 30000, ['r_bat2']), R('r_bat4', 'Celdas de grafeno', 'Batería', 380, 120000, ['r_bat3']),
+  R('r_bat5', 'Estado sólido', 'Batería', 800, 320000, ['r_bat4']), R('r_bat6', 'Celda cuántica', 'Futuro', 1500, 800000, ['r_bat5', 'r_quantum']),
+  R('r_dsp2', 'LCD HD', 'Pantalla', 10, 1500), R('r_dsp3', 'OLED', 'Pantalla', 70, 15000, ['r_dsp2']), R('r_dsp4', 'OLED 120 Hz', 'Pantalla', 180, 45000, ['r_dsp3']),
+  R('r_dsp5', 'LTPO 2K', 'Pantalla', 420, 130000, ['r_dsp4']), R('r_dsp6', 'MicroLED 4K', 'Pantalla', 850, 340000, ['r_dsp5']), R('r_dsp7', 'Panel Holo-Luz', 'Futuro', 1500, 850000, ['r_dsp6', 'r_quantum']),
+  R('r_cam2', 'Sensor 8 MP', 'Cámara', 10, 1500), R('r_cam3', '12 MP + flash doble', 'Cámara', 45, 9000, ['r_cam2']), R('r_cam4', 'Sensor 48 MP', 'Cámara', 130, 32000, ['r_cam3']),
+  R('r_cam5', '108 MP + aro de luz', 'Cámara', 300, 90000, ['r_cam4']), R('r_cam6', '200 MP periscopio', 'Cámara', 620, 220000, ['r_cam5']), R('r_cam7', 'Sensor cuántico IA', 'Futuro', 1200, 600000, ['r_cam6', 'r_ai']),
+  R('r_multicam', 'Multicámara (4)', 'Cámara', 60, 12000, ['r_cam3']), R('r_camarray', 'Matriz de cámaras (8)', 'Cámara', 350, 100000, ['r_multicam']),
+  R('r_spk2', 'Altavoces estéreo', 'Audio', 20, 3000), R('r_spk3', 'Hi-Fi cuádruple', 'Audio', 120, 25000, ['r_spk2']), R('r_spk4', 'Audio espacial', 'Audio', 400, 110000, ['r_spk3']),
+  R('r_cool1', 'Refrigeración de grafito', 'Refrigeración', 12, 1500), R('r_cool2', 'Tubos de cobre', 'Refrigeración', 60, 10000, ['r_cool1']), R('r_cool3', 'Cámara de vapor', 'Refrigeración', 200, 50000, ['r_cool2']),
+  R('r_cool4', 'Microventilador', 'Refrigeración', 380, 100000, ['r_cool3']), R('r_cool5', 'Circuito crio-gel', 'Futuro', 900, 380000, ['r_cool4']),
+  R('r_mod2', '4G LTE', 'Red', 25, 4000), R('r_mod3', '4G+ agregación', 'Red', 90, 20000, ['r_mod2']), R('r_mod4', '5G', 'Red', 260, 80000, ['r_mod3']),
+  R('r_mod5', '5G avanzado', 'Red', 550, 200000, ['r_mod4']), R('r_sat', 'Comunicación por satélite', 'Futuro', 1000, 450000, ['r_mod5']),
+  R('r_chg2', 'Carga de 10 W', 'Carga', 8, 1000), R('r_chg3', 'Carga rápida 25 W', 'Carga', 50, 9000, ['r_chg2']), R('r_chg4', 'Turbo 65 W', 'Carga', 180, 40000, ['r_chg3']),
+  R('r_chg5', 'Hiper 120 W', 'Carga', 420, 120000, ['r_chg4']), R('r_chg6', 'Warp 240 W', 'Carga', 800, 300000, ['r_chg5']), R('r_wireless', 'Carga inalámbrica', 'Carga', 110, 25000, ['r_chg3']),
+  R('r_alu', 'Marco de aluminio', 'Materiales', 15, 2500), R('r_glass', 'Traseras de cristal y cuero', 'Materiales', 25, 4000), R('r_steel', 'Acero inoxidable', 'Materiales', 90, 20000, ['r_alu']),
+  R('r_titan', 'Titanio', 'Materiales', 300, 90000, ['r_steel']), R('r_ceramic', 'Cuerpo cerámico', 'Materiales', 260, 80000, ['r_glass']), R('r_transp', 'Trasera transparente', 'Materiales', 220, 60000, ['r_glass']),
+  R('r_sapph', 'Cristal de zafiro', 'Materiales', 500, 180000, ['r_ceramic']), R('r_ip', 'Sellado IP68 contra agua', 'Materiales', 140, 35000, ['r_alu']),
+  R('r_bezel1', 'Biseles finos (3 mm)', 'Diseño', 30, 5000), R('r_bezel2', 'Borde a borde (1 mm)', 'Diseño', 240, 70000, ['r_bezel1', 'r_punch']),
+  R('r_notch', 'Notch y gota', 'Diseño', 35, 6000), R('r_punch', 'Pantalla perforada', 'Diseño', 140, 30000, ['r_notch']), R('r_udc', 'Cámara bajo pantalla', 'Diseño', 700, 260000, ['r_punch', 'r_dsp5']),
+  R('r_fold', 'Pantallas plegables', 'Diseño', 650, 250000, ['r_dsp4', 'r_titan']),
+  R('r_fp', 'Lector de huellas', 'Seguridad', 20, 3000), R('r_fpud', 'Huella bajo pantalla', 'Seguridad', 180, 50000, ['r_fp', 'r_dsp3']),
+  R('r_face2d', 'Desbloqueo facial 2D', 'Seguridad', 40, 7000), R('r_face3d', 'Facial 3D con profundidad', 'Seguridad', 330, 100000, ['r_face2d']),
+  R('r_usbc', 'Puerto USB-C', 'Diseño', 20, 3000), R('r_mag', 'Conector magnético', 'Diseño', 150, 30000, ['r_usbc']), R('r_portless', 'Diseño sin puertos', 'Diseño', 500, 150000, ['r_mag', 'r_wireless']),
+  R('r_ai', 'IA en el dispositivo (NPU)', 'Software', 300, 90000, ['r_cpu4']), R('r_os2', 'SO 2.0 motor fluido', 'Software', 40, 6000), R('r_os3', 'SO 3.0 widgets y gestos', 'Software', 200, 50000, ['r_os2']),
+  R('r_os4', 'SO 4.0 asistente IA', 'Software', 600, 200000, ['r_os3', 'r_ai']),
+  R('r_auto', 'Automatización de fábrica', 'Industria', 160, 40000), R('r_robots', 'Gigafábrica de robots', 'Industria', 700, 300000, ['r_auto']),
+  R('r_global', 'Logística global', 'Industria', 80, 20000),
+  R('r_quantum', 'Materiales cuánticos', 'Futuro', 1100, 500000, ['r_bat4', 'r_cpu6']),
 ];
 export const RES = Object.fromEntries(RESEARCH.map((r) => [r.id, r]));
 
 // ---------- market ----------
 // w = weights over stat scores; ideal price; sens = price sensitivity
 export const AUDIENCES = {
-  students: { name: 'Students', icon: '🎒', share: 0.24, ideal: 280, sens: 1.7, w: { performance: 0.2, battery: 0.2, camera: 0.2, design: 0.15, software: 0.1, features: 0.15 } },
-  business: { name: 'Business', icon: '💼', share: 0.15, ideal: 750, sens: 0.8, w: { battery: 0.3, performance: 0.2, software: 0.2, durability: 0.15, features: 0.15 } },
+  students: { name: 'Estudiantes', icon: '🎒', share: 0.24, ideal: 280, sens: 1.7, w: { performance: 0.2, battery: 0.2, camera: 0.2, design: 0.15, software: 0.1, features: 0.15 } },
+  business: { name: 'Empresas', icon: '💼', share: 0.15, ideal: 750, sens: 0.8, w: { battery: 0.3, performance: 0.2, software: 0.2, durability: 0.15, features: 0.15 } },
   gamers: { name: 'Gamers', icon: '🎮', share: 0.15, ideal: 600, sens: 1.0, w: { performance: 0.4, display: 0.2, thermals: 0.2, battery: 0.2 } },
-  creators: { name: 'Creators', icon: '📸', share: 0.13, ideal: 850, sens: 0.9, w: { camera: 0.5, display: 0.2, performance: 0.15, storage: 0.15 } },
-  seniors: { name: 'Seniors', icon: '👵', share: 0.2, ideal: 220, sens: 2.0, w: { battery: 0.35, durability: 0.25, display: 0.2, software: 0.2 } },
-  luxury: { name: 'Luxury', icon: '💎', share: 0.13, ideal: 1400, sens: 0.35, luxury: true, w: { design: 0.45, camera: 0.2, features: 0.2, display: 0.15 } },
+  creators: { name: 'Creadores', icon: '📸', share: 0.13, ideal: 850, sens: 0.9, w: { camera: 0.5, display: 0.2, performance: 0.15, storage: 0.15 } },
+  seniors: { name: 'Mayores', icon: '👵', share: 0.2, ideal: 220, sens: 2.0, w: { battery: 0.35, durability: 0.25, display: 0.2, software: 0.2 } },
+  luxury: { name: 'Lujo', icon: '💎', share: 0.13, ideal: 1400, sens: 0.35, luxury: true, w: { design: 0.45, camera: 0.2, features: 0.2, display: 0.15 } },
 };
 export const REGIONS = [
-  { id: 'home', name: 'Home Country', flag: '🏠', daily: 1100, cost: 0 },
-  { id: 'na', name: 'North America', flag: '🌎', daily: 2600, cost: 60000, global: true },
-  { id: 'eu', name: 'Europe', flag: '🇪🇺', daily: 2300, cost: 60000, global: true },
+  { id: 'home', name: 'Tu país', flag: '🏠', daily: 1100, cost: 0 },
+  { id: 'na', name: 'Norteamérica', flag: '🌎', daily: 2600, cost: 60000, global: true },
+  { id: 'eu', name: 'Europa', flag: '🇪🇺', daily: 2300, cost: 60000, global: true },
   { id: 'asia', name: 'Asia', flag: '🌏', daily: 4200, cost: 120000, global: true },
-  { id: 'latam', name: 'Latin America', flag: '🌎', daily: 1300, cost: 40000, global: true },
-  { id: 'africa', name: 'Africa', flag: '🌍', daily: 900, cost: 30000, global: true },
+  { id: 'latam', name: 'Latinoamérica', flag: '🌎', daily: 1300, cost: 40000, global: true },
+  { id: 'africa', name: 'África', flag: '🌍', daily: 900, cost: 30000, global: true },
 ];
 export const AD_STYLES = {
-  specs: { name: 'Tech specs', icon: '📊', mult: { students: 0.8, business: 1, gamers: 1.5, creators: 1.3, seniors: 0.4, luxury: 0.5 } },
-  funny: { name: 'Funny', icon: '😂', mult: { students: 1.6, business: 0.6, gamers: 1.2, creators: 0.9, seniors: 0.9, luxury: 0.4 } },
-  emotional: { name: 'Emotional', icon: '🥹', mult: { students: 0.9, business: 0.8, gamers: 0.5, creators: 1.1, seniors: 1.6, luxury: 1.3 } },
-  luxury: { name: 'Luxury lifestyle', icon: '🥂', mult: { students: 0.5, business: 1.2, gamers: 0.4, creators: 0.8, seniors: 0.6, luxury: 1.8 } },
-  celebrity: { name: 'Celebrity', icon: '⭐', mult: { students: 1.4, business: 0.9, gamers: 1.1, creators: 1.1, seniors: 0.9, luxury: 1.3 }, costMult: 1.6 },
-  meme: { name: 'Viral meme', icon: '🐸', mult: { students: 1.8, business: 0.3, gamers: 1.5, creators: 0.8, seniors: 0.3, luxury: 0.3 }, random: true },
+  specs: { name: 'Datos técnicos', icon: '📊', mult: { students: 0.8, business: 1, gamers: 1.5, creators: 1.3, seniors: 0.4, luxury: 0.5 } },
+  funny: { name: 'Divertido', icon: '😂', mult: { students: 1.6, business: 0.6, gamers: 1.2, creators: 0.9, seniors: 0.9, luxury: 0.4 } },
+  emotional: { name: 'Emotivo', icon: '🥹', mult: { students: 0.9, business: 0.8, gamers: 0.5, creators: 1.1, seniors: 1.6, luxury: 1.3 } },
+  luxury: { name: 'Estilo de vida de lujo', icon: '🥂', mult: { students: 0.5, business: 1.2, gamers: 0.4, creators: 0.8, seniors: 0.6, luxury: 1.8 } },
+  celebrity: { name: 'Famoso', icon: '⭐', mult: { students: 1.4, business: 0.9, gamers: 1.1, creators: 1.1, seniors: 0.9, luxury: 1.3 }, costMult: 1.6 },
+  meme: { name: 'Meme viral', icon: '🐸', mult: { students: 1.8, business: 0.3, gamers: 1.5, creators: 0.8, seniors: 0.3, luxury: 0.3 }, random: true },
 };
-export const PROMOTE = { performance: 'Performance', battery: 'Battery life', camera: 'Camera', display: 'Display', design: 'Design', durability: 'Durability', software: 'Software', price: 'Low price', thermals: 'Stays cool', features: 'Features' };
+export const PROMOTE = { performance: 'Rendimiento', battery: 'Batería', camera: 'Cámara', display: 'Pantalla', design: 'Diseño', durability: 'Resistencia', software: 'Software', price: 'Precio bajo', thermals: 'No se calienta', features: 'Funciones' };
 
 export const RIVALS = [
   { id: 'mango', name: 'Mango Mobile', color: '#f4a261', rep: 60, tech: 0.22, style: 'premium', every: 110 },
@@ -186,59 +186,59 @@ export const RIVALS = [
 
 // ---------- factories ----------
 export const FACTORIES = [
-  { id: 'garage', name: 'Garage Workshop', icon: '🏚️', base: 25, workers: 2, cost: 0, upkeep: 0 },
-  { id: 'small', name: 'Small Factory', icon: '🏭', base: 70, workers: 10, cost: 90000, upkeep: 3000 },
-  { id: 'medium', name: 'Assembly Plant', icon: '🏢', base: 450, workers: 40, cost: 450000, upkeep: 15000 },
-  { id: 'mega', name: 'Mega Factory', icon: '🌆', base: 3000, workers: 150, cost: 2600000, upkeep: 70000 },
-  { id: 'giga', name: 'Robot Gigafactory', icon: '🤖', base: 20000, workers: 60, cost: 14000000, upkeep: 250000, req: 'r_robots' },
+  { id: 'garage', name: 'Taller del garaje', icon: '🏚️', base: 25, workers: 2, cost: 0, upkeep: 0 },
+  { id: 'small', name: 'Fábrica pequeña', icon: '🏭', base: 70, workers: 10, cost: 90000, upkeep: 3000 },
+  { id: 'medium', name: 'Planta de montaje', icon: '🏢', base: 450, workers: 40, cost: 450000, upkeep: 15000 },
+  { id: 'mega', name: 'Megafábrica', icon: '🌆', base: 3000, workers: 150, cost: 2600000, upkeep: 70000 },
+  { id: 'giga', name: 'Gigafábrica de robots', icon: '🤖', base: 20000, workers: 60, cost: 14000000, upkeep: 250000, req: 'r_robots' },
 ];
-export const STAGES = ['Components arrive', 'Motherboard assembly', 'Screen installation', 'Camera installation', 'Battery installation', 'Final assembly', 'Software installation', 'Quality control', 'Packaging', 'Shipping'];
+export const STAGES = ['Llegan componentes', 'Montaje de placa', 'Instalar pantalla', 'Instalar cámaras', 'Instalar batería', 'Montaje final', 'Instalar software', 'Control de calidad', 'Empaquetado', 'Envío'];
 export const STAGE_ICON = ['📦', '🔌', '📱', '📷', '🔋', '🔧', '💾', '🔍', '🎁', '🚚'];
 
 export const ROLES = {
-  engineer: { name: 'Engineer', icon: '🛠️', salary: 3600, desc: 'Fewer defects, cheaper prototypes, better designs' },
-  researcher: { name: 'Researcher', icon: '🔬', salary: 3900, desc: '+1 research point / day each' },
-  worker: { name: 'Factory worker', icon: '👷', salary: 2200, desc: 'Needed to run factory stations' },
-  marketer: { name: 'Marketer', icon: '📣', salary: 3800, desc: '+12% advertising effect each' },
-  tester: { name: 'Tester', icon: '🧪', salary: 3200, desc: 'Cheaper, more accurate tests' },
+  engineer: { name: 'Ingeniero/a', icon: '🛠️', salary: 3600, desc: 'Menos defectos, prototipos más baratos' },
+  researcher: { name: 'Investigador/a', icon: '🔬', salary: 3900, desc: '+1 punto de investigación al día cada uno' },
+  worker: { name: 'Operario/a', icon: '👷', salary: 2200, desc: 'Necesarios para que funcione la fábrica' },
+  marketer: { name: 'Publicista', icon: '📣', salary: 3800, desc: '+12% de efecto publicitario cada uno' },
+  tester: { name: 'Probador/a', icon: '🧪', salary: 3200, desc: 'Pruebas más baratas y precisas' },
 };
 export const FIRST = ['Ava', 'Leo', 'Mia', 'Kai', 'Zoe', 'Ivan', 'Noor', 'Omar', 'Lina', 'Ravi', 'Sofia', 'Yuki', 'Ben', 'Ana', 'Tariq', 'Elena', 'Jin', 'Maya', 'Diego', 'Priya', 'Felix', 'Amara', 'Hugo', 'Sara', 'Tomas', 'Nia', 'Luca', 'Ines'];
 export const LAST = ['Chen', 'Silva', 'Novak', 'Okafor', 'Garcia', 'Kim', 'Rossi', 'Haddad', 'Patel', 'Nguyen', 'Müller', 'Costa', 'Sato', 'Ali', 'Moreau', 'Kowalski', 'Lopez', 'Ivanova'];
 
 // ---------- tests ----------
 export const TESTS = [
-  { id: 'perf', name: 'Performance', icon: '⚡', days: 1 }, { id: 'battery', name: 'Battery', icon: '🔋', days: 2 }, { id: 'camera', name: 'Camera', icon: '📷', days: 1 },
-  { id: 'drop', name: 'Drop', icon: '💥', days: 1 }, { id: 'temp', name: 'Temperature', icon: '🌡️', days: 1 }, { id: 'charge', name: 'Charging', icon: '🔌', days: 1 },
-  { id: 'gaming', name: 'Gaming', icon: '🎮', days: 1 }, { id: 'water', name: 'Water resistance', icon: '💧', days: 1 },
+  { id: 'perf', name: 'Rendimiento', icon: '⚡', days: 1 }, { id: 'battery', name: 'Batería', icon: '🔋', days: 2 }, { id: 'camera', name: 'Cámara', icon: '📷', days: 1 },
+  { id: 'drop', name: 'Caída', icon: '💥', days: 1 }, { id: 'temp', name: 'Temperatura', icon: '🌡️', days: 1 }, { id: 'charge', name: 'Carga', icon: '🔌', days: 1 },
+  { id: 'gaming', name: 'Juegos', icon: '🎮', days: 1 }, { id: 'water', name: 'Resistencia al agua', icon: '💧', days: 1 },
 ];
 
 // ---------- reviews ----------
 export const REVIEW_POS = {
-  battery: ['Battery lasts forever!', 'Two days on one charge. Unreal.', 'I forgot where my charger is.'],
-  camera: ['Camera is insane.', 'My photos look professional now 📸', 'Night mode is magic.'],
-  performance: ['So fast it feels illegal.', 'Zero lag. Ever.', 'Apps open before I tap them.'],
-  display: ['The screen is gorgeous.', 'Colors pop like crazy.', 'Smoothest display I have used.'],
-  design: ['Absolutely beautiful phone.', 'People keep asking what phone this is.', 'Feels premium in the hand.'],
-  durability: ['Dropped it down the stairs. Not a scratch.', 'Built like a tank.', 'Survived my toddler.'],
-  software: ['The OS is so clean and smooth.', 'Love the animations!', 'Best software I have used.'],
-  thermals: ['Never gets warm, even gaming.', 'Cool as ice.'],
-  price: ['Incredible value for the price.', 'Cheap and it just works.', 'Best bang for buck.'],
-  features: ['Has every feature I wanted.', 'Face unlock is instant.', 'Wireless charging is so convenient.'],
+  battery: ['¡La batería dura una eternidad!', 'Dos días con una carga. Increíble.', 'Ya no sé ni dónde está el cargador.'],
+  camera: ['La cámara es una locura.', 'Mis fotos parecen profesionales 📸', 'El modo noche es magia.'],
+  performance: ['Tan rápido que debería ser ilegal.', 'Cero lag. Nunca.', 'Las apps se abren antes de tocarlas.'],
+  display: ['La pantalla es preciosa.', 'Los colores son brutales.', 'La pantalla más fluida que he usado.'],
+  design: ['Un móvil precioso.', 'Todo el mundo me pregunta qué móvil es.', 'Se siente premium en la mano.'],
+  durability: ['Se me cayó por las escaleras. Ni un rasguño.', 'Es un tanque.', 'Ha sobrevivido a mi hijo de 3 años.'],
+  software: ['El sistema es limpio y fluido.', '¡Me encantan las animaciones!', 'El mejor software que he probado.'],
+  thermals: ['Nunca se calienta, ni jugando.', 'Fresquito siempre.'],
+  price: ['Calidad-precio increíble.', 'Barato y funciona.', 'Lo mejor por lo que cuesta.'],
+  features: ['Tiene todo lo que quería.', 'El desbloqueo facial es instantáneo.', 'La carga inalámbrica es comodísima.'],
 };
 export const REVIEW_NEG = {
-  battery: ['Battery dies by lunch.', 'Need a power bank 24/7.', 'Battery life is a joke.'],
-  camera: ['Photos look like a potato took them.', 'Camera is blurry.', 'Night photos are pure noise.'],
-  performance: ['Laggy and slow.', 'Takes forever to open apps.', 'Stutters constantly.'],
-  display: ['The screen looks washed out.', 'Low resolution, I can see the pixels.'],
-  design: ['Ugly. Sorry.', 'Looks like a phone from 2009.', 'Bezels the size of a highway.'],
-  durability: ['Cracked after one drop 😭', 'Feels flimsy.', 'Screen shattered on day 2.'],
-  software: ['The software is buggy.', 'Animations feel choppy.', 'Too much bloatware.'],
-  thermals: ['The phone gets way too hot.', 'Could fry an egg on it.', 'Burns my hand while gaming.'],
-  price: ['Way too expensive for what it is.', 'Overpriced.', 'Not worth the money.'],
-  features: ['Missing basic features.', 'No fingerprint? Really?'],
-  water: ['Died after it got a little wet.', 'Rain killed it.'],
-  fake: ['The ads lied about this phone.', 'Nothing like the advertisement.'],
+  battery: ['La batería muere a la hora de comer.', 'Necesito una powerbank 24/7.', 'La batería es un chiste.'],
+  camera: ['Las fotos parecen hechas con una patata.', 'La cámara saca todo borroso.', 'De noche solo sale ruido.'],
+  performance: ['Lento y con lag.', 'Tarda una eternidad en abrir apps.', 'Se traba todo el rato.'],
+  display: ['La pantalla se ve apagada.', 'Poca resolución, se ven los píxeles.'],
+  design: ['Feo. Lo siento.', 'Parece un móvil de 2009.', 'Biseles del tamaño de una autopista.'],
+  durability: ['Se rompió con la primera caída 😭', 'Se siente frágil.', 'Pantalla rota al segundo día.'],
+  software: ['El software tiene muchos fallos.', 'Las animaciones van a tirones.', 'Demasiadas apps basura.'],
+  thermals: ['Se calienta muchísimo.', 'Se puede freír un huevo encima.', 'Me quema la mano jugando.'],
+  price: ['Carísimo para lo que es.', 'Precio inflado.', 'No vale lo que cuesta.'],
+  features: ['Le faltan funciones básicas.', '¿Sin huella? ¿En serio?'],
+  water: ['Se murió al mojarse un poco.', 'La lluvia lo mató.'],
+  fake: ['Los anuncios mentían.', 'No se parece en nada al anuncio.'],
 };
-export const REVIEWERS = ['techguy99', 'sarah_k', 'MomOf3', 'gamer_x', 'PhotoPaul', 'grandpa_joe', 'lux.life', 'busy_ceo', 'student_life', 'anon', 'reviewbot', 'n00bmaster', 'cam_queen', 'TheVerdict', 'daily_user'];
+export const REVIEWERS = ['tecnoMario', 'laura_k', 'MamáDe3', 'gamer_x', 'FotoPablo', 'abuelo_pepe', 'vida.lujo', 'jefa_ocupada', 'estudiante22', 'anónimo', 'reseñabot', 'n00bmaster', 'reina_cam', 'ElVeredicto', 'usuario_diario'];
 
 export const EVENT_TYPES = ['shortage', 'accident', 'viralAd', 'rivalLaunch', 'techFound', 'badReviews', 'viral', 'expo'];

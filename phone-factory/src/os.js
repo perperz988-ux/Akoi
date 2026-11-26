@@ -1,10 +1,10 @@
 // Fictional phone OS rendered to a canvas (used for the 3D screen and the OS designer preview).
 export const APP_ICONS = {
-  Phone: '📞', Messages: '💬', Camera: '📷', Gallery: '🖼️', Browser: '🌐', Mail: '✉️', Maps: '🗺️', Music: '🎵', Store: '🛍️', Clock: '⏰', Weather: '⛅', Settings: '⚙️',
-  Notes: '📝', Calculator: '🧮', Wallet: '💳', Health: '❤️', Games: '🎮', Video: '🎬', Files: '📁', Calendar: '📅', Podcasts: '🎙️', Fitness: '🏃', Translate: '🈯', Assistant: '✨',
+  'Teléfono': '📞', Mensajes: '💬', 'Cámara': '📷', 'Galería': '🖼️', Navegador: '🌐', Correo: '✉️', Mapas: '🗺️', 'Música': '🎵', Tienda: '🛍️', Reloj: '⏰', Tiempo: '⛅', Ajustes: '⚙️',
+  Notas: '📝', Calculadora: '🧮', Cartera: '💳', Salud: '❤️', Juegos: '🎮', 'Vídeo': '🎬', Archivos: '📁', Calendario: '📅', Podcasts: '🎙️', Deporte: '🏃', Traductor: '🈯', Asistente: '✨',
 };
 export const ALL_APPS = Object.keys(APP_ICONS);
-export const CONTROL_TILES = { 'Wi-Fi': '📶', Bluetooth: '🔵', Airplane: '✈️', Flashlight: '🔦', Rotation: '🔄', 'Do Not Disturb': '🌙', 'Battery Saver': '🔋', Hotspot: '📡', Camera: '📷', 'Screen Record': '⏺️', Calculator: '🧮', NFC: '💳', 'Dark Mode': '🌓', Location: '📍', 'Game Mode': '🎮', 'Satellite SOS': '🛰️' };
+export const CONTROL_TILES = { 'Wi-Fi': '📶', Bluetooth: '🔵', 'Modo avión': '✈️', Linterna: '🔦', 'Rotación': '🔄', 'No molestar': '🌙', 'Ahorro batería': '🔋', 'Punto acceso': '📡', 'Cámara': '📷', 'Grabar pantalla': '⏺️', Calculadora: '🧮', NFC: '💳', 'Modo oscuro': '🌓', 'Ubicación': '📍', 'Modo juego': '🎮', 'SOS satélite': '🛰️' };
 export const WALLPAPERS = ['aurora', 'waves', 'dots', 'mesh', 'solid', 'stripes', 'galaxy', 'sunset'];
 export const PALETTES = { vivid: ['#ff3b30', '#ff9500', '#ffcc00', '#34c759', '#00c7be', '#0a84ff', '#5e5ce6', '#bf5af2', '#ff2d55'], pastel: ['#ffadad', '#ffd6a5', '#fdffb6', '#caffbf', '#9bf6ff', '#a0c4ff', '#bdb2ff', '#ffc6ff'], mono: ['#2b2d42', '#3d405b', '#4a4e69', '#22223b', '#33415c'], neon: ['#ff00e6', '#00f0ff', '#39ff14', '#fffb00', '#ff6b00', '#b026ff'], earth: ['#606c38', '#283618', '#dda15e', '#bc6c25', '#8d6346', '#a3b18a'] };
 const FONTS = { sans: 'system-ui, Segoe UI, Roboto, sans-serif', rounded: '"Arial Rounded MT Bold", "Varela Round", system-ui, sans-serif', mono: 'ui-monospace, Menlo, monospace', serif: 'Georgia, "Times New Roman", serif' };
@@ -70,15 +70,15 @@ export function renderOS(canvas, os, screen, opts = {}) {
     else if (os.lockClock === 'minimal') { g.font = `300 ${44 * s}px ${font}`; g.textAlign = 'left'; g.fillText(time, 24 * s, H * 0.2); }
     else if (os.lockClock === 'center') { g.font = `200 ${72 * s}px ${font}`; g.fillText(time, W / 2, H * 0.48); }
     else { g.font = `700 ${84 * s}px ${font}`; g.fillText(time, W / 2, H * 0.27); }
-    g.font = `500 ${16 * s}px ${font}`; g.textAlign = os.lockClock === 'minimal' ? 'left' : 'center'; g.fillText('Friday, March 13', os.lockClock === 'minimal' ? 24 * s : W / 2, os.lockClock === 'stacked' ? H * 0.5 : os.lockClock === 'minimal' ? H * 0.24 : os.lockClock === 'center' ? H * 0.53 : H * 0.12);
-    if (os.widgets) { g.fillStyle = 'rgba(255,255,255,0.18)'; rr(g, W * 0.1, H * 0.62, W * 0.8, H * 0.1, 18 * s); g.fill(); g.fillStyle = fg; g.font = `600 ${14 * s}px ${font}`; g.textAlign = 'left'; g.fillText('⛅ 21°  ·  🔋 87%  ·  🎵 Now playing', W * 0.15, H * 0.675); }
+    g.font = `500 ${16 * s}px ${font}`; g.textAlign = os.lockClock === 'minimal' ? 'left' : 'center'; g.fillText('Viernes, 13 de marzo', os.lockClock === 'minimal' ? 24 * s : W / 2, os.lockClock === 'stacked' ? H * 0.5 : os.lockClock === 'minimal' ? H * 0.24 : os.lockClock === 'center' ? H * 0.53 : H * 0.12);
+    if (os.widgets) { g.fillStyle = 'rgba(255,255,255,0.18)'; rr(g, W * 0.1, H * 0.62, W * 0.8, H * 0.1, 18 * s); g.fill(); g.fillStyle = fg; g.font = `600 ${14 * s}px ${font}`; g.textAlign = 'left'; g.fillText('⛅ 21°  ·  🔋 87%  ·  🎵 Sonando', W * 0.15, H * 0.675); }
     g.fillStyle = 'rgba(255,255,255,0.85)'; rr(g, W / 2 - 60 * s, H - 18 * s, 120 * s, 5 * s, 3 * s); g.fill();
     g.font = `${26 * s}px sans-serif`; g.textAlign = 'center'; g.fillText('🔦', W * 0.18, H - 50 * s); g.fillText('📷', W * 0.82, H - 50 * s);
   } else if (screen === 'home' || screen.startsWith('app:') || screen === 'control') {
     statusBar(g, W, s, os, fg, time);
     const cols = os.cols, apps = os.apps, sz = (W - 40 * s) / cols * 0.66, gapX = (W - 40 * s) / cols;
     let y0 = 54 * s;
-    if (os.widgets) { g.fillStyle = 'rgba(255,255,255,0.18)'; rr(g, 20 * s, y0, W - 40 * s, 92 * s, 22 * s); g.fill(); g.fillStyle = fg; g.textAlign = 'left'; g.font = `700 ${34 * s}px ${font}`; g.fillText(time, 36 * s, y0 + 46 * s); g.font = `500 ${13 * s}px ${font}`; g.fillText('⛅ 21° Sunny · 3 events today', 36 * s, y0 + 72 * s); y0 += 108 * s; }
+    if (os.widgets) { g.fillStyle = 'rgba(255,255,255,0.18)'; rr(g, 20 * s, y0, W - 40 * s, 92 * s, 22 * s); g.fill(); g.fillStyle = fg; g.textAlign = 'left'; g.font = `700 ${34 * s}px ${font}`; g.fillText(time, 36 * s, y0 + 46 * s); g.font = `500 ${13 * s}px ${font}`; g.fillText('⛅ 21° Soleado · 3 eventos hoy', 36 * s, y0 + 72 * s); y0 += 108 * s; }
     const dockN = os.dock ? Math.min(cols, apps.length) : 0; const gridApps = apps.slice(0, Math.max(0, apps.length - dockN));
     gridApps.forEach((a, i) => { const c = i % cols, r = Math.floor(i / cols); const x = 20 * s + c * gapX + (gapX - sz) / 2, y = y0 + r * (sz + 30 * s); drawIcon(g, x, y, sz, os, a, i); g.fillStyle = fg; g.font = `500 ${11 * s}px ${font}`; g.textAlign = 'center'; g.textBaseline = 'alphabetic'; g.fillText(a, x + sz / 2, y + sz + 14 * s); });
     if (dockN) { g.fillStyle = 'rgba(255,255,255,0.2)'; rr(g, 14 * s, H - sz - 46 * s, W - 28 * s, sz + 26 * s, 28 * s); g.fill(); apps.slice(apps.length - dockN).forEach((a, i) => { const x = 20 * s + i * gapX + (gapX - sz) / 2; drawIcon(g, x, H - sz - 33 * s, sz, os, a, i + 5); }); }
@@ -101,8 +101,8 @@ export function renderOS(canvas, os, screen, opts = {}) {
     }
   } else if (screen === 'settings') {
     g.fillStyle = os.dark ? '#0f1016' : '#f2f2f7'; g.fillRect(0, 0, W, H); const tc = os.dark ? '#fff' : '#111';
-    statusBar(g, W, s, os, tc, time); g.fillStyle = tc; g.font = `800 ${30 * s}px ${font}`; g.textAlign = 'left'; g.textBaseline = 'alphabetic'; g.fillText('Settings', 20 * s, 72 * s);
-    const rows = [['📶', 'Wi-Fi', 'Home_5G'], ['🔵', 'Bluetooth', 'On'], ['🔔', 'Notifications', ''], ['🌓', 'Dark mode', os.dark ? 'On' : 'Off'], ['🎞️', 'Animations', os.animations], ['🔋', 'Battery', '87%'], ['🔒', 'Privacy & Security', ''], ['✨', 'Assistant', os.assistant ? 'On' : 'Off'], ['ℹ️', 'About ' + os.name, 'v' + (opts.osVersion || '1.0')]];
+    statusBar(g, W, s, os, tc, time); g.fillStyle = tc; g.font = `800 ${30 * s}px ${font}`; g.textAlign = 'left'; g.textBaseline = 'alphabetic'; g.fillText('Ajustes', 20 * s, 72 * s);
+    const AN = { none: 'ninguna', snappy: 'rápida', smooth: 'suave', bouncy: 'elástica', cinematic: 'cinemática' }; const rows = [['📶', 'Wi-Fi', 'Casa_5G'], ['🔵', 'Bluetooth', 'Sí'], ['🔔', 'Notificaciones', ''], ['🌓', 'Modo oscuro', os.dark ? 'Sí' : 'No'], ['🎞️', 'Animaciones', AN[os.animations] || os.animations], ['🔋', 'Batería', '87%'], ['🔒', 'Privacidad y seguridad', ''], ['✨', 'Asistente', os.assistant ? 'Sí' : 'No'], ['ℹ️', 'Acerca de ' + os.name, 'v' + (opts.osVersion || '1.0')]];
     rows.forEach(([ic, a, b], i) => { const y = 96 * s + i * 50 * s; g.fillStyle = os.dark ? '#1c1c24' : '#fff'; rr(g, 14 * s, y, W - 28 * s, 44 * s, 12 * s); g.fill(); g.font = `${18 * s}px sans-serif`; g.textBaseline = 'middle'; g.fillText(ic, 26 * s, y + 22 * s); g.fillStyle = tc; g.font = `500 ${15 * s}px ${font}`; g.fillText(a, 56 * s, y + 22 * s); g.textAlign = 'right'; g.fillStyle = os.accent; g.fillText(b + ' ›', W - 26 * s, y + 22 * s); g.textAlign = 'left'; });
   }
   g.restore(); drawCut(g, W, H, opts.cut, s);

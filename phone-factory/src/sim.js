@@ -1,25 +1,26 @@
 // PHONE FACTORY — simulation core (pure logic, no DOM).
 import { HW, CPU, RAM, STORAGE, BATTERY, DISPLAY, CAMERA, SPEAKER, COOLING, MODEM, CHARGING, FRAMES, BACKS, RESEARCH, RES, AUDIENCES, REGIONS, AD_STYLES, RIVALS, FACTORIES, STAGES, ROLES, FIRST, LAST, TESTS, REVIEW_POS, REVIEW_NEG, REVIEWERS, EVENT_TYPES, PROMOTE } from './data.js';
 
+export const FLAG_ES = { fragile: 'frágil', overheat: 'se calienta', battery: 'batería floja', camera: 'cámara mala', leak: 'filtraciones', nowater: 'no resiste el agua', software: 'software con fallos', fake: 'publicidad engañosa' };
 export const clamp = (v, a = 0, b = 100) => (v < a ? a : v > b ? b : v);
 const rnd = (a = 0, b = 1) => a + Math.random() * (b - a);
 const pick = (a) => a[Math.floor(Math.random() * a.length)];
 const byId = (list, id) => list.find((x) => x.id === id) || list[0];
-export const fmtMoney = (n) => (!isFinite(n) ? '∞' : (n < 0 ? '-' : '') + '$' + (Math.abs(n) >= 1e9 ? (Math.abs(n) / 1e9).toFixed(2) + 'B' : Math.abs(n) >= 1e6 ? (Math.abs(n) / 1e6).toFixed(2) + 'M' : Math.abs(n) >= 1e4 ? (Math.abs(n) / 1e3).toFixed(1) + 'k' : Math.round(Math.abs(n)).toLocaleString('en-US')));
-export const fmtNum = (n) => (n >= 1e6 ? (n / 1e6).toFixed(2) + 'M' : n >= 1e4 ? (n / 1e3).toFixed(1) + 'k' : Math.round(n).toLocaleString('en-US'));
-export const dateOf = (day) => { const d = new Date(2026, 0, 1 + Math.floor(day)); return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }); };
+export const fmtMoney = (n) => (!isFinite(n) ? '∞' : (n < 0 ? '-' : '') + '$' + (Math.abs(n) >= 1e9 ? (Math.abs(n) / 1e9).toFixed(2) + 'B' : Math.abs(n) >= 1e6 ? (Math.abs(n) / 1e6).toFixed(2) + 'M' : Math.abs(n) >= 1e4 ? (Math.abs(n) / 1e3).toFixed(1) + 'k' : Math.round(Math.abs(n)).toLocaleString('es-ES')));
+export const fmtNum = (n) => (n >= 1e6 ? (n / 1e6).toFixed(2) + 'M' : n >= 1e4 ? (n / 1e3).toFixed(1) + 'k' : Math.round(n).toLocaleString('es-ES'));
+export const dateOf = (day) => { const d = new Date(2026, 0, 1 + Math.floor(day)); return d.toLocaleDateString('es-ES', { month: 'short', day: 'numeric', year: 'numeric' }); };
 
 // ---------------- defaults ----------------
 export function defaultOS() {
   return {
     name: 'Nimbus OS', wallpaper: 'aurora', c1: '#3a0ca3', c2: '#f72585', iconShape: 'squircle', iconStyle: 'gradient', palette: 'vivid', cols: 4, dock: true,
     font: 'sans', lockClock: 'big', animations: 'smooth', dark: true, accent: '#4cc9f0',
-    apps: ['Phone', 'Messages', 'Camera', 'Gallery', 'Browser', 'Mail', 'Maps', 'Music', 'Store', 'Clock', 'Weather', 'Settings'],
-    control: ['Wi-Fi', 'Bluetooth', 'Airplane', 'Flashlight', 'Rotation', 'Do Not Disturb', 'Battery Saver', 'Hotspot'],
+    apps: ['Teléfono', 'Mensajes', 'Cámara', 'Galería', 'Navegador', 'Calculadora', 'Música', 'Juegos', 'Reloj', 'Notas', 'Tiempo', 'Ajustes'],
+    control: ['Wi-Fi', 'Bluetooth', 'Modo avión', 'Linterna', 'Rotación', 'No molestar', 'Ahorro batería', 'Punto acceso'],
     widgets: true, gestures: false, assistant: false, aod: false,
   };
 }
-export function defaultDesign(id, name = 'Model 1') {
+export function defaultDesign(id, name = 'Modelo 1') {
   return {
     id, name, rev: 1, created: 0, prototype: false, tests: {}, testRev: 0, flags: [], hidden: [], found: [],
     ext: { w: 70, h: 145, t: 10, r: 8, bezel: 6, shape: 'bezel', back: 'plastic', frame: 'plastic', color: '#2b2d42', frameColor: '#8d99ae', accent: '#ef233c',
@@ -31,21 +32,21 @@ export function defaultDesign(id, name = 'Model 1') {
 export function newState(company, mode = 'campaign') {
   const s = {
     v: 1, mode, day: 0, money: mode === 'sandbox' ? Infinity : 80000, rep: 15,
-    company: { name: company || 'Startup Inc.', logo: { shape: 'circle', bg: '#ff3d71', fg: '#ffffff', glyph: (company || 'S')[0].toUpperCase(), font: 'bold' } },
+    company: { name: company || 'Startup S.L.', logo: { shape: 'circle', bg: '#ff3d71', fg: '#ffffff', glyph: (company || 'S')[0].toUpperCase(), font: 'bold' } },
     os: defaultOS(), researched: {}, researching: null, rp: 0,
     employees: [], candidates: [], nextEmp: 1, factories: [{ type: 'garage', stations: Array(10).fill(1) }],
     designs: [], nextDesign: 1, products: [], inventory: {}, orders: [], pipeline: STAGES.map(() => []), qcRejected: 0,
     regions: { home: true }, rivals: [], effects: [], news: [], missions: { done: [] },
     stats: { sold: 0, revenue: 0, produced: 0, intl: 0, milestones: {}, spent: 0 }, flags: {}, history: [], lastDaily: 0, cineQueue: [],
   };
-  s.employees.push({ id: 0, name: 'You (Founder)', role: 'engineer', skill: 3, salary: 0, founder: true });
-  hire(s, { role: 'worker', name: 'Sam Ortiz', skill: 2 }, true); hire(s, { role: 'worker', name: 'Lea Brandt', skill: 2 }, true);
+  s.employees.push({ id: 0, name: 'Tú (fundador/a)', role: 'engineer', skill: 3, salary: 0, founder: true });
+  hire(s, { role: 'worker', name: 'Sara Ortiz', skill: 2 }, true); hire(s, { role: 'worker', name: 'Leo Brandt', skill: 2 }, true);
   for (const r of RIVALS) s.rivals.push({ id: r.id, name: r.name, color: r.color, rep: r.rep, phones: [], nextLaunch: Math.floor(rnd(5, 40)) });
   for (const r of s.rivals) rivalLaunch(s, r, true);
   refreshCandidates(s);
   if (mode === 'sandbox') { for (const r of RESEARCH) s.researched[r.id] = true; for (const g of Object.keys(s.regions)) s.regions[g] = true; for (const r of REGIONS) s.regions[r.id] = true; s.rep = 60; s.factories.push({ type: 'mega', stations: Array(10).fill(5) }); for (let i = 0; i < 150; i++) hire(s, { role: 'worker' }, true); for (let i = 0; i < 20; i++) hire(s, { role: 'researcher' }, true); }
-  const d = defaultDesign(s.nextDesign++, 'Model 1'); s.designs.push(d);
-  news(s, '🚀', `${s.company.name} is founded in a tiny garage. The dream: build a phone.`);
+  const d = defaultDesign(s.nextDesign++, 'Modelo 1'); s.designs.push(d);
+  news(s, '🚀', `Nace ${s.company.name} en un pequeño garaje. El sueño: construir un móvil.`);
   return s;
 }
 export const has = (s, id) => !id || s.mode === 'sandbox' || !!s.researched[id];
@@ -140,48 +141,48 @@ export function utility(scores, price, aud, rep, hype, rating, age) {
 export function touchDesign(d) { d.rev++; }
 export function designErrors(d, s) {
   const errs = []; const e = d.ext;
-  for (const [k, list] of Object.entries(HW)) { const it = hwItem(k, d.hw[k]); if (it.req && !has(s, it.req)) errs.push(`${it.name} needs research`); }
-  const L = limits(s); if (e.camCount > L.camCount[1]) errs.push(`Max ${L.camCount[1]} cameras (research more)`);
-  if (e.bezel < L.bezel[0]) errs.push(`Bezels thinner than ${L.bezel[0]} mm need research`);
-  if (e.port === 'none' && !e.wireless) errs.push('Portless phones need wireless charging');
+  for (const [k, list] of Object.entries(HW)) { const it = hwItem(k, d.hw[k]); if (it.req && !has(s, it.req)) errs.push(`${it.name} requiere investigación`); }
+  const L = limits(s); if (e.camCount > L.camCount[1]) errs.push(`Máximo ${L.camCount[1]} cámaras (investiga más)`);
+  if (e.bezel < L.bezel[0]) errs.push(`Biseles de menos de ${L.bezel[0]} mm requieren investigación`);
+  if (e.port === 'none' && !e.wireless) errs.push('Un móvil sin puerto necesita carga inalámbrica');
   return errs;
 }
 export function prototypeCost(d, s) { const st = computeStats(d, s); const eng = s.employees.filter((x) => x.role === 'engineer').length; return Math.round(st.cost * 3 + 1500 * Math.max(0.4, 1 - eng * 0.06)); }
 export function buildPrototype(s, d) {
-  if (designErrors(d, s).length) return 'Fix design errors first';
+  if (designErrors(d, s).length) return 'Corrige primero los errores del diseño';
   const c = prototypeCost(d, s); if (!spend(s, c)) return 'Not enough money';
   d.prototype = true; d.protoRev = d.rev; d.tests = {}; d.testRev = d.rev; d.found = [];
   // hidden defects depend on complexity and engineering team
   const st = computeStats(d, s); const eng = s.employees.filter((x) => x.role === 'engineer').reduce((a, x) => a + x.skill, 0);
   const risk = clamp(0.35 - eng * 0.025 + (d.ext.fold !== 'none' ? 0.2 : 0) + (st.heat > 44 ? 0.15 : 0), 0.04, 0.8);
   d.hidden = []; for (const f of ['overheat', 'battery', 'camera', 'fragile', 'leak', 'software']) if (Math.random() < risk / 3) d.hidden.push(f);
-  news(s, '🧪', `Prototype of ${d.name} built (${fmtMoney(c)}).`);
+  news(s, '🧪', `Prototipo de ${d.name} construido (${fmtMoney(c)}).`);
   if (!s.flags.firstProto) { s.flags.firstProto = true; s.cineQueue.push({ name: 'prototype', design: d.id }, { name: 'boot', design: d.id }); }
   return null;
 }
 export function testCost(s) { const t = s.employees.filter((x) => x.role === 'tester').length; return Math.round(600 * Math.max(0.35, 1 - t * 0.12)); }
 export function runTest(s, d, id) {
-  if (!d.prototype || d.protoRev !== d.rev) return { err: 'Build a prototype of this revision first' };
-  if (!spend(s, testCost(s))) return { err: 'Not enough money' };
+  if (!d.prototype || d.protoRev !== d.rev) return { err: 'Construye primero un prototipo de esta versión' };
+  if (!spend(s, testCost(s))) return { err: 'No hay dinero suficiente' };
   const st = computeStats(d, s); const testers = s.employees.filter((x) => x.role === 'tester').reduce((a, x) => a + x.skill, 0);
   const detect = clamp(0.55 + testers * 0.06, 0, 0.97); let r;
   const reveal = (f) => { if (d.hidden.includes(f) && Math.random() < detect && !d.found.includes(f)) { d.found.push(f); return true; } return false; };
   switch (id) {
-    case 'perf': { const P = st.scores.performance; const score = Math.round(P * 1000 + rnd(-800, 800)); r = { score, pass: P >= 8, detail: `Benchmark: ${fmtNum(score)} pts${st.throttle < 1 ? ` · throttled to ${Math.round(st.throttle * 100)}%` : ''}`, value: P }; if (reveal('software')) r.found = 'software'; break; }
-    case 'battery': { const h = st.hours * (d.hidden.includes('battery') ? 0.7 : 1) * rnd(0.95, 1.05); r = { score: Math.round(h * 10) / 10, pass: h >= 7, detail: `${st.mAh} mAh · ${h.toFixed(1)} h mixed use`, value: st.scores.battery }; if (reveal('battery')) r.found = 'battery'; break; }
-    case 'camera': { const v = st.scores.camera * rnd(0.92, 1.05); r = { score: Math.round(v), pass: v >= 7, detail: `Image score ${Math.round(v)}/100 · ${d.ext.camCount} camera${d.ext.camCount > 1 ? 's' : ''}`, value: v }; if (reveal('camera')) r.found = 'camera'; break; }
-    case 'drop': { const p = clamp(st.scores.durability / 100 + 0.05, 0.05, 0.98) * (d.hidden.includes('fragile') ? 0.6 : 1); let ok = 0; for (let i = 0; i < 10; i++) if (Math.random() < p) ok++; r = { score: ok, pass: ok >= 6, detail: `${ok}/10 drops from 1.5 m survived`, value: ok * 10 }; if (reveal('fragile')) r.found = 'fragile'; break; }
-    case 'temp': { const t = st.heat + (d.hidden.includes('overheat') ? 5 : 0) + rnd(-1, 1); r = { score: Math.round(t * 10) / 10, pass: t <= 45, detail: `Peak ${t.toFixed(1)} °C under load`, value: clamp(100 - (t - 34) * 5) }; if (reveal('overheat')) r.found = 'overheat'; break; }
-    case 'charge': { const chg = hwItem('charging', d.hw.charging); const t = st.heat - 4 + chg.heat; r = { score: st.chargeMins, pass: st.chargeMins <= 180 && t <= 46, detail: `0→100% in ${st.chargeMins} min · ${t.toFixed(1)} °C`, value: clamp(100 - st.chargeMins / 2) }; break; }
-    case 'gaming': { const fps = Math.round(clamp(st.scores.performance * 1.6 * (hwItem('display', d.hw.display).hz / 60) * 0.8, 5, 240) * (d.hidden.includes('overheat') ? 0.7 : 1)); r = { score: fps, pass: fps >= 20 && st.heat <= 47, detail: `${fps} fps average · ${st.heat.toFixed(1)} °C`, value: clamp(fps / 1.2) }; if (reveal('overheat')) r.found = 'overheat'; break; }
-    case 'water': { const ok = st.ip && !d.hidden.includes('leak'); r = { score: ok ? 68 : 0, pass: ok, detail: ok ? 'IP68 — survived 30 min at 1.5 m' : st.ip ? 'Leak detected at the seals!' : 'No water sealing (needs IP68 research + sealed port)', value: ok ? 100 : 0 }; if (reveal('leak')) r.found = 'leak'; break; }
+    case 'perf': { const P = st.scores.performance; const score = Math.round(P * 1000 + rnd(-800, 800)); r = { score, pass: P >= 8, detail: `Benchmark: ${fmtNum(score)} pts${st.throttle < 1 ? ` · limitado al ${Math.round(st.throttle * 100)}%` : ''}`, value: P }; if (reveal('software')) r.found = 'software'; break; }
+    case 'battery': { const h = st.hours * (d.hidden.includes('battery') ? 0.7 : 1) * rnd(0.95, 1.05); r = { score: Math.round(h * 10) / 10, pass: h >= 7, detail: `${st.mAh} mAh · ${h.toFixed(1)} h de uso mixto`, value: st.scores.battery }; if (reveal('battery')) r.found = 'battery'; break; }
+    case 'camera': { const v = st.scores.camera * rnd(0.92, 1.05); r = { score: Math.round(v), pass: v >= 7, detail: `Calidad de imagen ${Math.round(v)}/100 · ${d.ext.camCount} cámara${d.ext.camCount > 1 ? 's' : ''}`, value: v }; if (reveal('camera')) r.found = 'camera'; break; }
+    case 'drop': { const p = clamp(st.scores.durability / 100 + 0.05, 0.05, 0.98) * (d.hidden.includes('fragile') ? 0.6 : 1); let ok = 0; for (let i = 0; i < 10; i++) if (Math.random() < p) ok++; r = { score: ok, pass: ok >= 6, detail: `${ok}/10 caídas desde 1,5 m superadas`, value: ok * 10 }; if (reveal('fragile')) r.found = 'fragile'; break; }
+    case 'temp': { const t = st.heat + (d.hidden.includes('overheat') ? 5 : 0) + rnd(-1, 1); r = { score: Math.round(t * 10) / 10, pass: t <= 45, detail: `Pico de ${t.toFixed(1)} °C bajo carga`, value: clamp(100 - (t - 34) * 5) }; if (reveal('overheat')) r.found = 'overheat'; break; }
+    case 'charge': { const chg = hwItem('charging', d.hw.charging); const t = st.heat - 4 + chg.heat; r = { score: st.chargeMins, pass: st.chargeMins <= 180 && t <= 46, detail: `0→100% en ${st.chargeMins} min · ${t.toFixed(1)} °C`, value: clamp(100 - st.chargeMins / 2) }; break; }
+    case 'gaming': { const fps = Math.round(clamp(st.scores.performance * 1.6 * (hwItem('display', d.hw.display).hz / 60) * 0.8, 5, 240) * (d.hidden.includes('overheat') ? 0.7 : 1)); r = { score: fps, pass: fps >= 20 && st.heat <= 47, detail: `${fps} FPS de media · ${st.heat.toFixed(1)} °C`, value: clamp(fps / 1.2) }; if (reveal('overheat')) r.found = 'overheat'; break; }
+    case 'water': { const ok = st.ip && !d.hidden.includes('leak'); r = { score: ok ? 68 : 0, pass: ok, detail: ok ? 'IP68: aguantó 30 min a 1,5 m' : st.ip ? '¡Fuga detectada en las juntas!' : 'Sin sellado (necesita investigar IP68 y un puerto sellado)', value: ok ? 100 : 0 }; if (reveal('leak')) r.found = 'leak'; break; }
   }
   d.tests[id] = r;
   return r;
 }
 export function allTested(d) { return d.prototype && d.protoRev === d.rev && TESTS.every((t) => d.tests[t.id]); }
 export function fixCost(d) { return 3000 + d.found.length * 4000; }
-export function fixDefects(s, d) { if (!d.found.length) return 'Nothing to fix'; const c = fixCost(d); if (!spend(s, c)) return 'Not enough money'; d.hidden = d.hidden.filter((f) => !d.found.includes(f)); news(s, '🛠️', `Engineers fixed ${d.found.length} defect(s) in ${d.name}.`); d.found = []; return null; }
+export function fixDefects(s, d) { if (!d.found.length) return 'No hay nada que arreglar'; const c = fixCost(d); if (!spend(s, c)) return 'No hay dinero suficiente'; d.hidden = d.hidden.filter((f) => !d.found.includes(f)); news(s, '🛠️', `Los ingenieros arreglaron ${d.found.length} defecto(s) del ${d.name}.`); d.found = []; return null; }
 // flags that stick to a launched product from failed tests + hidden defects
 export function productFlags(d) {
   const f = new Set();
@@ -201,7 +202,7 @@ export function refreshCandidates(s) {
 export function hire(s, c, free = false) {
   const role = c.role, skill = c.skill || 2 + Math.floor(Math.random() * 3);
   const e = { id: s.nextEmp++, name: c.name || pick(FIRST) + ' ' + pick(LAST), role, skill, salary: c.salary || Math.round(ROLES[role].salary * (0.7 + 0.15 * skill) / 10) * 10 };
-  if (!free && !spend(s, Math.round(e.salary * 0.5))) return 'Not enough money for the signing bonus';
+  if (!free && !spend(s, Math.round(e.salary * 0.5))) return 'No hay dinero para la prima de fichaje';
   s.employees.push(e); return null;
 }
 export function hireBulk(s, role, n) { let k = 0; for (let i = 0; i < n; i++) if (!hire(s, { role })) k++; return k; }
@@ -210,9 +211,9 @@ export const count = (s, role) => s.employees.filter((e) => e.role === role).len
 export function rpPerDay(s) { return 0.6 + s.employees.filter((e) => e.role === 'researcher').reduce((a, e) => a + 0.6 + e.skill * 0.2, 0); }
 export function canResearch(s, id) { const r = RES[id]; return r && !s.researched[id] && r.pre.every((p) => s.researched[p]); }
 export function startResearch(s, id) {
-  if (!canResearch(s, id)) return 'Locked';
+  if (!canResearch(s, id)) return 'Bloqueado';
   if (s.researching === id) return null;
-  const r = RES[id]; if (!spend(s, r.cost)) return 'Not enough money';
+  const r = RES[id]; if (!spend(s, r.cost)) return 'No hay dinero suficiente';
   s.researching = id; s.rp = 0; return null;
 }
 export function factoryRate(s) {
@@ -223,25 +224,25 @@ export function factoryRate(s) {
   return { rates, staff, need, workers, cap: Math.min(...rates) };
 }
 export function buildFactory(s, type) {
-  const F = byId(FACTORIES, type); if (F.req && !has(s, F.req)) return 'Needs research';
-  if (!spend(s, F.cost)) return 'Not enough money';
-  s.factories.push({ type, stations: Array(10).fill(1) }); news(s, '🏭', `New ${F.name} opened!`);
+  const F = byId(FACTORIES, type); if (F.req && !has(s, F.req)) return 'Requiere investigación';
+  if (!spend(s, F.cost)) return 'No hay dinero suficiente';
+  s.factories.push({ type, stations: Array(10).fill(1) }); news(s, '🏭', `¡Inaugurada nueva ${F.name}!`);
   if (!s.flags.factoryOpened) { s.flags.factoryOpened = true; s.cineQueue.push({ name: 'factory', type }); }
   return null;
 }
 export function upgradeCost(s, fi, st) { const f = s.factories[fi], F = byId(FACTORIES, f.type); return Math.round((F.cost * 0.04 + 1500) * f.stations[st]); }
-export function upgradeStation(s, fi, st) { const f = s.factories[fi]; if (f.stations[st] >= 5) return 'Max level'; const c = upgradeCost(s, fi, st); if (!spend(s, c)) return 'Not enough money'; f.stations[st]++; return null; }
-export function unlockRegion(s, id) { const R = REGIONS.find((r) => r.id === id); if (R.global && !has(s, 'r_global')) return 'Research Global logistics first'; if (!spend(s, R.cost)) return 'Not enough money'; s.regions[id] = true; news(s, '🌍', `Distribution deal signed: ${R.name}!`); return null; }
+export function upgradeStation(s, fi, st) { const f = s.factories[fi]; if (f.stations[st] >= 5) return 'Nivel máximo'; const c = upgradeCost(s, fi, st); if (!spend(s, c)) return 'No hay dinero suficiente'; f.stations[st]++; return null; }
+export function unlockRegion(s, id) { const R = REGIONS.find((r) => r.id === id); if (R.global && !has(s, 'r_global')) return 'Investiga antes Logística global'; if (!spend(s, R.cost)) return 'No hay dinero suficiente'; s.regions[id] = true; news(s, '🌍', `¡Acuerdo de distribución firmado: ${R.name}!`); return null; }
 
 // ---------------- production ----------------
 export function unitCost(s, d) { const st = computeStats(d, s); return st.cost * (s.effects.some((e) => e.type === 'shortage') ? 1.35 : 1); }
 export function orderCost(s, d, qty) { const disc = qty >= 10000 ? 0.85 : qty >= 1000 ? 0.92 : 1; return Math.round(unitCost(s, d) * qty * disc); }
 export function placeOrder(s, d, qty) {
-  qty = Math.floor(qty); if (qty < 1) return 'Invalid quantity';
-  if (!allTested(d) && !sandbox(s)) return 'Finish all tests on the prototype first';
-  const c = orderCost(s, d, qty); if (!spend(s, c)) return 'Not enough money';
+  qty = Math.floor(qty); if (qty < 1) return 'Cantidad no válida';
+  if (!allTested(d) && !sandbox(s)) return 'Termina antes todas las pruebas del prototipo';
+  const c = orderCost(s, d, qty); if (!spend(s, c)) return 'No hay dinero suficiente';
   const delay = s.effects.some((e) => e.type === 'shortage') ? 5 : 2;
-  s.orders.push({ d: d.id, qty, arrive: s.day + delay }); news(s, '📦', `Ordered components for ${fmtNum(qty)}× ${d.name} (${fmtMoney(c)}). Arriving in ${delay} days.`);
+  s.orders.push({ d: d.id, qty, arrive: s.day + delay }); news(s, '📦', `Pedidos componentes para ${fmtNum(qty)}× ${d.name} (${fmtMoney(c)}). Llegan en ${delay} días.`);
   return null;
 }
 function defectRate(s, d) {
@@ -273,16 +274,16 @@ export function inPipeline(s) { return s.pipeline.map((q) => q.reduce((a, c) => 
 // ---------------- marketing & launch ----------------
 export function adCost(style, budget) { return Math.round(budget * (AD_STYLES[style].costMult || 1)); }
 export function launchProduct(s, d, opts) {
-  if (!allTested(d) && !sandbox(s)) return 'All 8 tests must be run on the latest prototype';
-  if (s.products.some((p) => p.d === d.id && p.status !== 'retired')) return 'This model is already launched';
-  const regions = opts.regions.filter((r) => s.regions[r]); if (!regions.length) return 'Pick at least one unlocked region';
-  const cost = adCost(opts.style, opts.budget); if (!spend(s, cost)) return 'Not enough money for the ad campaign';
+  if (!allTested(d) && !sandbox(s)) return 'Hay que hacer las 8 pruebas al último prototipo';
+  if (s.products.some((p) => p.d === d.id && p.status !== 'retired')) return 'Este modelo ya está lanzado';
+  const regions = opts.regions.filter((r) => s.regions[r]); if (!regions.length) return 'Elige al menos una región desbloqueada';
+  const cost = adCost(opts.style, opts.budget); if (!spend(s, cost)) return 'No hay dinero para la campaña publicitaria';
   const st = computeStats(d, s);
   const p = { id: d.id, d: d.id, name: d.name, price: opts.price, audience: opts.audience, style: opts.style, promote: opts.promote.slice(0, 3), regions, status: 'scheduled', launchDay: s.day + Math.max(0, opts.delay | 0),
     stats: st, flags: productFlags(d), hype: {}, sold: 0, revenue: 0, returns: 0, reviews: [], rating: 0, nReviews: 0, ratingSum: 0, daily: [], preorders: 0, intl: 0, fake: [] };
   addHype(s, p, opts.audience, opts.style, cost);
   for (const k of p.promote) { const v = k === 'price' ? clamp(100 - (opts.price / 12)) : st.scores[k]; if (v < 40) p.fake.push(k); }
-  s.products.push(p); news(s, '📣', `${d.name} announced! Launching ${p.launchDay === s.day ? 'today' : 'on ' + dateOf(p.launchDay)} at ${fmtMoney(opts.price)}.`);
+  s.products.push(p); news(s, '📣', `¡Anunciado el ${d.name}! Sale ${p.launchDay === s.day ? 'hoy' : 'el ' + dateOf(p.launchDay)} por ${fmtMoney(opts.price)}.`);
   if (p.launchDay === s.day) doLaunch(s, p);
   return null;
 }
@@ -291,12 +292,12 @@ export function addHype(s, p, aud, style, money) {
   let base = Math.log10(money / 800 + 1) * 0.55 * mk * (A.random ? rnd(0.2, 2.2) : 1);
   for (const a of Object.keys(AUDIENCES)) p.hype[a] = Math.min(3, (p.hype[a] || 0) + base * A.mult[a] * (a === aud ? 1 : 0.35));
 }
-export function runAd(s, p, style, budget, aud) { const c = adCost(style, budget); if (!spend(s, c)) return 'Not enough money'; addHype(s, p, aud, style, c); news(s, AD_STYLES[style].icon, `New ${AD_STYLES[style].name} ad for ${p.name} (${fmtMoney(c)}).`); return null; }
+export function runAd(s, p, style, budget, aud) { const c = adCost(style, budget); if (!spend(s, c)) return 'No hay dinero suficiente'; addHype(s, p, aud, style, c); news(s, AD_STYLES[style].icon, `Nuevo anuncio «${AD_STYLES[style].name}» del ${p.name} (${fmtMoney(c)}).`); return null; }
 function doLaunch(s, p) {
-  p.status = 'onsale'; p.launchDay = Math.floor(s.day); news(s, '🎉', `${p.name} is now on sale!`, 'good');
+  p.status = 'onsale'; p.launchDay = Math.floor(s.day); news(s, '🎉', `¡El ${p.name} ya está a la venta!`, 'good');
   if (!s.flags.firstLaunch) { s.flags.firstLaunch = true; s.cineQueue.push({ name: 'launch', product: p.id }); }
 }
-export function retire(s, p) { p.status = 'retired'; news(s, '📦', `${p.name} retired from sale.`); }
+export function retire(s, p) { p.status = 'retired'; news(s, '📦', `${p.name} retirado de la venta.`); }
 export function setPrice(p, price) { p.price = Math.max(1, Math.round(price)); }
 
 // ---------------- rivals ----------------
@@ -315,7 +316,7 @@ export function rivalLaunch(s, r, quiet = false, better = false) {
   const phone = { name: `${names[0]} ${num} ${pick(names.slice(1))}`, scores: sc, overall, price, launchDay: Math.floor(s.day), sold: 0, daily: [], hype: 0.6 };
   r.phones.unshift(phone); if (r.phones.length > 2) r.phones.length = 2;
   r.nextLaunch = s.day + R.every + Math.floor(rnd(-15, 20));
-  if (!quiet) news(s, '📱', `${r.name} launches the ${phone.name} (score ${overall}, ${fmtMoney(price)}).`, better ? 'bad' : 'info');
+  if (!quiet) news(s, '📱', `${r.name} lanza el ${phone.name} (puntuación ${overall}, ${fmtMoney(price)}).`, better ? 'bad' : 'info');
   return phone;
 }
 
@@ -325,7 +326,7 @@ export function dailyStep(s) {
   // scheduled launches
   for (const p of s.products) if (p.status === 'scheduled' && day >= p.launchDay) doLaunch(s, p);
   // research
-  if (s.researching) { s.rp += rpPerDay(s) * (s.effects.some((e) => e.type === 'techFound') ? 2 : 1); const r = RES[s.researching]; if (s.rp >= r.rp) { s.researched[r.id] = true; news(s, '🔬', `Research complete: ${r.name}!`, 'good'); s.researching = null; s.rp = 0; s._researchDone = r.id; } }
+  if (s.researching) { s.rp += rpPerDay(s) * (s.effects.some((e) => e.type === 'techFound') ? 2 : 1); const r = RES[s.researching]; if (s.rp >= r.rp) { s.researched[r.id] = true; news(s, '🔬', `¡Investigación completada: ${r.name}!`, 'good'); s.researching = null; s.rp = 0; s._researchDone = r.id; } }
   // rivals
   for (const r of s.rivals) if (day >= r.nextLaunch) rivalLaunch(s, r);
   // market
@@ -376,7 +377,7 @@ export function dailyStep(s) {
   // monthly costs
   if (day > 0 && day % 30 === 0) {
     const sal = s.employees.reduce((a, e) => a + e.salary, 0); const upkeep = s.factories.reduce((a, f) => a + byId(FACTORIES, f.type).upkeep, 0);
-    if (!sandbox(s)) { s.money -= sal + upkeep; } news(s, '💸', `Monthly costs: salaries ${fmtMoney(sal)}, factories ${fmtMoney(upkeep)}.`);
+    if (!sandbox(s)) { s.money -= sal + upkeep; } news(s, '💸', `Gastos del mes: sueldos ${fmtMoney(sal)}, fábricas ${fmtMoney(upkeep)}.`);
     if (day >= s.candRefresh) refreshCandidates(s);
   }
   // effects expire
@@ -384,13 +385,13 @@ export function dailyStep(s) {
   // random events
   if (day > 25 && Math.random() < 1 / 28) randomEvent(s);
   // milestones
-  for (const m of [1000, 10000, 100000, 1000000, 10000000]) if (s.stats.sold >= m && !s.stats.milestones[m]) { s.stats.milestones[m] = true; s.cineQueue.push({ name: 'milestone', n: m }); news(s, '🏆', `${fmtNum(m)} phones sold!`, 'good'); }
+  for (const m of [1000, 10000, 100000, 1000000, 10000000]) if (s.stats.sold >= m && !s.stats.milestones[m]) { s.stats.milestones[m] = true; s.cineQueue.push({ name: 'milestone', n: m }); news(s, '🏆', `¡${fmtNum(m)} móviles vendidos!`, 'good'); }
   // market share
   const share = marketShare(s); s.share = share;
-  if (!s.flags.worldNo1 && share.length && share[0].me && s.stats.sold > 50000) { s.flags.worldNo1 = true; s.cineQueue.push({ name: 'world' }); news(s, '🌍', `${s.company.name} is now the LARGEST phone company in the world!`, 'good'); }
+  if (!s.flags.worldNo1 && share.length && share[0].me && s.stats.sold > 50000) { s.flags.worldNo1 = true; s.cineQueue.push({ name: 'world' }); news(s, '🌍', `¡${s.company.name} es ahora la MAYOR empresa de móviles del mundo!`, 'good'); }
   if (day % 7 === 0) s.history.push({ day, money: isFinite(s.money) ? s.money : 0, sold: s.stats.sold, rep: s.rep, share: (share.find((x) => x.me) || {}).pct || 0 }); if (s.history.length > 300) s.history.shift();
   checkMissions(s);
-  if (s.money < -50000 && !sandbox(s) && !s.flags.bankruptWarn) { s.flags.bankruptWarn = true; news(s, '⚠️', 'You are deep in debt! Cut costs or sell phones fast.', 'bad'); }
+  if (s.money < -50000 && !sandbox(s) && !s.flags.bankruptWarn) { s.flags.bankruptWarn = true; news(s, '⚠️', '¡Estás muy endeudado! Recorta gastos o vende móviles rápido.', 'bad'); }
 }
 export function marketShare(s) {
   const rows = [{ name: s.company.name, me: true, color: '#ff3d71', last30: s.products.reduce((a, p) => a + p.daily.slice(-30).reduce((x, y) => x + y, 0), 0) }];
@@ -411,7 +412,7 @@ function addReview(s, p, dm) {
     const keys = Object.keys(A.w).concat(['price']);
     const val = (k) => (k === 'price' ? clamp(100 * Math.min(1.5, A.ideal / p.price) / 1.5) : sc[k] || 0);
     keys.sort((a, b) => val(b) - val(a));
-    text = stars >= 4 ? pick(REVIEW_POS[keys[0]] || REVIEW_POS.design) : stars <= 2 ? pick(REVIEW_NEG[keys[keys.length - 1]] || REVIEW_NEG.price) : pick(['It\'s fine. Does the job.', 'Decent phone, nothing special.', 'Good, but ' + pick(REVIEW_NEG[keys[keys.length - 1]] || ['could be better.']).toLowerCase()]);
+    text = stars >= 4 ? pick(REVIEW_POS[keys[0]] || REVIEW_POS.design) : stars <= 2 ? pick(REVIEW_NEG[keys[keys.length - 1]] || REVIEW_NEG.price) : pick(['Está bien. Cumple.', 'Móvil decente, nada especial.', 'Bueno, pero ' + pick(REVIEW_NEG[keys[keys.length - 1]] || ['podría ser mejor.']).toLowerCase()]);
   }
   const rv = { stars, text, who: pick(REVIEWERS), aud, day: Math.floor(s.day) };
   p.reviews.unshift(rv); if (p.reviews.length > 40) p.reviews.pop(); p.nReviews++; p.ratingSum += stars; p.rating = p.ratingSum / p.nReviews;
@@ -420,27 +421,27 @@ function randomEvent(s) {
   const day = Math.floor(s.day); const t = pick(EVENT_TYPES); const live = s.products.filter((p) => p.status === 'onsale');
   const ev = (o) => { s.effects.push(o); s._event = o; };
   switch (t) {
-    case 'shortage': ev({ type: 'shortage', until: day + 15, icon: '⚠️', title: 'Component shortage!', text: 'A global chip shortage hits. Component costs +35% and deliveries take 5 days for 15 days.' }); break;
-    case 'accident': { const loss = sandbox(s) ? 0 : Math.round(Math.min(Math.max(0, s.money) * 0.05, 40000)); s.money -= loss; ev({ type: 'accident', until: day + 6, icon: '🔥', title: 'Factory accident!', text: `A fire on the line. Production slowed by 60% for 6 days. Repairs cost ${fmtMoney(loss)}.` }); break; }
-    case 'viralAd': if (live.length) { const p = pick(live); for (const a in p.hype) p.hype[a] = Math.min(3, p.hype[a] * 1.8 + 0.4); ev({ type: 'viralAd', until: day + 1, icon: '📈', title: 'Viral advertisement!', text: `An ad for ${p.name} went viral. Hype skyrockets!` }); } break;
-    case 'rivalLaunch': { const r = pick(s.rivals); const ph = rivalLaunch(s, r, true, true); ph.hype = 1.2; r.boost = (r.boost || 0) + 0.03; ev({ type: 'rivalLaunch', until: day + 1, icon: '😱', title: `${r.name} strikes back!`, text: `${r.name} launched the ${ph.name} — score ${ph.overall} at ${fmtMoney(ph.price)}. Time to answer.` }); break; }
-    case 'techFound': ev({ type: 'techFound', until: day + 10, icon: '💡', title: 'Breakthrough!', text: 'Your lab discovered a new technique. Research speed ×2 for 10 days.' }); break;
-    case 'badReviews': { const bad = live.filter((p) => p.flags.length); if (bad.length) { const p = pick(bad); for (let i = 0; i < 6; i++) { const f = pick(p.flags); p.reviews.unshift({ stars: 1, text: pick(REVIEW_NEG[{ fragile: 'durability', overheat: 'thermals', battery: 'battery', camera: 'camera', leak: 'water', nowater: 'water', software: 'software' }[f]]), who: pick(REVIEWERS), aud: p.audience, day }); p.nReviews++; p.ratingSum += 1; } p.rating = p.ratingSum / p.nReviews; s.rep = Math.max(0, s.rep - 5); ev({ type: 'badReviews', until: day + 1, icon: '👎', title: 'Terrible reviews!', text: `A popular reviewer tore apart the ${p.name}: "${p.flags.join(', ')}". Reputation −5.` }); } break; }
-    case 'viral': if (live.length) { const p = pick(live); ev({ type: 'viral', product: p.id, until: day + 7, icon: '🚀', title: 'Unexpected viral success!', text: `Everyone is suddenly talking about the ${p.name}. Demand surges for a week!` }); } break;
-    case 'expo': ev({ type: 'expo', until: day + 10, icon: '🎪', title: 'World Mobile Expo', text: 'The biggest phone event of the year. Market demand +35% for 10 days!' }); break;
+    case 'shortage': ev({ type: 'shortage', until: day + 15, icon: '⚠️', title: '¡Escasez de componentes!', text: 'Una crisis mundial de chips: los componentes cuestan un 35% más y tardan 5 días en llegar durante 15 días.' }); break;
+    case 'accident': { const loss = sandbox(s) ? 0 : Math.round(Math.min(Math.max(0, s.money) * 0.05, 40000)); s.money -= loss; ev({ type: 'accident', until: day + 6, icon: '🔥', title: '¡Accidente en la fábrica!', text: `Un incendio en la línea. La producción baja un 60% durante 6 días. Las reparaciones cuestan ${fmtMoney(loss)}.` }); break; }
+    case 'viralAd': if (live.length) { const p = pick(live); for (const a in p.hype) p.hype[a] = Math.min(3, p.hype[a] * 1.8 + 0.4); ev({ type: 'viralAd', until: day + 1, icon: '📈', title: '¡Anuncio viral!', text: `Un anuncio del ${p.name} se ha hecho viral. ¡La expectación se dispara!` }); } break;
+    case 'rivalLaunch': { const r = pick(s.rivals); const ph = rivalLaunch(s, r, true, true); ph.hype = 1.2; r.boost = (r.boost || 0) + 0.03; ev({ type: 'rivalLaunch', until: day + 1, icon: '😱', title: `¡${r.name} contraataca!`, text: `${r.name} ha lanzado el ${ph.name}: puntuación ${ph.overall} por ${fmtMoney(ph.price)}. Hay que responder.` }); break; }
+    case 'techFound': ev({ type: 'techFound', until: day + 10, icon: '💡', title: '¡Descubrimiento!', text: 'Tu laboratorio ha descubierto una técnica nueva. Investigación ×2 durante 10 días.' }); break;
+    case 'badReviews': { const bad = live.filter((p) => p.flags.length); if (bad.length) { const p = pick(bad); for (let i = 0; i < 6; i++) { const f = pick(p.flags); p.reviews.unshift({ stars: 1, text: pick(REVIEW_NEG[{ fragile: 'durability', overheat: 'thermals', battery: 'battery', camera: 'camera', leak: 'water', nowater: 'water', software: 'software' }[f]]), who: pick(REVIEWERS), aud: p.audience, day }); p.nReviews++; p.ratingSum += 1; } p.rating = p.ratingSum / p.nReviews; s.rep = Math.max(0, s.rep - 5); ev({ type: 'badReviews', until: day + 1, icon: '👎', title: '¡Críticas terribles!', text: `Un youtuber famoso ha destrozado el ${p.name}: «${p.flags.map((f) => FLAG_ES[f] || f).join(', ')}». Reputación −5.` }); } break; }
+    case 'viral': if (live.length) { const p = pick(live); ev({ type: 'viral', product: p.id, until: day + 7, icon: '🚀', title: '¡Éxito viral inesperado!', text: `De repente todo el mundo habla del ${p.name}. ¡La demanda se dispara una semana!` }); } break;
+    case 'expo': ev({ type: 'expo', until: day + 10, icon: '🎪', title: 'Feria Mundial del Móvil', text: 'El mayor evento del año. ¡La demanda sube un 35% durante 10 días!' }); break;
   }
   if (s._event) news(s, s._event.icon, s._event.title + ' ' + s._event.text, 'event');
 }
 
 // ---------------- missions ----------------
 export const MISSIONS = [
-  { id: 'm1', title: 'FIRST PHONE', desc: 'Design your first smartphone and build a working prototype.', reward: 15000, check: (s) => s.designs.some((d) => d.prototype), hint: 'Design → customize → Build prototype' },
-  { id: 'm2', title: 'BUILD IT', desc: 'Test your prototype, then produce 100 phones in your factory.', reward: 20000, check: (s) => s.stats.produced >= 100, progress: (s) => `${Math.floor(s.stats.produced)}/100`, hint: 'Testing → run all 8 tests. Factory → order production' },
-  { id: 'm3', title: 'LAUNCH', desc: 'Release your first phone to the market.', reward: 25000, check: (s) => s.products.some((p) => p.status === 'onsale'), hint: 'Marketing → set price, audience and ad → Launch' },
-  { id: 'm4', title: 'COMPETE', desc: "Outsell a rival company's newest phone in your home country over 7 days.", reward: 60000, check: (s) => beatsRival(s), progress: (s) => { const b = bestVsRival(s); return b ? `you ${fmtNum(b.me)} vs ${fmtNum(b.them)} (${b.rival}) per week at home` : ''; }, hint: 'Better value for one audience + a strong ad + enough stock (upgrade the factory!)' },
-  { id: 'm5', title: 'GO GLOBAL', desc: 'Sell 2,000 phones internationally.', reward: 150000, check: (s) => s.stats.intl >= 2000, progress: (s) => `${fmtNum(s.stats.intl)}/2,000`, hint: 'Research Global logistics, unlock a region in Market, launch there' },
-  { id: 'm6', title: 'FLAGSHIP', desc: 'Launch a premium flagship: price ≥ $999, score ≥ 75 and rating ≥ 4.0★.', reward: 500000, check: (s) => s.products.some((p) => p.status !== 'scheduled' && p.price >= 999 && p.stats.overall >= 75 && p.nReviews >= 8 && p.rating >= 4), hint: 'Premium materials, great camera & display, luxury ad' },
-  { id: 'm7', title: 'FUTURE', desc: 'Build and launch the most advanced phone in the world (score ≥ 92, better than every rival).', reward: 2000000, check: (s) => s.products.some((p) => p.status !== 'scheduled' && p.stats.overall >= 92 && s.rivals.every((r) => r.phones.every((ph) => ph.overall < p.stats.overall))), hint: 'Research the Future tech tree' },
+  { id: 'm1', title: 'PRIMER MÓVIL', desc: 'Diseña tu primer smartphone y construye un prototipo que funcione.', reward: 15000, check: (s) => s.designs.some((d) => d.prototype), hint: 'Diseño → personaliza y ponle nombre → Construir prototipo' },
+  { id: 'm2', title: 'FABRÍCALO', desc: 'Prueba tu prototipo y fabrica 100 móviles.', reward: 20000, check: (s) => s.stats.produced >= 100, progress: (s) => `${Math.floor(s.stats.produced)}/100`, hint: 'Laboratorio → haz las 8 pruebas. Fábrica → pide producción' },
+  { id: 'm3', title: 'LANZAMIENTO', desc: 'Pon a la venta tu primer móvil.', reward: 25000, check: (s) => s.products.some((p) => p.status === 'onsale'), hint: 'Marketing → precio, público y anuncio → Lanzar' },
+  { id: 'm4', title: 'COMPITE', desc: 'Vende más que el último móvil de una empresa rival en tu país durante 7 días.', reward: 60000, check: (s) => beatsRival(s), progress: (s) => { const b = bestVsRival(s); return b ? `tú ${fmtNum(b.me)} vs ${fmtNum(b.them)} (${b.rival}) por semana en tu país` : ''; }, hint: 'Mejor relación calidad-precio para un público + buen anuncio + stock suficiente (¡mejora la fábrica!)' },
+  { id: 'm5', title: 'GLOBAL', desc: 'Vende 2.000 móviles en el extranjero.', reward: 150000, check: (s) => s.stats.intl >= 2000, progress: (s) => `${fmtNum(s.stats.intl)}/2.000`, hint: 'Investiga Logística global, desbloquea una región en Mercado y lanza allí' },
+  { id: 'm6', title: 'BUQUE INSIGNIA', desc: 'Lanza un gama alta: precio ≥ 999 $, puntuación ≥ 75 y valoración ≥ 4,0★.', reward: 500000, check: (s) => s.products.some((p) => p.status !== 'scheduled' && p.price >= 999 && p.stats.overall >= 75 && p.nReviews >= 8 && p.rating >= 4), hint: 'Materiales premium, gran cámara y pantalla, anuncio de lujo' },
+  { id: 'm7', title: 'FUTURO', desc: 'Crea y lanza el móvil más avanzado del mundo (puntuación ≥ 92, mejor que todos los rivales).', reward: 2000000, check: (s) => s.products.some((p) => p.status !== 'scheduled' && p.stats.overall >= 92 && s.rivals.every((r) => r.phones.every((ph) => ph.overall < p.stats.overall))), hint: 'Investiga la rama Futuro' },
 ];
 function bestVsRival(s) {
   let best = null;
@@ -453,7 +454,7 @@ export function currentMission(s) { return MISSIONS.find((m) => !s.missions.done
 function checkMissions(s) {
   if (sandbox(s)) return;
   const m = currentMission(s); if (!m) return;
-  if (m.check(s)) { s.missions.done.push(m.id); s.money += m.reward; news(s, '✅', `MISSION COMPLETE: ${m.title}! Reward ${fmtMoney(m.reward)}.`, 'good'); s._mission = m; if (s.missions.done.length === MISSIONS.length) { s.flags.campaignDone = true; s.cineQueue.push({ name: 'campaign' }); } }
+  if (m.check(s)) { s.missions.done.push(m.id); s.money += m.reward; news(s, '✅', `¡MISIÓN CUMPLIDA: ${m.title}! Recompensa ${fmtMoney(m.reward)}.`, 'good'); s._mission = m; if (s.missions.done.length === MISSIONS.length) { s.flags.campaignDone = true; s.cineQueue.push({ name: 'campaign' }); } }
 }
 
 // ---------------- main tick ----------------

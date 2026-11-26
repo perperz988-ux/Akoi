@@ -1,3 +1,16 @@
+# FÁBRICA DE MÓVILES (PHONE FACTORY) 📱🏭
+
+**Todo el juego está en español y se juega en horizontal.** En el móvil, al tocar la pantalla se pone a pantalla completa y se bloquea en horizontal. Si giras el móvil a vertical, aparece un aviso para que lo vuelvas a girar.
+
+* **✏️ Nombre del teléfono:** hay un campo grande encima del modelo 3D, y al crear un modelo nuevo se te pregunta cómo se llama.
+* **📱 Probar teléfono** (en Diseño y en el Laboratorio): usas tu móvil como si fuera real.
+  * **Apps que funcionan:** desbloqueo, inicio, centro de control, Cámara (hace fotos que van a la Galería), Calculadora, Teléfono (marcador y llamada), Música (suena), Juegos (toca el punto), Reloj, Notas, Navegador, Mensajes y Ajustes (el modo oscuro cambia de verdad).
+  * **El hardware importa:** el procesador decide cuánto tardan en abrirse las apps y los FPS, la batería se gasta según su autonomía, la temperatura sube al jugar según la refrigeración, y la cámara saca peores fotos si es mala.
+  * **Pruebas físicas:** ⏻ encender, 🔌 cargar (velocidad según los vatios), 💥 dejarlo caer (la pantalla se raja según la resistencia), 💧 meterlo en agua (sin IP68 se muere), 🔄 girar, 📖 plegar y 🛠 reparar.
+  * **Lista de 9 tareas** de prueba de usuario.
+
+---
+
 # PHONE FACTORY 📱🏭
 
 A complete smartphone-company tycoon game that runs in **one HTML file** (`release/phone-factory.html`, ~0.7 MB).
