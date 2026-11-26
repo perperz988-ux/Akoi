@@ -1,4 +1,6 @@
-> **Nuevo:** [TRASH TO PS5](trash-to-ps5/README.md) — aventura narrativa en primera persona en un solo HTML (`release/trash-to-ps5.html`).
+> **Nuevo:** [PHONE FACTORY](phone-factory/README.md) — tycoon de empresa de móviles en un solo HTML (`release/phone-factory.html`).
+>
+> [TRASH TO PS5](trash-to-ps5/README.md) — aventura narrativa en primera persona en un solo HTML (`release/trash-to-ps5.html`).
 
 # PORT SOLANO
 

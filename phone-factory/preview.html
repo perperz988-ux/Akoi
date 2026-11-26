@@ -1,0 +1,14 @@
+<!doctype html><html><head><meta charset="utf-8"><style>body{margin:0;background:#1b1b26;display:grid;grid-template-columns:repeat(3,1fr);height:100vh}div{position:relative;height:50vh;overflow:hidden}</style></head><body>
+<div id="a"></div><div id="b"></div><div id="c"></div><div id="d"></div><div id="e"></div><div id="f"></div>
+<script type="module">
+import { Viewer } from './src/phone3d.js'; import { drawLogo } from './src/os.js'; import { defaultDesign, defaultOS } from './src/sim.js';
+const os = defaultOS(); const logo = { shape: 'circle', bg: '#ff3d71', fg: '#fff', glyph: 'P', font: 'bold' };
+const mk = (id, f, view, screen = 'home') => { const d = defaultDesign(1, 'Pixelon ' + id); f(d.ext); const v = new Viewer(document.getElementById(id)); v.screen = screen; v.setDesign(d, os, 'Phonecorp', (c) => drawLogo(c, logo)); v.view(view); v.update(0.016); v.update(0.016); return v; };
+mk('a', (e) => {}, 'front34', 'lock');
+mk('b', (e) => Object.assign(e, { camCount: 3, camLayout: 'square', back: 'gloss', frame: 'aluminum', color: '#1d3557', frameColor: '#a8dadc', flash: 'dual', shape: 'punch', bezel: 2 }), 'back34');
+mk('c', (e) => Object.assign(e, { camCount: 4, camLayout: 'circle', back: 'matte', frame: 'titanium', color: '#e9edc9', frameColor: '#ccc5b9', flash: 'ring', shape: 'pill', bezel: 1.5, port: 'usbc', speakers: 'stereo' }), 'back');
+mk('d', (e) => Object.assign(e, { camCount: 20, camLayout: 'grid', back: 'transparent', frame: 'steel', color: '#9bf6ff', frameColor: '#bbb', camSize: 0.7, wireless: true }), 'back34');
+const v = mk('e', (e) => Object.assign(e, { fold: 'book', camCount: 3, camLayout: 'vertical', back: 'gloss', frame: 'titanium', color: '#3a0ca3', frameColor: '#999', shape: 'punch', bezel: 2 }), 'front34'); 
+mk('f', (e) => Object.assign(e, { fold: 'flip', w: 72, h: 85, camCount: 2, camLayout: 'horizontal', back: 'sapphire', frame: 'ceramic', color: '#ffafcc', frameColor: '#ffc8dd', shape: 'drop', bezel: 3 }), 'front34', 'control');
+window.__ready = true;
+</script></body></html>

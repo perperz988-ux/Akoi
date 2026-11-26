@@ -14,7 +14,9 @@
     "android:add": "npx cap add android",
     "android:open": "npx cap open android",
     "ps5:dev": "vite trash-to-ps5 --host",
-    "ps5:build": "vite build trash-to-ps5 && node trash-to-ps5/build-single.mjs"
+    "ps5:build": "vite build trash-to-ps5 && node trash-to-ps5/build-single.mjs",
+    "pf:dev": "vite phone-factory --host",
+    "pf:build": "vite build phone-factory && node phone-factory/build-single.mjs"
   },
   "dependencies": {
     "@capacitor/android": "6.2.0",
