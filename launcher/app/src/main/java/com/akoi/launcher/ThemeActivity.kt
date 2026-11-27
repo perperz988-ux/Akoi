@@ -28,6 +28,7 @@ class ThemeActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         palette = Themes.load(this)
+        GameFont.apply(this)
         render()
     }
 
@@ -35,11 +36,11 @@ class ThemeActivity : ComponentActivity() {
         val bg = palette.bg
         val fg = Ui.onColor(bg)
         @Suppress("DEPRECATION")
-        window.statusBarColor = bg
+        window.statusBarColor = palette.top
         @Suppress("DEPRECATION")
         window.navigationBarColor = bg
         WindowCompat.getInsetsController(window, window.decorView).apply {
-            isAppearanceLightStatusBars = fg == Ui.onColor(Color.WHITE)
+            isAppearanceLightStatusBars = Ui.onColor(palette.top) == Ui.onColor(Color.WHITE)
             isAppearanceLightNavigationBars = fg == Ui.onColor(Color.WHITE)
         }
 
@@ -61,7 +62,7 @@ class ThemeActivity : ComponentActivity() {
         })
         column.addView(TextView(this).apply {
             text = "Tus\ncolores"
-            style(54f, palette.clock, Ui.HEAVY, -0.04f)
+            style(54f, palette.top, Ui.HEAVY, -0.02f)
             setLineSpacing(0f, 0.88f)
         })
         column.addView(TextView(this).apply {
@@ -79,6 +80,16 @@ class ThemeActivity : ComponentActivity() {
             addView(presetRow)
         })
 
+        // ---- Letra gamer
+        column.addView(sectionTitle("Letra", fg).apply { setPadding(0, dp(26), 0, dp(10)) })
+        val fontRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        val chosen = Themes.font(this)
+        GameFont.entries.forEach { f -> fontRow.addView(fontCard(f, f == chosen, fg)) }
+        column.addView(HorizontalScrollView(this).apply {
+            isHorizontalScrollBarEnabled = false
+            addView(fontRow)
+        })
+
         // ---- Cada color
         column.addView(sectionTitle("Edita cada losa", fg).apply { setPadding(0, dp(26), 0, dp(10)) })
         val stack = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
@@ -88,6 +99,7 @@ class ThemeActivity : ComponentActivity() {
         column.addView(stack)
 
         column.addView(sectionTitle("Básicos", fg).apply { setPadding(0, dp(26), 0, dp(10)) })
+        column.addView(simpleRow("Barra de arriba", Palette.KEY_TOP, fg))
         column.addView(simpleRow("Fondo", Palette.KEY_BG, fg))
         column.addView(simpleRow("Reloj", Palette.KEY_CLOCK, fg))
         column.addView(simpleRow("Buscador", Palette.KEY_SEARCH, fg))
@@ -117,6 +129,38 @@ class ThemeActivity : ComponentActivity() {
         this.text = text.uppercase()
         style(12f, Ui.alpha(fg, 0xBB), Ui.HEAVY, 0.14f)
         setPadding(0, 0, 0, dp(10))
+    }
+
+    private fun fontCard(font: GameFont, selected: Boolean, fg: Int): View {
+        val heavy = font.heavy(this)
+        return LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(14), dp(12), dp(14), dp(12))
+            background = Ui.outline(
+                if (selected) palette.top else Ui.alpha(fg, 0x44),
+                dp(if (selected) 3 else 1), dp(18).toFloat(),
+            )
+            addView(TextView(context).apply {
+                text = "12:45"
+                typeface = heavy
+                textSize = 30f * font.scale
+                setTextColor(if (selected) palette.top else fg)
+                includeFontPadding = false
+            })
+            addView(TextView(context).apply {
+                text = font.title.uppercase()
+                typeface = heavy
+                textSize = 13f * font.scale
+                setTextColor(Ui.alpha(fg, 0xCC))
+                setPadding(0, dp(8), 0, 0)
+            })
+            setOnClickListener {
+                Themes.setFont(this@ThemeActivity, font)
+                GameFont.apply(this@ThemeActivity)
+                render()
+            }
+            layoutParams = LinearLayout.LayoutParams(-2, -2).apply { marginEnd = dp(10) }
+        }
     }
 
     private fun presetCard(p: Palette, fg: Int): View {

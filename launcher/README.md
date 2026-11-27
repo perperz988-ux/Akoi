@@ -26,7 +26,18 @@ Todo en español, con toque gamer, y **cada color se puede cambiar**.
   - **Todas A–Z**: ventanas con cada letra (`#`, A–Z, Ñ) para encontrar apps en orden alfabético.
 - Mantén pulsada una app: información o desinstalar.
 
+### Pantalla de inicio predeterminada
+La primera vez ZperOS te pregunta si quieres usarlo como pantalla de inicio.
+Si no, toca el aviso **"Hacer ZperOS mi pantalla de inicio" → ACTIVAR**, o en la losa
+**Sistema → Predeterminado**. En algunos teléfonos (por ejemplo Samsung) se abre
+*Ajustes → Aplicaciones predeterminadas → Pantalla de inicio*: elige **ZperOS**.
+
 ### 🎨 Personalizar
+- **Letra gamer**: Gamer (Orbitron), Arcade (Press Start 2P), Bloque (Russo One),
+  Retro (Audiowide) o la del Sistema. Las fuentes van incluidas (licencia SIL OFL, ver
+  `app/src/main/assets/fonts/OFL.txt`).
+- **Barra de arriba**: la franja de la hora, el wifi y la batería del teléfono se pinta
+  del color del tema, junto con la losa del reloj.
 - Temas listos: **ZperOS** (negro, azul y naranja), **Neón gamer**, **Atardecer**, **Matrix**,
   **Lava**, **Hielo** y **Mono**.
 - Cambia **el color de cada losa**, el fondo, el reloj y el buscador con tono, saturación y brillo,

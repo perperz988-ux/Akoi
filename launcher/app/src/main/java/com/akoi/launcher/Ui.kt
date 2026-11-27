@@ -13,8 +13,11 @@ import kotlin.math.roundToInt
 
 /** Utilidades de dibujo del estilo "losa": colores sólidos, sin degradados ni sombras. */
 object Ui {
-    val HEAVY: Typeface = Typeface.create("sans-serif-black", Typeface.NORMAL)
-    val BOLD: Typeface = Typeface.create("sans-serif-medium", Typeface.BOLD)
+    var HEAVY: Typeface = Typeface.create("sans-serif-black", Typeface.NORMAL)
+    var BOLD: Typeface = Typeface.create("sans-serif-medium", Typeface.BOLD)
+
+    /** Escala de los títulos según la fuente (las pixeladas son muy anchas). */
+    var headScale: Float = 1f
 
     private const val DARK_TEXT = 0xFF141414.toInt()
     private const val LIGHT_TEXT = 0xFFF5F3EE.toInt()
@@ -34,6 +37,13 @@ object Ui {
             } else {
                 FloatArray(8) { radius }
             }
+        }
+
+    /** Losa con esquinas inferiores redondeadas (la del reloj, pegada a la barra de arriba). */
+    fun slabBottom(color: Int, radius: Float): GradientDrawable =
+        GradientDrawable().apply {
+            setColor(color)
+            cornerRadii = floatArrayOf(0f, 0f, 0f, 0f, radius, radius, radius, radius)
         }
 
     /** Recuadro con borde (las "teclas" de apps dentro de un cajón). */
@@ -63,7 +73,7 @@ fun Context.dp(v: Number): Int = (v.toFloat() * resources.displayMetrics.density
 fun View.dp(v: Number): Int = context.dp(v)
 
 fun TextView.style(sizeSp: Float, color: Int, face: Typeface = Ui.BOLD, spacing: Float = 0f): TextView {
-    textSize = sizeSp
+    textSize = if (face == Ui.HEAVY) sizeSp * Ui.headScale else sizeSp
     setTextColor(color)
     typeface = face
     letterSpacing = spacing

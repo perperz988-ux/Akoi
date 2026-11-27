@@ -10,7 +10,10 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.app.role.RoleManager
 import android.content.pm.LauncherApps
+import android.content.pm.PackageManager
+import android.os.Build
 import android.content.res.ColorStateList
 import android.graphics.Rect
 import android.hardware.camera2.CameraCharacteristics
@@ -124,6 +127,7 @@ class MainActivity : ComponentActivity(), AssistantHost {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         palette = Themes.load(this)
+        GameFont.apply(this)
         themeStamp = Themes.stamp(this)
         launcherApps = getSystemService(LauncherApps::class.java)
         usage = UsageStore(this)
@@ -147,6 +151,11 @@ class MainActivity : ComponentActivity(), AssistantHost {
         )
         if (savedInstanceState == null && Themes.coverEnabled(this)) showCover() else hideCover()
         reload()
+        // La primera vez, ofrece hacer ZperOS la pantalla de inicio.
+        if (savedInstanceState == null && !isDefaultHome() && !prefs().getBoolean("asked_home", false)) {
+            prefs().edit().putBoolean("asked_home", true).apply()
+            mainHandler.postDelayed({ requestDefaultHome() }, 800)
+        }
     }
 
     override fun onResume() {
@@ -156,6 +165,7 @@ class MainActivity : ComponentActivity(), AssistantHost {
             return
         }
         updateInfo()
+        defaultBanner.visibility = if (isDefaultHome()) View.GONE else View.VISIBLE
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -185,6 +195,7 @@ class MainActivity : ComponentActivity(), AssistantHost {
         root.addView(home, FrameLayout.LayoutParams(-1, -1))
 
         home.addView(buildHeader())
+        home.addView(buildDefaultBanner())
         home.addView(buildSearch())
 
         val content = FrameLayout(this)
@@ -217,6 +228,76 @@ class MainActivity : ComponentActivity(), AssistantHost {
         return root
     }
 
+    private lateinit var defaultBanner: View
+
+    /** Aviso para poner ZperOS como pantalla de inicio (se oculta cuando ya lo es). */
+    private fun buildDefaultBanner(): View {
+        val color = palette.slab(Drawer.JUEGOS)
+        val fg = Ui.onColor(color)
+        defaultBanner = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            background = Ui.ripple(fg, dp(20).toFloat(), Ui.slab(color, dp(20).toFloat(), topOnly = false))
+            setPadding(dp(16), dp(12), dp(16), dp(12))
+            addView(TextView(context).apply {
+                text = "⌂"
+                style(22f, fg, Ui.HEAVY)
+            })
+            addView(TextView(context).apply {
+                text = "Hacer ZperOS mi pantalla de inicio"
+                style(14f, fg, Ui.BOLD)
+                setPadding(dp(12), 0, dp(8), 0)
+            }, LinearLayout.LayoutParams(0, -2, 1f))
+            addView(TextView(context).apply {
+                text = "ACTIVAR"
+                style(12f, Ui.onColor(fg), Ui.HEAVY, 0.08f)
+                background = Ui.slab(fg, dp(14).toFloat(), topOnly = false)
+                setPadding(dp(12), dp(7), dp(12), dp(7))
+            })
+            setOnClickListener { requestDefaultHome() }
+            layoutParams = LinearLayout.LayoutParams(-1, -2).apply { setMargins(dp(14), dp(12), dp(14), 0) }
+            visibility = if (isDefaultHome()) View.GONE else View.VISIBLE
+        }
+        return defaultBanner
+    }
+
+    private fun isDefaultHome(): Boolean {
+        val home = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME)
+        val info = packageManager.resolveActivity(home, PackageManager.MATCH_DEFAULT_ONLY)
+        return info?.activityInfo?.packageName == packageName
+    }
+
+    /** Abre el diálogo del sistema para elegir ZperOS como pantalla de inicio. */
+    private fun requestDefaultHome() {
+        if (isDefaultHome()) {
+            toast("ZperOS ya es tu pantalla de inicio")
+            return
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            val rm = getSystemService(RoleManager::class.java)
+            if (rm != null && rm.isRoleAvailable(RoleManager.ROLE_HOME) && !rm.isRoleHeld(RoleManager.ROLE_HOME)) {
+                try {
+                    homeRoleLauncher.launch(rm.createRequestRoleIntent(RoleManager.ROLE_HOME))
+                    return
+                } catch (e: Exception) {
+                    // sigue con los ajustes
+                }
+            }
+        }
+        startSafe(Intent(Settings.ACTION_HOME_SETTINGS))
+    }
+
+    private val homeRoleLauncher =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+            if (isDefaultHome()) {
+                toast("¡Listo! ZperOS es tu pantalla de inicio")
+            } else {
+                // Algunos teléfonos (p. ej. Samsung) solo lo permiten desde Ajustes.
+                startSafe(Intent(Settings.ACTION_HOME_SETTINGS))
+            }
+            defaultBanner.visibility = if (isDefaultHome()) View.GONE else View.VISIBLE
+        }
+
     private fun makeList(adapter: TileAdapter) = RecyclerView(this).apply {
         layoutManager = GridLayoutManager(context, TileAdapter.SPANS).apply {
             spanSizeLookup = adapter.spanLookup
@@ -228,17 +309,19 @@ class MainActivity : ComponentActivity(), AssistantHost {
         isVerticalScrollBarEnabled = false
     }
 
+    /** La losa del reloj: mismo color que la barra de arriba del teléfono. */
     private fun buildHeader(): View {
-        val fg = Ui.onColor(palette.bg)
+        val fg = Ui.onColor(palette.top)
         val row = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.BOTTOM
-            setPadding(dp(18), dp(10), dp(16), 0)
+            background = Ui.slabBottom(palette.top, dp(30).toFloat())
+            setPadding(dp(18), dp(6), dp(16), dp(14))
         }
         row.addView(TextClock(this).apply {
             format24Hour = "HH:mm"
             format12Hour = "h:mm"
-            style(74f, palette.clock, Ui.HEAVY, -0.05f)
+            style(74f, palette.clock, Ui.HEAVY, -0.03f)
             setOnClickListener { showCover() }
         }, LinearLayout.LayoutParams(0, -2, 1f))
 
@@ -457,7 +540,7 @@ class MainActivity : ComponentActivity(), AssistantHost {
             Tile.Action("☀", "Brillo") { startSafe(Intent(Settings.ACTION_DISPLAY_SETTINGS)) },
             Tile.Action("🎮", "Modo juego") { startSafe(Intent("android.settings.ZEN_MODE_SETTINGS")) },
             Tile.Action("🎨", "Colores") { openThemes() },
-            Tile.Action("🏠", "Launcher") { startSafe(Intent(Settings.ACTION_HOME_SETTINGS)) },
+            Tile.Action("🏠", "Predeterminado") { requestDefaultHome() },
             Tile.Action("⚙", "Ajustes") { startSafe(Intent(Settings.ACTION_SETTINGS)) },
             Tile.Action("🔒", "Portada") { showCover() },
         ) + appsIn(d).let { list ->
@@ -522,7 +605,7 @@ class MainActivity : ComponentActivity(), AssistantHost {
 
     private fun hideCover() {
         cover?.visibility = View.GONE
-        setBars(palette.bg, palette.slab(drawerViews.keys.lastOrNull() ?: Drawer.AZ))
+        setBars(palette.top, palette.slab(drawerViews.keys.lastOrNull() ?: Drawer.AZ))
     }
 
     private fun setBars(top: Int, bottom: Int) {
