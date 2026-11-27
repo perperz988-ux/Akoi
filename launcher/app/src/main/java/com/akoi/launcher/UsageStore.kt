@@ -25,6 +25,9 @@ class UsageStore(context: Context) {
             .apply()
     }
 
+    /** Veces que se ha abierto la app. */
+    fun count(app: AppItem): Int = prefs.getInt("c:${key(app)}", 0)
+
     fun suggestions(apps: List<AppItem>, count: Int): List<AppItem> {
         val s = slot()
         val learned = apps

@@ -12,6 +12,8 @@ class AppItem(
     val component: ComponentName,
     val user: UserHandle,
     val icon: Drawable,
+    /** Cajón temático (Juegos, Social…) o null si solo aparece en "Todas A–Z". */
+    val drawer: Drawer?,
 ) {
     /** Etiqueta sin acentos y en minúsculas, para buscar. */
     val searchKey: String = normalize(label)

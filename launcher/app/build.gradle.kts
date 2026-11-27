@@ -33,4 +33,5 @@ dependencies {
     implementation("androidx.core:core-ktx:1.13.1")
     implementation("androidx.activity:activity-ktx:1.9.2")
     implementation("androidx.recyclerview:recyclerview:1.3.2")
+    implementation("androidx.dynamicanimation:dynamicanimation:1.0.0")
 }

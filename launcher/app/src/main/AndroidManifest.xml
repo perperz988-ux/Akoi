@@ -42,5 +42,11 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <activity
+            android:name=".ThemeActivity"
+            android:exported="false"
+            android:label="Personalizar"
+            android:excludeFromRecents="true" />
     </application>
 </manifest>
