@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Akoi Launcher</string>
+    <string name="search_hint">Buscar apps…</string>
+    <string name="letters_title">Apps por letra</string>
+    <string name="all_apps">TODAS</string>
+    <string name="all_apps_title">Todas las apps (A–Z)</string>
+    <string name="results_title">Resultados</string>
+    <string name="letter_title">Letra %1$s</string>
+    <string name="back">‹ VOLVER</string>
+    <string name="no_results">No se encontraron apps</string>
+    <string name="menu">Menú</string>
+    <string name="set_default">Fijar como launcher predeterminado</string>
+    <string name="system_settings">Ajustes del sistema</string>
+    <string name="app_info">Información de la app</string>
+    <string name="uninstall">Desinstalar</string>
+    <string name="cant_open">No se pudo abrir la app</string>
+</resources>
