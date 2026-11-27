@@ -44,7 +44,7 @@ class CoverView(context: Context, palette: Palette, private val onOpened: () -> 
         hourSlab = FrameLayout(context).apply {
             background = Ui.slab(cHour, 0f)
             addView(TextView(context).apply {
-                text = context.getString(R.string.app_name).substringBefore(' ').lowercase()
+                text = context.getString(R.string.app_name)
                 style(14f, Ui.onColor(cHour), Ui.HEAVY)
             }, LayoutParams(-2, -2).apply { setMargins(dp(20), dp(14), 0, 0) })
             addView(giant(cHour, "HH", "h"), LayoutParams(-2, -2, Gravity.START or Gravity.BOTTOM).apply {

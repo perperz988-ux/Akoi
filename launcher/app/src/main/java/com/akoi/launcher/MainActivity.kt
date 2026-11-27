@@ -288,7 +288,7 @@ class MainActivity : ComponentActivity(), AssistantHost {
 
         search = EditText(this).apply {
             background = null
-            hint = "Busca apps o pregúntale a Akoi…"
+            hint = "Busca apps o pregúntale a Zper…"
             setHintTextColor(Ui.alpha(fg, 0x88))
             setTextColor(fg)
             textSize = 16f
@@ -617,7 +617,7 @@ class MainActivity : ComponentActivity(), AssistantHost {
     private fun startVoice() {
         val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
             .putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-            .putExtra(RecognizerIntent.EXTRA_PROMPT, "Habla con Akoi…")
+            .putExtra(RecognizerIntent.EXTRA_PROMPT, "Habla con Zper…")
         try {
             voiceLauncher.launch(intent)
         } catch (e: ActivityNotFoundException) {
@@ -678,7 +678,7 @@ class MainActivity : ComponentActivity(), AssistantHost {
     }
 
     override fun copyText(text: String) {
-        getSystemService(ClipboardManager::class.java)?.setPrimaryClip(ClipData.newPlainText("Akoi", text))
+        getSystemService(ClipboardManager::class.java)?.setPrimaryClip(ClipData.newPlainText("ZperOS", text))
         toast("Copiado")
     }
 

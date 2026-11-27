@@ -28,7 +28,7 @@ class AssistantAction(
 )
 
 /**
- * Asistente "Akoi AI": entiende órdenes sencillas en español
+ * Asistente "Zper AI": entiende órdenes sencillas en español
  * (abrir apps, alarmas, temporizador, linterna, llamar, mapas, ajustes,
  * cálculos, hora y búsquedas web). Funciona sin internet, en el teléfono.
  */
@@ -84,7 +84,7 @@ class Assistant(private val host: AssistantHost) {
             false -> "Apagar linterna"
             null -> "Encender / apagar linterna"
         }
-        return AssistantAction("✦", title, "Akoi AI") { host.setTorch(target) }
+        return AssistantAction("✦", title, "Zper AI") { host.setTorch(target) }
     }
 
     private fun alarm(q: String): AssistantAction? {
@@ -111,7 +111,7 @@ class Assistant(private val host: AssistantHost) {
                 Intent(AlarmClock.ACTION_SET_ALARM)
                     .putExtra(AlarmClock.EXTRA_HOUR, hour)
                     .putExtra(AlarmClock.EXTRA_MINUTES, minute)
-                    .putExtra(AlarmClock.EXTRA_MESSAGE, "Akoi")
+                    .putExtra(AlarmClock.EXTRA_MESSAGE, "ZperOS")
             )
         }
     }
@@ -133,7 +133,7 @@ class Assistant(private val host: AssistantHost) {
             host.startSafe(
                 Intent(AlarmClock.ACTION_SET_TIMER)
                     .putExtra(AlarmClock.EXTRA_LENGTH, seconds)
-                    .putExtra(AlarmClock.EXTRA_MESSAGE, "Akoi")
+                    .putExtra(AlarmClock.EXTRA_MESSAGE, "ZperOS")
                     .putExtra(AlarmClock.EXTRA_SKIP_UI, false)
             )
         }
@@ -176,11 +176,11 @@ class Assistant(private val host: AssistantHost) {
         return when {
             Regex("\\bque hora\\b").containsMatchIn(q) -> {
                 val time = DateFormat.getTimeInstance(DateFormat.SHORT).format(now)
-                AssistantAction("✦", "Son las $time", "Akoi AI", keepOpen = true) {}
+                AssistantAction("✦", "Son las $time", "Zper AI", keepOpen = true) {}
             }
             Regex("\\b(que dia|que fecha|fecha de hoy)\\b").containsMatchIn(q) -> {
                 val date = DateFormat.getDateInstance(DateFormat.FULL).format(now)
-                AssistantAction("✦", "Hoy es $date", "Akoi AI", keepOpen = true) {}
+                AssistantAction("✦", "Hoy es $date", "Zper AI", keepOpen = true) {}
             }
             else -> null
         }
@@ -212,7 +212,7 @@ class Assistant(private val host: AssistantHost) {
     private fun clean(raw: String): String =
         AppItem.normalize(raw)
             .replace(Regex("[¿?¡!]"), " ")
-            .replace(Regex("^(oye |hey |akoi |ok )+"), "")
+            .replace(Regex("^(oye |hey |zper |zperos |ok )+"), "")
             .replace(Regex("\\s+"), " ")
             .trim()
             .trimEnd('.')

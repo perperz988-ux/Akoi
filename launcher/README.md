@@ -1,4 +1,4 @@
-# Akoi Launcher
+# ZperOS
 
 Launcher para Android con estilo **"losa"** (slab): bloques de color sólido que se apilan,
 números gigantes y cajones tipo acordeón en lugar de una cuadrícula de iconos.
@@ -15,7 +15,7 @@ Todo en español, con toque gamer, y **cada color se puede cambiar**.
 
 ### Inicio
 - Reloj grande, fecha, batería y alarma.
-- **Buscador / asistente Akoi**: busca apps o escribe órdenes en español
+- **Buscador / asistente Zper**: busca apps o escribe órdenes en español
   ("abre WhatsApp", "alarma a las 7:30", "temporizador 10 minutos", "enciende la linterna",
   "cuánto es 25 por 4", "qué es un agujero negro"…). Botón de micrófono para hablar.
 - **Losas apiladas** (solo una abierta a la vez):
@@ -27,7 +27,7 @@ Todo en español, con toque gamer, y **cada color se puede cambiar**.
 - Mantén pulsada una app: información o desinstalar.
 
 ### 🎨 Personalizar
-- Temas listos: **Akoi** (negro, azul y naranja), **Neón gamer**, **Atardecer**, **Matrix**,
+- Temas listos: **ZperOS** (negro, azul y naranja), **Neón gamer**, **Atardecer**, **Matrix**,
   **Lava**, **Hielo** y **Mono**.
 - Cambia **el color de cada losa**, el fondo, el reloj y el buscador con tono, saturación y brillo,
   colores rápidos o código `#RRGGBB`.
@@ -43,11 +43,11 @@ cd launcher
 # APK: launcher/app/build/outputs/apk/debug/app-debug.apk
 ```
 
-También se compila en GitHub Actions (workflow *Build Akoi Launcher APK*);
-el APK queda como artefacto `akoi-launcher-debug-apk`.
+También se compila en GitHub Actions (workflow *Build ZperOS APK*);
+el APK queda como artefacto `zperos-debug-apk`.
 
 ## Usarlo como launcher
 
 1. Instala el APK.
-2. Pulsa *Inicio* y elige **Akoi Launcher** → *Siempre*
+2. Pulsa *Inicio* y elige **ZperOS** → *Siempre*
    (o en la losa **Sistema** → *Launcher*).

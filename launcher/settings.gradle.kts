@@ -12,5 +12,5 @@ dependencyResolutionManagement {
         mavenCentral()
     }
 }
-rootProject.name = "AkoiLauncher"
+rootProject.name = "ZperOS"
 include(":app")

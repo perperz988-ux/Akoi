@@ -48,7 +48,7 @@ object Themes {
 
     //                         Juegos        Social        Ver           Crear         Sistema       A–Z
     val presets: List<Palette> = listOf(
-        Palette("Akoi", c(0xFF050608), c(0xFF1546B8), c(0xFFEDEFF5),
+        Palette("ZperOS", c(0xFF050608), c(0xFF1546B8), c(0xFFEDEFF5),
             listOf(c(0xFFFF6A1A), c(0xFF2F6BFF), c(0xFFFFA24D), c(0xFF0F2A6E), c(0xFFE6EAF2), c(0xFF5B8CFF))),
         Palette("Neón gamer", c(0xFF07040F), c(0xFF00F0FF), c(0xFF1A1426),
             listOf(c(0xFFFF2E88), c(0xFF00F0FF), c(0xFFB6FF00), c(0xFF8A2BE2), c(0xFFFFE600), c(0xFF2B1B4D))),

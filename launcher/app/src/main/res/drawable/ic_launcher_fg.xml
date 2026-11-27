@@ -1,9 +1,8 @@
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp" android:height="108dp"
     android:viewportWidth="108" android:viewportHeight="108">
-    <!-- Cuadrícula 2x2 de "ventanas": azul y naranja -->
-    <path android:fillColor="#FF1546B8" android:pathData="M34,34h17v17h-17z" />
-    <path android:fillColor="#FFFF7A1A" android:pathData="M57,34h17v17h-17z" />
-    <path android:fillColor="#FFFF7A1A" android:pathData="M34,57h17v17h-17z" />
-    <path android:fillColor="#FF1546B8" android:pathData="M57,57h17v17h-17z" />
+    <!-- "Z" hecha de losas: naranja arriba, azul en diagonal, naranja abajo -->
+    <path android:fillColor="#FFFF6A1A" android:pathData="M33,32h42v11h-42z" />
+    <path android:fillColor="#FF2F6BFF" android:pathData="M62,43h13L46,65h-13z" />
+    <path android:fillColor="#FFFF6A1A" android:pathData="M33,65h42v11h-42z" />
 </vector>
