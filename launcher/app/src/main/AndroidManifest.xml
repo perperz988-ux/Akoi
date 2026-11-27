@@ -39,10 +39,15 @@
             android:excludeFromRecents="true"
             android:resizeableActivity="true"
             android:windowSoftInputMode="adjustResize|stateHidden">
+            <!-- Pantalla de inicio (launcher) -->
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.HOME" />
                 <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+            <!-- Icono en el cajón de apps -->
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
