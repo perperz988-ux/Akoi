@@ -1,0 +1,8 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+    <!-- "i" blanca sobre círculo turquesa -->
+    <path android:fillColor="#FF19C3B4" android:pathData="M54,33a21,21 0,1 1,-0.01,0z" />
+    <path android:fillColor="#FFFFFFFF" android:pathData="M54,40.5a3.2,3.2 0,1 1,-0.01,0z" />
+    <path android:fillColor="#FFFFFFFF" android:pathData="M51,47h6v20h-6z" />
+</vector>
