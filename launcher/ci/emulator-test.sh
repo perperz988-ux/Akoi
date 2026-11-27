@@ -13,9 +13,13 @@ adb shell cmd package query-activities --brief -a android.intent.action.MAIN -c 
 grep -q "$PKG" home.txt && echo "OK: ZperOS aparece como pantalla de inicio" || { echo "FALLO: ZperOS no aparece como launcher"; fail=1; }
 
 echo "== Fijar como launcher predeterminado =="
-adb shell cmd role add-role-holder android.app.role.HOME $PKG 0
-sleep 2
-adb shell cmd role get-role-holders android.app.role.HOME | tee holder.txt
+# El emulador a veces tarda en aplicarlo: reintenta hasta ~60 s.
+for i in $(seq 1 12); do
+  adb shell cmd role add-role-holder android.app.role.HOME $PKG 0 || true
+  sleep 5
+  adb shell cmd role get-role-holders android.app.role.HOME | tee holder.txt
+  grep -q "$PKG" holder.txt && break
+done
 grep -q "$PKG" holder.txt && echo "OK: ZperOS es el launcher predeterminado" || { echo "FALLO: no quedó como predeterminado"; fail=1; }
 
 adb logcat -c
