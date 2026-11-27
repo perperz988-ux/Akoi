@@ -5,6 +5,7 @@ import com.anthropic.client.AnthropicClient
 import com.anthropic.client.okhttp.AnthropicOkHttpClient
 import com.anthropic.errors.AnthropicIoException
 import com.anthropic.errors.AnthropicServiceException
+import com.anthropic.errors.BadRequestException
 import com.anthropic.errors.OverloadedException
 import com.anthropic.errors.PaymentRequiredException
 import com.anthropic.errors.PermissionDeniedException
@@ -15,13 +16,14 @@ import com.anthropic.models.beta.messages.BetaStopReason
 import com.anthropic.models.beta.messages.MessageCreateParams
 
 /**
- * Zper AI: la IA gamer de ZperOS, hecha con Claude (API de Anthropic).
+ * Zper AI: la IA gamer de ZperOS.
+ * Funciona con Gemini (Google AI Studio, plan gratis) o con Claude (Anthropic, de pago).
  *
  * ── DÓNDE SE EDITA ──────────────────────────────────────────────
- *  • La API key y la personalidad se cambian DENTRO de la app:
+ *  • La IA a usar, las API keys y la personalidad se cambian DENTRO de la app:
  *    🎨 Personalizar → "Zper AI".
  *  • La personalidad por defecto está aquí abajo en [DEFAULT_PERSONALITY].
- *  • El modelo de Claude está en [MODEL].
+ *  • El modelo de Claude está en [MODEL]; el de Gemini se elige solo (GeminiClient.kt).
  * ────────────────────────────────────────────────────────────────
  */
 object ZperAi {
@@ -45,8 +47,30 @@ object ZperAi {
 
     private fun prefs(ctx: Context) = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 
-    fun apiKey(ctx: Context): String = prefs(ctx).getString("key", "").orEmpty().trim()
-    fun setApiKey(ctx: Context, key: String) = prefs(ctx).edit().putString("key", key.trim()).apply()
+    /** Qué IA usar. */
+    enum class Provider(val title: String) { GEMINI("Gemini (gratis)"), CLAUDE("Claude") }
+
+    fun provider(ctx: Context): Provider =
+        if (prefs(ctx).getString("provider", "gemini") == "claude") Provider.CLAUDE else Provider.GEMINI
+
+    fun setProvider(ctx: Context, p: Provider) =
+        prefs(ctx).edit().putString("provider", if (p == Provider.CLAUDE) "claude" else "gemini").apply()
+
+    /** Key de la IA elegida. */
+    fun apiKey(ctx: Context): String = keyFor(ctx, provider(ctx))
+    fun setApiKey(ctx: Context, key: String) = setKeyFor(ctx, provider(ctx), key)
+
+    fun keyFor(ctx: Context, p: Provider): String =
+        prefs(ctx).getString(if (p == Provider.CLAUDE) "key" else "gemini_key", "").orEmpty().trim()
+
+    fun setKeyFor(ctx: Context, p: Provider, key: String) =
+        prefs(ctx).edit().putString(if (p == Provider.CLAUDE) "key" else "gemini_key", key.trim()).apply()
+
+    /** Dónde conseguir la key de la IA elegida. */
+    fun keyUrl(ctx: Context) = if (provider(ctx) == Provider.CLAUDE)
+        "https://console.anthropic.com/settings/keys" else "https://aistudio.google.com/apikey"
+
+    fun keyHint(ctx: Context) = if (provider(ctx) == Provider.CLAUDE) "sk-ant-…" else "AIza…"
 
     fun personality(ctx: Context): String =
         prefs(ctx).getString("personality", null)?.takeIf { it.isNotBlank() } ?: DEFAULT_PERSONALITY
@@ -75,8 +99,9 @@ object ZperAi {
      * Se llama desde un hilo de fondo. Devuelve un mensaje de error en español, o null si todo bien.
      */
     fun chat(ctx: Context, history: List<Turn>, games: List<String>, onText: (String) -> Unit): String? {
+        val provider = provider(ctx)
         val key = apiKey(ctx)
-        if (key.isEmpty()) return "Falta tu API key de Claude. Ponla en 🎨 Personalizar → Zper AI."
+        if (key.isEmpty()) return "Falta tu API key de ${provider.title}. Ponla en 🎨 Personalizar → Zper AI."
 
         val system = buildString {
             append(personality(ctx))
@@ -87,15 +112,25 @@ object ZperAi {
             }
         }
 
+        if (provider == Provider.GEMINI) return GeminiClient.chat(ctx, key, system, history, onText)
+        return chatClaude(key, system, history, onText, withFallbacks = true)
+    }
+
+    private fun chatClaude(
+        key: String,
+        system: String,
+        history: List<Turn>,
+        onText: (String) -> Unit,
+        withFallbacks: Boolean,
+    ): String? {
         val builder = MessageCreateParams.builder()
             .model(MODEL)
             .maxTokens(4096L)
             .system(system)
             // Chat rápido: poco "pensar", respuestas al momento.
             .outputConfig(BetaOutputConfig.builder().effort(BetaOutputConfig.Effort.LOW).build())
-            // Si Claude rechaza una petición por seguridad, el servidor reintenta con otro modelo.
-            .addBeta("server-side-fallback-2026-07-01")
-            .fallbacksDefault()
+        // Si Claude rechaza una petición por seguridad, el servidor reintenta con otro modelo.
+        if (withFallbacks) builder.addBeta("server-side-fallback-2026-07-01").fallbacksDefault()
         // La conversación debe empezar con el jugador.
         history.dropWhile { !it.fromUser }.forEach { t ->
             if (t.fromUser) builder.addUserMessage(t.text) else builder.addAssistantMessage(t.text)
@@ -117,6 +152,14 @@ object ZperAi {
                 stream.close()
             }
             if (refused) "Zper AI no puede ayudar con eso. Prueba con otra pregunta." else null
+        } catch (e: BadRequestException) {
+            val msg = e.apiMessage().orElse("")
+            when {
+                "credit balance" in msg.lowercase() ->
+                    "Tu cuenta de Claude no tiene saldo. Usa Gemini (gratis) en 🎨 Personalizar → Zper AI."
+                withFallbacks -> chatClaude(key, system, history, onText, withFallbacks = false)
+                else -> "Claude rechazó la petición: ${msg.take(160)}"
+            }
         } catch (e: UnauthorizedException) {
             "API key inválida. Revísala en 🎨 Personalizar → Zper AI."
         } catch (e: PermissionDeniedException) {

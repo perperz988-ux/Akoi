@@ -105,7 +105,7 @@ class ThemeActivity : ComponentActivity() {
         column.addView(simpleRow("Buscador", Palette.KEY_SEARCH, fg))
 
         // ---- Zper AI (Claude)
-        column.addView(sectionTitle("Zper AI · Claude", fg).apply { setPadding(0, dp(26), 0, dp(10)) })
+        column.addView(sectionTitle("Zper AI", fg).apply { setPadding(0, dp(26), 0, dp(10)) })
         column.addView(buildAiSection(fg))
 
         // ---- ⚡ Turbo gamer
@@ -188,15 +188,35 @@ class ThemeActivity : ComponentActivity() {
             setPadding(0, dp(12), 0, dp(6))
         }
 
+        val provider = ZperAi.provider(this)
         val hasKey = ZperAi.apiKey(this).isNotEmpty()
-        val keyField = field(if (hasKey) "•••••••• (guardada)" else "sk-ant-…", multi = false)
+        val keyField = field(if (hasKey) "•••••••• (guardada)" else ZperAi.keyHint(this), multi = false)
         val persona = field("Personalidad", multi = true).apply { setText(ZperAi.personality(this@ThemeActivity)) }
 
         return LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             background = Ui.slab(c, dp(24).toFloat(), topOnly = false)
             setPadding(dp(16), dp(8), dp(16), dp(16))
-            addView(label("🔑 API key de Claude " + if (hasKey) "· ✅ conectada" else "· ❌ falta"))
+            addView(label("🧠 IA que usa Zper AI"))
+            addView(LinearLayout(context).apply {
+                orientation = LinearLayout.HORIZONTAL
+                ZperAi.Provider.entries.forEachIndexed { i, p ->
+                    val selected = p == provider
+                    addView(TextView(context).apply {
+                        text = (if (selected) "✓ " else "") + p.title
+                        gravity = Gravity.CENTER
+                        style(12f, if (selected) Ui.onColor(on) else on, Ui.HEAVY, 0.05f)
+                        background = if (selected) Ui.slab(on, dp(14).toFloat(), topOnly = false)
+                            else Ui.outline(on, dp(2), dp(14).toFloat())
+                        setPadding(dp(14), dp(9), dp(14), dp(9))
+                        setOnClickListener {
+                            ZperAi.setProvider(this@ThemeActivity, p)
+                            render()
+                        }
+                    }, LinearLayout.LayoutParams(-2, -2).apply { if (i > 0) marginStart = dp(8) })
+                }
+            })
+            addView(label("🔑 API key de ${provider.title} " + if (hasKey) "· ✅ conectada" else "· ❌ falta"))
             addView(keyField)
             addView(LinearLayout(context).apply {
                 orientation = LinearLayout.HORIZONTAL
@@ -216,7 +236,9 @@ class ThemeActivity : ComponentActivity() {
                 }, LinearLayout.LayoutParams(-2, -2).apply { marginStart = dp(8) })
             })
             addView(TextView(context).apply {
-                text = "Consíguela en console.anthropic.com → API Keys. Se guarda solo en este teléfono."
+                text = (if (provider == ZperAi.Provider.GEMINI)
+                    "Gratis en aistudio.google.com/apikey → Create API key."
+                else "En console.anthropic.com → API Keys (de pago).") + " Se guarda solo en este teléfono."
                 style(11f, Ui.alpha(on, 0xBB), Ui.BOLD)
                 setPadding(0, dp(8), 0, 0)
             })

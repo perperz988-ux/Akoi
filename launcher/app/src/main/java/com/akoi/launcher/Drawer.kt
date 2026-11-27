@@ -31,9 +31,23 @@ enum class Drawer(val title: String, val glyph: String) {
             "packageinstaller", "systemui", "samsung.android.app", "store", "updater", "backup",
         )
 
+        /** Juegos en la nube, launchers de juegos y emuladores (por paquete o por nombre). */
+        private val GAME_KW = listOf(
+            "game", "juego", "supercell", "roblox", "mojang", "minecraft", "epicgames", "garena", "tencent.ig",
+            "activision", "mihoyo", "hoyoverse", "cloudmoon", "cloud moon", "geforcenow", "geforce now",
+            "nvidia.geforce", "xcloud", "gamepass", "game pass", "boosteroid", "netboom", "gloud", "now.gg",
+            "nowgg", "chikii", "moonlight", "steam", "valvesoftware", "playstation", "remoteplay",
+            "remote play", "parsec", "rainway", "emulat", "retroarch", "ppsspp", "dolphin", "citra",
+            "yuzu", "skyline", "aethersx2", "nethersx2", "drastic", "mupen", "lemuroid", "winlator",
+            "gamehub", "gamelauncher", "game launcher", "rockstar", "ea.gp", "ubisoft", "krafton",
+            "pubg", "freefire", "free fire", "fortnite", "brawl", "clash", "genshin", "honkai",
+        )
+
         /** Cajón temático de una app, o null si solo va en "Todas A–Z". */
-        fun classify(info: ApplicationInfo?, packageName: String): Drawer? {
+        fun classify(info: ApplicationInfo?, packageName: String, label: String = ""): Drawer? {
             val pkg = packageName.lowercase()
+            val name = label.lowercase()
+            if (GAME_KW.any { pkg.contains(it) || name.contains(it) }) return JUEGOS
             if (info != null) {
                 @Suppress("DEPRECATION")
                 if (info.category == ApplicationInfo.CATEGORY_GAME ||
@@ -50,10 +64,6 @@ enum class Drawer(val title: String, val glyph: String) {
                     ApplicationInfo.CATEGORY_ACCESSIBILITY -> return SISTEMA
                 }
             }
-            if (pkg.contains("game") || pkg.contains("supercell") || pkg.contains("roblox") ||
-                pkg.contains("mojang") || pkg.contains("epicgames") || pkg.contains("garena") ||
-                pkg.contains("tencent.ig") || pkg.contains("activision") || pkg.contains("miHoYo".lowercase())
-            ) return JUEGOS
             if (SOCIAL_KW.any { pkg.contains(it) }) return SOCIAL
             if (VER_KW.any { pkg.contains(it) }) return VER
             if (SISTEMA_KW.any { pkg.contains(it) }) return SISTEMA

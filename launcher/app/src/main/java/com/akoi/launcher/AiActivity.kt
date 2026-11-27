@@ -218,7 +218,7 @@ class AiActivity : ComponentActivity() {
         val c = palette.slab(Drawer.SOCIAL)
         val fg = Ui.onColor(c)
         val keyField = EditText(this).apply {
-            hint = "sk-ant-…"
+            hint = ZperAi.keyHint(this@AiActivity)
             setHintTextColor(Ui.alpha(fg, 0x88))
             setTextColor(fg)
             textSize = 14f
@@ -231,11 +231,13 @@ class AiActivity : ComponentActivity() {
             background = Ui.slab(c, dp(24).toFloat(), topOnly = false)
             setPadding(dp(16), dp(14), dp(16), dp(14))
             addView(TextView(context).apply {
-                text = "🔑 Conecta tu Claude"
+                text = "🔑 Conecta ${ZperAi.provider(this@AiActivity).title}"
                 style(18f, fg, Ui.HEAVY)
             })
             addView(TextView(context).apply {
-                text = "Pega tu API key de Anthropic. Se guarda solo en este teléfono."
+                text = if (ZperAi.provider(this@AiActivity) == ZperAi.Provider.GEMINI)
+                    "Crea gratis tu API key en Google AI Studio y pégala aquí. Se guarda solo en este teléfono."
+                else "Pega tu API key de Anthropic. Se guarda solo en este teléfono."
                 style(12f, Ui.alpha(fg, 0xCC), Ui.BOLD)
                 setPadding(0, dp(6), 0, dp(10))
             })
@@ -267,9 +269,9 @@ class AiActivity : ComponentActivity() {
                     setPadding(dp(16), dp(10), 0, dp(10))
                     setOnClickListener {
                         try {
-                            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://console.anthropic.com/settings/keys")))
+                            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(ZperAi.keyUrl(this@AiActivity))))
                         } catch (e: ActivityNotFoundException) {
-                            toast("Abre console.anthropic.com en el navegador")
+                            toast("Abre ${ZperAi.keyUrl(this@AiActivity)} en el navegador")
                         }
                     }
                 })
@@ -281,7 +283,8 @@ class AiActivity : ComponentActivity() {
     private fun refreshKeyState() {
         val hasKey = ZperAi.apiKey(this).isNotEmpty()
         keyCard.visibility = if (hasKey) View.GONE else View.VISIBLE
-        status.text = if (hasKey) "● EN LÍNEA · CLAUDE" else "● SIN API KEY"
+        val name = ZperAi.provider(this).title.uppercase()
+        status.text = if (hasKey) "● EN LÍNEA · $name" else "● SIN API KEY · $name"
     }
 
     // ---------------------------------------------------------------- Chat
@@ -290,7 +293,7 @@ class AiActivity : ComponentActivity() {
         val text = raw.trim()
         if (text.isEmpty() || busy) return
         if (ZperAi.apiKey(this).isEmpty()) {
-            toast("Primero pega tu API key de Claude 🔑")
+            toast("Primero pega tu API key 🔑")
             refreshKeyState()
             return
         }
@@ -344,7 +347,7 @@ class AiActivity : ComponentActivity() {
             val la = getSystemService(LauncherApps::class.java)
             val found = try {
                 la.getActivityList(null, Process.myUserHandle())
-                    .filter { Drawer.classify(it.applicationInfo, it.componentName.packageName) == Drawer.JUEGOS }
+                    .filter { Drawer.classify(it.applicationInfo, it.componentName.packageName, it.label.toString()) == Drawer.JUEGOS }
                     .map { it.label.toString() }
                     .distinct()
             } catch (e: Exception) {

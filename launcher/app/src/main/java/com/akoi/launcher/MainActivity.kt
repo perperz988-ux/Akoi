@@ -701,8 +701,11 @@ class MainActivity : ComponentActivity(), AssistantHost {
                 } catch (e: Exception) {
                     info.getIcon(density)
                 }
-                val drawer = Drawer.classify(info.applicationInfo, info.componentName.packageName)
-                result += AppItem(info.label.toString(), info.componentName, user, icon, drawer)
+                val label = info.label.toString()
+                val pkgName = info.componentName.packageName
+                val drawer = if (hasOverride(pkgName)) drawerOverride(pkgName)
+                    else Drawer.classify(info.applicationInfo, pkgName, label)
+                result += AppItem(label, info.componentName, user, icon, drawer)
             }
         }
         val collator = Collator.getInstance(Locale("es")).apply { strength = Collator.PRIMARY }
@@ -825,17 +828,44 @@ class MainActivity : ComponentActivity(), AssistantHost {
 
     private fun showAppMenu(app: AppItem, anchor: View) {
         PopupMenu(this, anchor).apply {
-            menu.add(0, 1, 0, "Información de la app")
-            menu.add(0, 2, 1, "Desinstalar")
+            if (app.drawer != Drawer.JUEGOS) menu.add(0, 10, 0, "🎮 Mover a Juegos")
+            val sub = menu.addSubMenu(0, 11, 1, "📂 Mover a otra losa…")
+            Drawer.entries.filter { it != Drawer.AZ && it != app.drawer && it != Drawer.JUEGOS }
+                .forEachIndexed { i, d -> sub.add(0, 100 + d.ordinal, i, "${d.glyph} ${d.title}") }
+            if (app.drawer != null) sub.add(0, 99, 99, "Quitar de ${app.drawer.title} (solo A–Z)")
+            menu.add(0, 1, 2, "Información de la app")
+            menu.add(0, 2, 3, "Desinstalar")
             setOnMenuItemClickListener { item ->
+                val pkg = app.component.packageName
                 when (item.itemId) {
                     1 -> launcherApps.startAppDetailsActivity(app.component, app.user, null, null)
-                    2 -> startSafe(Intent(Intent.ACTION_DELETE, Uri.parse("package:${app.component.packageName}")))
+                    2 -> startSafe(Intent(Intent.ACTION_DELETE, Uri.parse("package:$pkg")))
+                    10 -> setDrawerOverride(pkg, Drawer.JUEGOS)
+                    99 -> setDrawerOverride(pkg, null)
+                    in 100..199 -> Drawer.entries.getOrNull(item.itemId - 100)?.let { setDrawerOverride(pkg, it) }
                 }
                 true
             }
             show()
         }
+    }
+
+    // ------------------------------------------------ Losa elegida a mano
+
+    private fun overrides() = getSharedPreferences("drawer_overrides", Context.MODE_PRIVATE)
+
+    /** Losa que el usuario eligió a mano para una app (o null si no eligió). "NONE" = solo A–Z. */
+    private fun drawerOverride(pkg: String): Drawer? {
+        val v = overrides().getString(pkg, null) ?: return null
+        return Drawer.entries.firstOrNull { it.name == v }
+    }
+
+    private fun hasOverride(pkg: String) = overrides().contains(pkg)
+
+    private fun setDrawerOverride(pkg: String, drawer: Drawer?) {
+        overrides().edit().putString(pkg, drawer?.name ?: "NONE").apply()
+        toast(if (drawer != null) "Movida a ${drawer.title} ${drawer.glyph}" else "Ahora solo aparece en Todas A–Z")
+        reload()
     }
 
     private fun hideKeyboard() {

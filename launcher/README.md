@@ -26,6 +26,15 @@ Todo en español, con toque gamer, y **cada color se puede cambiar**.
   - **Todas A–Z**: ventanas con cada letra (`#`, A–Z, Ñ) para encontrar apps en orden alfabético.
 - Mantén pulsada una app: información o desinstalar.
 
+### 🤖 Zper AI
+IA gamer integrada. Usa **Gemini (Google AI Studio, gratis)** o **Claude** (de pago).
+Elige cuál y pega tu API key en **🎨 Personalizar → Zper AI**. La key gratis de Gemini se
+crea en aistudio.google.com/apikey. La personalidad también se edita ahí
+(o en el código: `ZperAi.kt`).
+
+### 🎮 ¿Una app no sale en Juegos?
+Mantén pulsada la app → **🎮 Mover a Juegos** (o a otra losa).
+
 ### Pantalla de inicio predeterminada
 La primera vez ZperOS te pregunta si quieres usarlo como pantalla de inicio.
 Si no, toca el aviso **"Hacer ZperOS mi pantalla de inicio" → ACTIVAR**, o en la losa
