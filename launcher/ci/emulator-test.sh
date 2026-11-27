@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Prueba ZperOS en un emulador: instalar, fijar como launcher, abrir y capturar pantallas.
 set -u
-PKG=com.zperos.launcher
+PKG=com.zper.os
 APK=${APK:-app-debug.apk}
 mkdir -p shots
 fail=0

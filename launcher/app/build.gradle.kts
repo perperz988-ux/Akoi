@@ -8,7 +8,7 @@ android {
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.zperos.launcher"
+        applicationId = "com.zper.os"
         minSdk = 26
         targetSdk = 34
         // En GitHub Actions la versión sube sola en cada compilación,
