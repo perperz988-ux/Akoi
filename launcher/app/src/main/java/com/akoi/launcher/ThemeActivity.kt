@@ -108,6 +108,30 @@ class ThemeActivity : ComponentActivity() {
         column.addView(sectionTitle("Zper AI · Claude", fg).apply { setPadding(0, dp(26), 0, dp(10)) })
         column.addView(buildAiSection(fg))
 
+        // ---- ⚡ Turbo gamer
+        column.addView(sectionTitle("⚡ Turbo gamer", fg).apply { setPadding(0, dp(26), 0, dp(6)) })
+        column.addView(Switch(this).apply {
+            text = "Turbo automático al abrir un juego"
+            setTextColor(fg)
+            textSize = 15f
+            isChecked = GameBooster.autoTurbo(this@ThemeActivity)
+            setOnCheckedChangeListener { _, on -> GameBooster.setAutoTurbo(this@ThemeActivity, on) }
+            setPadding(0, dp(8), 0, dp(8))
+        })
+        column.addView(Switch(this).apply {
+            text = "No molestar mientras juegas"
+            setTextColor(fg)
+            textSize = 15f
+            isChecked = GameBooster.dndWhilePlaying(this@ThemeActivity)
+            setOnCheckedChangeListener { _, on ->
+                GameBooster.setDndWhilePlaying(this@ThemeActivity, on)
+                if (on && !GameBooster.canUseDnd(this@ThemeActivity)) {
+                    try { startActivity(GameBooster.dndPermissionIntent()) } catch (e: Exception) { }
+                }
+            }
+            setPadding(0, dp(8), 0, dp(8))
+        })
+
         column.addView(sectionTitle("Portada", fg).apply { setPadding(0, dp(26), 0, dp(6)) })
         column.addView(Switch(this).apply {
             text = "Mostrar la portada al encender la pantalla"

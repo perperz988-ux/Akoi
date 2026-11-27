@@ -165,6 +165,7 @@ class MainActivity : ComponentActivity(), AssistantHost {
             return
         }
         updateInfo()
+        GameBooster.endSession(this) // quita el "No molestar" del turbo al volver
         defaultBanner.visibility = if (isDefaultHome()) View.GONE else View.VISIBLE
     }
 
@@ -187,7 +188,7 @@ class MainActivity : ComponentActivity(), AssistantHost {
     // ------------------------------------------------------------- Interfaz
 
     private fun buildUi(): View {
-        val root = FrameLayout(this).apply {
+        val root = FrameLayout(this).also { rootView = it }.apply {
             setBackgroundColor(palette.bg)
             fitsSystemWindows = true
         }
@@ -507,7 +508,7 @@ class MainActivity : ComponentActivity(), AssistantHost {
     private fun fillHeader(v: DrawerViews) {
         val list = appsIn(v.drawer)
         v.meta.text = when (v.drawer) {
-            Drawer.JUEGOS -> if (list.isEmpty()) "sin juegos" else "🎮 ${list.size}"
+            Drawer.JUEGOS -> (if (list.isEmpty()) "sin juegos" else "🎮 ${list.size}") + " · " + GameBooster.thermalLabel(this)
             Drawer.AZ -> azLetter?.let { "letra $it" } ?: "${apps.size} apps"
             else -> "${list.size}"
         }
@@ -528,8 +529,24 @@ class MainActivity : ComponentActivity(), AssistantHost {
     private fun tilesFor(d: Drawer): List<Tile> = when (d) {
         Drawer.JUEGOS -> listOf<Tile>(
             Tile.Card("🤖", "Zper AI", "Tu compa gamer con Claude: tips, builds y retos") { openZperAi() },
-        ) + gameTiles()
+        ) + turboTiles() + gameTiles()
         else -> tilesForOther(d)
+    }
+
+    /** Botones del ⚡ Modo Turbo dentro de la losa Juegos. */
+    private fun turboTiles(): List<Tile> {
+        val tiles = ArrayList<Tile>()
+        tiles += Tile.Action("⚡", "Turbo ahora") { runTurbo(null) }
+        if (!GameBooster.canUseDnd(this)) {
+            tiles += Tile.Action("🔕", "Permitir No molestar") { startSafe(GameBooster.dndPermissionIntent()) }
+        }
+        GameBooster.samsungGameLauncherIntent(this)?.let { intent ->
+            tiles += Tile.Action("🚀", "Game Booster") { startSafe(intent) }
+        }
+        if (getSystemService(android.os.PowerManager::class.java)?.isPowerSaveMode == true) {
+            tiles += Tile.Action("🔋", "Quitar ahorro") { startSafe(Intent(Settings.ACTION_BATTERY_SAVER_SETTINGS)) }
+        }
+        return tiles
     }
 
     private fun gameTiles(): List<Tile> {
@@ -706,6 +723,80 @@ class MainActivity : ComponentActivity(), AssistantHost {
     }
 
     private fun launch(app: AppItem, source: View) {
+        if (app.drawer == Drawer.JUEGOS && GameBooster.autoTurbo(this) && !turboRunning) {
+            runTurbo(app, source)
+            return
+        }
+        startApp(app, source)
+    }
+
+    private lateinit var rootView: FrameLayout
+    private var turboRunning = false
+
+    /**
+     * ⚡ Turbo: pantalla gamer de 1 segundo mientras prepara el teléfono;
+     * luego abre el juego (si hay uno).
+     */
+    private fun runTurbo(game: AppItem?, source: View? = null) {
+        if (turboRunning) return
+        turboRunning = true
+        hideKeyboard()
+        val color = palette.slab(Drawer.JUEGOS)
+        val fg = Ui.onColor(color)
+        val title = TextView(this).apply {
+            text = "⚡ TURBO"
+            style(64f, fg, Ui.HEAVY, -0.02f)
+        }
+        val sub = TextView(this).apply {
+            text = game?.let { "Preparando ${it.label}…" } ?: "Optimizando…"
+            style(16f, fg, Ui.HEAVY)
+            setPadding(0, dp(10), 0, dp(18))
+        }
+        val stats = TextView(this).apply {
+            style(15f, Ui.alpha(fg, 0xDD), Ui.BOLD)
+            setLineSpacing(0f, 1.3f)
+        }
+        val overlay = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER_VERTICAL
+            setBackgroundColor(color)
+            setPadding(dp(28), 0, dp(28), 0)
+            isClickable = true
+            addView(title)
+            addView(sub)
+            addView(stats)
+            alpha = 0f
+        }
+        rootView.addView(overlay, FrameLayout.LayoutParams(-1, -1))
+        overlay.animate().alpha(1f).setDuration(150).start()
+        overlay.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
+
+        val others = apps.filter { it.drawer != Drawer.JUEGOS }.map { it.component.packageName }
+        val ctx = applicationContext
+        executor.execute {
+            val report = GameBooster.boost(ctx, game?.component?.packageName, others)
+            mainHandler.post {
+                stats.text = buildString {
+                    append("🧠 RAM libre: ${report.freeRamMb} MB de ${report.totalRamMb} MB\n")
+                    if (report.closedApps > 0) append("🧹 ${report.closedApps} apps en segundo plano cerradas\n")
+                    append(if (report.dndOn) "🔕 No molestar: ACTIVADO\n" else "🔔 No molestar: sin permiso (actívalo en la losa Juegos)\n")
+                    append("🌡️ Temperatura: ${GameBooster.thermalLabel(ctx)}\n")
+                    report.warnings.forEach { append("$it\n") }
+                    if (report.warnings.isEmpty()) append("✅ Todo listo para jugar")
+                }
+                sub.text = game?.let { "¡${it.label} listo! GG 🎮" } ?: "Turbo aplicado"
+                mainHandler.postDelayed({
+                    if (game != null) startApp(game, source ?: rootView)
+                    mainHandler.postDelayed({
+                        rootView.removeView(overlay)
+                        turboRunning = false
+                    }, if (game != null) 700L else 1800L)
+                }, if (game != null) 1100L else 0L)
+            }
+        }
+    }
+
+    private fun startApp(app: AppItem, source: View) {
         val bounds = Rect().also { source.getGlobalVisibleRect(it) }
         try {
             launcherApps.startMainActivity(app.component, app.user, bounds, null)

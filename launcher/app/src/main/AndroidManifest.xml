@@ -20,6 +20,9 @@
     </queries>
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- ⚡ Modo Turbo -->
+    <uses-permission android:name="android.permission.KILL_BACKGROUND_PROCESSES" />
+    <uses-permission android:name="android.permission.ACCESS_NOTIFICATION_POLICY" />
     <uses-permission android:name="android.permission.REQUEST_DELETE_PACKAGES" />
     <uses-permission android:name="com.android.alarm.permission.SET_ALARM" />
 
