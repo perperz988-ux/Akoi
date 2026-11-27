@@ -34,7 +34,7 @@ sleep 3
 adb exec-out screencap -p > shots/3_az.png
 
 # Buscar con el asistente.
-adb shell input tap 400 415
+adb shell input tap 400 540
 adb shell input text "cuanto%ses%s25%spor%s4"
 sleep 2
 adb exec-out screencap -p > shots/4_buscar.png
