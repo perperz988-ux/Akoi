@@ -104,6 +104,10 @@ class ThemeActivity : ComponentActivity() {
         column.addView(simpleRow("Reloj", Palette.KEY_CLOCK, fg))
         column.addView(simpleRow("Buscador", Palette.KEY_SEARCH, fg))
 
+        // ---- Zper AI (Claude)
+        column.addView(sectionTitle("Zper AI · Claude", fg).apply { setPadding(0, dp(26), 0, dp(10)) })
+        column.addView(buildAiSection(fg))
+
         column.addView(sectionTitle("Portada", fg).apply { setPadding(0, dp(26), 0, dp(6)) })
         column.addView(Switch(this).apply {
             text = "Mostrar la portada al encender la pantalla"
@@ -123,6 +127,92 @@ class ThemeActivity : ComponentActivity() {
         }, LinearLayout.LayoutParams(-1, dp(56)).apply { topMargin = dp(28) })
 
         setContentView(scroll)
+    }
+
+    /** API key de Claude y personalidad de Zper AI, editables aquí. */
+    private fun buildAiSection(fg: Int): View {
+        val c = palette.slab(Drawer.SOCIAL)
+        val on = Ui.onColor(c)
+        fun field(hintText: String, multi: Boolean) = EditText(this).apply {
+            hint = hintText
+            setHintTextColor(Ui.alpha(on, 0x88))
+            setTextColor(on)
+            textSize = 14f
+            background = Ui.outline(on, dp(2), dp(14).toFloat())
+            setPadding(dp(12), dp(10), dp(12), dp(10))
+            if (multi) {
+                inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_MULTI_LINE or
+                    InputType.TYPE_TEXT_FLAG_CAP_SENTENCES
+                minLines = 5
+                maxLines = 12
+                gravity = Gravity.TOP or Gravity.START
+            } else {
+                inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
+            }
+        }
+        fun button(label: String, onClick: () -> Unit) = TextView(this).apply {
+            text = label
+            gravity = Gravity.CENTER
+            style(12f, Ui.onColor(on), Ui.HEAVY, 0.08f)
+            background = Ui.slab(on, dp(14).toFloat(), topOnly = false)
+            setPadding(dp(14), dp(9), dp(14), dp(9))
+            setOnClickListener { onClick() }
+        }
+        fun label(t: String) = TextView(this).apply {
+            text = t
+            style(13f, on, Ui.HEAVY)
+            setPadding(0, dp(12), 0, dp(6))
+        }
+
+        val hasKey = ZperAi.apiKey(this).isNotEmpty()
+        val keyField = field(if (hasKey) "•••••••• (guardada)" else "sk-ant-…", multi = false)
+        val persona = field("Personalidad", multi = true).apply { setText(ZperAi.personality(this@ThemeActivity)) }
+
+        return LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            background = Ui.slab(c, dp(24).toFloat(), topOnly = false)
+            setPadding(dp(16), dp(8), dp(16), dp(16))
+            addView(label("🔑 API key de Claude " + if (hasKey) "· ✅ conectada" else "· ❌ falta"))
+            addView(keyField)
+            addView(LinearLayout(context).apply {
+                orientation = LinearLayout.HORIZONTAL
+                setPadding(0, dp(8), 0, 0)
+                addView(button("GUARDAR KEY") {
+                    val k = keyField.text.toString().trim()
+                    if (k.length < 20) {
+                        android.widget.Toast.makeText(context, "Esa key se ve incompleta", android.widget.Toast.LENGTH_SHORT).show()
+                    } else {
+                        ZperAi.setApiKey(this@ThemeActivity, k)
+                        render()
+                    }
+                })
+                if (hasKey) addView(button("BORRAR") {
+                    ZperAi.setApiKey(this@ThemeActivity, "")
+                    render()
+                }, LinearLayout.LayoutParams(-2, -2).apply { marginStart = dp(8) })
+            })
+            addView(TextView(context).apply {
+                text = "Consíguela en console.anthropic.com → API Keys. Se guarda solo en este teléfono."
+                style(11f, Ui.alpha(on, 0xBB), Ui.BOLD)
+                setPadding(0, dp(8), 0, 0)
+            })
+            addView(label("🎮 Personalidad de Zper AI"))
+            addView(persona)
+            addView(LinearLayout(context).apply {
+                orientation = LinearLayout.HORIZONTAL
+                setPadding(0, dp(8), 0, 0)
+                addView(button("GUARDAR") {
+                    ZperAi.setPersonality(this@ThemeActivity, persona.text.toString())
+                    android.widget.Toast.makeText(context, "Personalidad guardada 🎮", android.widget.Toast.LENGTH_SHORT).show()
+                })
+                addView(button("ORIGINAL") {
+                    ZperAi.setPersonality(this@ThemeActivity, "")
+                    persona.setText(ZperAi.DEFAULT_PERSONALITY)
+                }, LinearLayout.LayoutParams(-2, -2).apply { marginStart = dp(8) })
+                addView(button("PROBAR ▶") { openZperAi() },
+                    LinearLayout.LayoutParams(-2, -2).apply { marginStart = dp(8) })
+            })
+        }
     }
 
     private fun sectionTitle(text: String, fg: Int) = TextView(this).apply {

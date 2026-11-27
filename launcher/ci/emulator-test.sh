@@ -6,6 +6,26 @@ APK=${APK:-app-debug.apk}
 mkdir -p shots
 fail=0
 
+# Toca el primer elemento de la pantalla cuyo texto contenga $1 (usa uiautomator).
+tap_text() {
+  adb shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1
+  adb pull /sdcard/ui.xml ui.xml >/dev/null 2>&1
+  python3 - "$1" <<'PY'
+import re, sys, subprocess
+needle = sys.argv[1]
+xml = open("ui.xml", encoding="utf-8").read()
+for m in re.finditer(r'<node [^>]*>', xml):
+    node = m.group(0)
+    t = re.search(r' text="([^"]*)"', node); h = re.search(r' hint="([^"]*)"', node)
+    if (t and needle in t.group(1)) or (h and needle in h.group(1)):
+        b = re.search(r'bounds="\[(\d+),(\d+)\]\[(\d+),(\d+)\]"', node)
+        x1, y1, x2, y2 = map(int, b.groups())
+        subprocess.run(["adb", "shell", "input", "tap", str((x1 + x2) // 2), str((y1 + y2) // 2)])
+        print("tap", needle); sys.exit(0)
+print("no encontrado:", needle); sys.exit(1)
+PY
+}
+
 adb install -r "$APK" || { echo "FALLO: no se pudo instalar"; exit 1; }
 
 echo "== Apps de pantalla de inicio disponibles =="
@@ -43,6 +63,31 @@ adb shell input text "cuanto%ses%s25%spor%s4"
 sleep 2
 adb exec-out screencap -p > shots/4_buscar.png
 adb shell input keyevent KEYCODE_BACK
+adb shell input keyevent KEYCODE_BACK
+
+# ---- Zper AI: abrir el chat, poner una key falsa y enviar. Debe responder "API key inválida"
+# (eso prueba que el SDK de Claude funciona dentro de Android) y no cerrarse.
+adb shell input keyevent KEYCODE_HOME
+sleep 2
+adb shell input tap 400 540
+adb shell input text "hola"
+sleep 2
+if tap_text "Preguntar a Zper AI"; then
+  sleep 3
+  tap_text "sk-ant" && adb shell input text "sk-ant-api03-claveFalsaDePruebaZperOS1234567890"
+  sleep 1
+  adb shell input keyevent KEYCODE_BACK
+  tap_text "GUARDAR"
+  sleep 2
+  tap_text "Recomiéndame" || tap_text "Trivia"
+  sleep 15
+  adb exec-out screencap -p > shots/5_zper_ai.png
+  adb shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1; adb pull /sdcard/ui.xml ui.xml >/dev/null 2>&1
+  if grep -q "API key inválida" ui.xml; then echo "OK: Zper AI llamó a Claude (respondió API key inválida, como se espera)";
+  else echo "FALLO: Zper AI no mostró la respuesta esperada"; grep -o 'text="[^"]*"' ui.xml | head -40; fail=1; fi
+else
+  echo "FALLO: no apareció 'Preguntar a Zper AI'"; fail=1
+fi
 adb shell input keyevent KEYCODE_BACK
 
 # Pulsar Inicio de nuevo: debe seguir ZperOS en primer plano.

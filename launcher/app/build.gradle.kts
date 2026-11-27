@@ -38,6 +38,19 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
+    packaging {
+        resources {
+            excludes += setOf(
+                "META-INF/DEPENDENCIES",
+                "META-INF/LICENSE*",
+                "META-INF/NOTICE*",
+                "META-INF/INDEX.LIST",
+                "META-INF/versions/**",
+                "META-INF/FastDoubleParser-*",
+                "META-INF/io.netty.versions.properties",
+            )
+        }
+    }
     kotlinOptions {
         jvmTarget = "17"
     }
@@ -48,4 +61,7 @@ dependencies {
     implementation("androidx.activity:activity-ktx:1.9.2")
     implementation("androidx.recyclerview:recyclerview:1.3.2")
     implementation("androidx.dynamicanimation:dynamicanimation:1.0.0")
+
+    // Zper AI: SDK oficial de Claude (Anthropic) para Java/Kotlin.
+    implementation("com.anthropic:anthropic-java:3.14.0")
 }

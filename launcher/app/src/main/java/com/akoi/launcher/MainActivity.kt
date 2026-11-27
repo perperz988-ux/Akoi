@@ -329,12 +329,22 @@ class MainActivity : ComponentActivity(), AssistantHost {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.END
         }
-        side.addView(TextView(this).apply {
-            text = "🎨"
-            textSize = 22f
-            setPadding(dp(10), dp(4), dp(4), dp(8))
-            contentDescription = "Personalizar colores"
-            setOnClickListener { openThemes() }
+        side.addView(LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            addView(TextView(context).apply {
+                text = "🤖"
+                textSize = 22f
+                setPadding(dp(10), dp(4), dp(6), dp(8))
+                contentDescription = "Zper AI"
+                setOnClickListener { openZperAi() }
+            })
+            addView(TextView(context).apply {
+                text = "🎨"
+                textSize = 22f
+                setPadding(dp(6), dp(4), dp(4), dp(8))
+                contentDescription = "Personalizar colores"
+                setOnClickListener { openThemes() }
+            })
         })
         side.addView(TextClock(this).apply {
             format24Hour = "EEE d MMM"
@@ -516,10 +526,16 @@ class MainActivity : ComponentActivity(), AssistantHost {
     }
 
     private fun tilesFor(d: Drawer): List<Tile> = when (d) {
-        Drawer.JUEGOS -> {
-            val games = appsIn(d)
-            if (games.isEmpty()) {
-                listOf(
+        Drawer.JUEGOS -> listOf<Tile>(
+            Tile.Card("🤖", "Zper AI", "Tu compa gamer con Claude: tips, builds y retos") { openZperAi() },
+        ) + gameTiles()
+        else -> tilesForOther(d)
+    }
+
+    private fun gameTiles(): List<Tile> {
+        val games = appsIn(Drawer.JUEGOS)
+        return if (games.isEmpty()) {
+                listOf<Tile>(
                     Tile.Header("Aún no hay juegos instalados"),
                     Tile.Action("🛒", "Buscar juegos") {
                         startSafe(Intent(Intent.ACTION_VIEW, Uri.parse("market://search?q=juegos&c=apps")))
@@ -531,7 +547,9 @@ class MainActivity : ComponentActivity(), AssistantHost {
                     Tile.App(g, if (n > 0) "▶ $n ${if (n == 1) "PARTIDA" else "PARTIDAS"}" else "NUEVO")
                 }
             }
-        }
+    }
+
+    private fun tilesForOther(d: Drawer): List<Tile> = when (d) {
         Drawer.SISTEMA -> listOf<Tile>(
             Tile.Header("Rápido"),
             Tile.Action("🔦", "Linterna") { setTorch(null) },
@@ -539,6 +557,7 @@ class MainActivity : ComponentActivity(), AssistantHost {
             Tile.Action("ᛒ", "Bluetooth") { startSafe(Intent(Settings.ACTION_BLUETOOTH_SETTINGS)) },
             Tile.Action("☀", "Brillo") { startSafe(Intent(Settings.ACTION_DISPLAY_SETTINGS)) },
             Tile.Action("🎮", "Modo juego") { startSafe(Intent("android.settings.ZEN_MODE_SETTINGS")) },
+            Tile.Action("🤖", "Zper AI") { openZperAi() },
             Tile.Action("🎨", "Colores") { openThemes() },
             Tile.Action("🏠", "Predeterminado") { requestDefaultHome() },
             Tile.Action("⚙", "Ajustes") { startSafe(Intent(Settings.ACTION_SETTINGS)) },
@@ -581,6 +600,11 @@ class MainActivity : ComponentActivity(), AssistantHost {
         actions = assistant.suggest(query, apps, found.isNotEmpty())
         val tiles = ArrayList<Tile>()
         actions.forEach { a -> tiles += Tile.Card(a.icon, a.title, a.subtitle) { runAction(a) } }
+        val question = query.trim()
+        tiles += Tile.Card("🤖", "Preguntar a Zper AI", "“$question”") {
+            openZperAi(question)
+            mainHandler.postDelayed({ resetHome() }, 400)
+        }
         tiles += Tile.Header(if (found.isEmpty()) "Sin apps con ese nombre" else "Apps · ${found.size}")
         found.forEach { tiles += Tile.App(it) }
         resultsAdapter.submit(tiles, Ui.onColor(palette.slab(Drawer.AZ)))
