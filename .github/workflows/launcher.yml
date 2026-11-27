@@ -7,6 +7,9 @@ on:
       - '.github/workflows/launcher.yml'
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   apk:
     runs-on: ubuntu-latest
@@ -28,6 +31,17 @@ jobs:
         with:
           name: zperos-debug-apk
           path: launcher/app/build/outputs/apk/debug/app-debug.apk
+      - name: Copy APK as ZperOS.apk
+        run: cp app/build/outputs/apk/debug/app-debug.apk ZperOS.apk
+      - name: Publish direct download (GitHub Release)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: zperos-latest
+          name: ZperOS (última versión)
+          body: "Descarga directa: toca **ZperOS.apk** abajo para instalar."
+          target_commitish: ${{ github.sha }}
+          make_latest: true
+          files: launcher/ZperOS.apk
 
   emulator-test:
     needs: apk
