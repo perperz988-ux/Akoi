@@ -47,17 +47,16 @@ class CoverView(context: Context, palette: Palette, private val onOpened: () -> 
                 text = context.getString(R.string.app_name)
                 style(14f, Ui.onColor(cHour), Ui.HEAVY)
             }, LayoutParams(-2, -2).apply { setMargins(dp(20), dp(14), 0, 0) })
-            addView(giant(cHour, "HH", "h"), LayoutParams(-2, -2, Gravity.START or Gravity.BOTTOM).apply {
-                marginStart = -dp(22)
-                bottomMargin = -dp(18)
+            addView(giant(cHour, "HH", "hh", Gravity.START or Gravity.BOTTOM), LayoutParams(-1, -1).apply {
+                setMargins(dp(14), dp(44), dp(14), dp(6))
             })
         }
         column.addView(hourSlab, LinearLayout.LayoutParams(-1, 0, 1f))
 
         minuteSlab = FrameLayout(context).apply {
             background = Ui.slab(cMin, 0f)
-            addView(giant(cMin, "mm", "mm"), LayoutParams(-2, -2, Gravity.END or Gravity.CENTER_VERTICAL).apply {
-                marginEnd = -dp(26)
+            addView(giant(cMin, "mm", "mm", Gravity.END or Gravity.TOP), LayoutParams(-1, -1).apply {
+                setMargins(dp(14), dp(6), dp(14), dp(36))
             })
         }
         column.addView(minuteSlab, LinearLayout.LayoutParams(-1, 0, 1f))
@@ -92,11 +91,14 @@ class CoverView(context: Context, palette: Palette, private val onOpened: () -> 
         bands = listOf(bottomSlab, minuteSlab, hourSlab)
     }
 
-    private fun giant(bg: Int, format: String, format12: String) = TextClock(context).apply {
+    /** Número gigante que se ajusta solo para verse completo en cualquier pantalla. */
+    private fun giant(bg: Int, format: String, format12: String, align: Int) = TextClock(context).apply {
         format24Hour = format
         format12Hour = format12
-        style(230f, Ui.onColor(bg), Ui.HEAVY, -0.07f)
+        style(200f, Ui.onColor(bg), Ui.HEAVY, -0.03f)
         maxLines = 1
+        gravity = align
+        setAutoSizeTextTypeUniformWithConfiguration(48, 400, 2, android.util.TypedValue.COMPLEX_UNIT_SP)
     }
 
     fun setInfo(text: String) {
