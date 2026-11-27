@@ -20,8 +20,9 @@ data class Palette(
         KEY_CLOCK -> copy(clock = color, name = CUSTOM)
         KEY_SEARCH -> copy(search = color, name = CUSTOM)
         else -> {
-            val i = key.removePrefix("slab").toIntOrNull() ?: return this
-            copy(slabs = slabs.toMutableList().also { it[i] = color }, name = CUSTOM)
+            val i = key.removePrefix("slab").toIntOrNull()
+            if (i == null) this
+            else copy(slabs = slabs.toMutableList().also { it[i] = color }, name = CUSTOM)
         }
     }
 
