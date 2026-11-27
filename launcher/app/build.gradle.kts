@@ -11,8 +11,22 @@ android {
         applicationId = "com.zperos.launcher"
         minSdk = 26
         targetSdk = 34
-        versionCode = 2
-        versionName = "2.0"
+        // En GitHub Actions la versión sube sola en cada compilación,
+        // así Android deja instalar el APK nuevo encima del anterior.
+        val run = (System.getenv("GITHUB_RUN_NUMBER") ?: "0").toInt()
+        versionCode = 100 + run
+        versionName = "2.$run"
+    }
+
+    // Llave fija (no secreta, solo para pruebas): todas las compilaciones se firman igual
+    // y se pueden instalar como actualización sin desinstalar.
+    signingConfigs {
+        getByName("debug") {
+            storeFile = rootProject.file("zperos-debug.keystore")
+            storePassword = "zperos123"
+            keyAlias = "zperos"
+            keyPassword = "zperos123"
+        }
     }
 
     buildTypes {
