@@ -10,9 +10,9 @@ import { settings } from '../game/Save';
 
 export interface Quality { pixelRatio: number; shadows: number; splitK: number; maxZ: number; puffs: number; buildings: number; antialias: boolean; trees: boolean }
 export const QUALITY: Record<string, Quality> = {
-  low: { pixelRatio: 0.75, shadows: 0, splitK: 1.25, maxZ: 13, puffs: 500, buildings: 0.4, antialias: false, trees: false },
-  medium: { pixelRatio: 1, shadows: 1024, splitK: 1.6, maxZ: 13, puffs: 1100, buildings: 0.7, antialias: false, trees: true },
-  high: { pixelRatio: 1.5, shadows: 2048, splitK: 2.0, maxZ: 14, puffs: 1800, buildings: 1, antialias: true, trees: true },
+  low: { pixelRatio: 1, shadows: 0, splitK: 1.25, maxZ: 13, puffs: 500, buildings: 0.4, antialias: false, trees: false },
+  medium: { pixelRatio: 1.25, shadows: 1024, splitK: 1.6, maxZ: 13, puffs: 1100, buildings: 0.7, antialias: false, trees: true },
+  high: { pixelRatio: 1.75, shadows: 2048, splitK: 2.0, maxZ: 14, puffs: 1800, buildings: 1, antialias: true, trees: true },
   ultra: { pixelRatio: 2, shadows: 4096, splitK: 2.5, maxZ: 14, puffs: 2400, buildings: 1.3, antialias: true, trees: true },
 };
 

@@ -1,0 +1,6 @@
+{
+  "appId": "com.skyward.flightsim",
+  "appName": "Skyward",
+  "webDir": "dist",
+  "android": { "allowMixedContent": false, "backgroundColor": "#06090d", "webContentsDebuggingEnabled": false }
+}

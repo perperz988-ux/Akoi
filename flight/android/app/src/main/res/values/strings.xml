@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Skyward</string>
+    <string name="title_activity_main">Skyward</string>
+    <string name="package_name">com.skyward.flightsim</string>
+    <string name="custom_url_scheme">com.skyward.flightsim</string>
+</resources>

@@ -30,3 +30,35 @@ jobs:
         with:
           name: port-solano-debug-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
+
+  skyward-apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: 17 }
+      - name: Accept Android licenses (SDK is preinstalled on ubuntu-latest)
+        run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null || true
+      - name: Install & build Skyward web bundle + single-file HTML
+        run: |
+          npm ci
+          ln -sfn ../node_modules flight/node_modules
+          npm run build:flight:html
+      - name: Sync Capacitor (flight/)
+        working-directory: flight
+        run: npx cap sync android
+      - name: Build Skyward debug APK
+        working-directory: flight/android
+        run: chmod +x gradlew && ./gradlew assembleDebug --no-daemon
+      - name: Upload Skyward APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: skyward-debug-apk
+          path: flight/android/app/build/outputs/apk/debug/app-debug.apk
+      - name: Upload Skyward HTML
+        uses: actions/upload-artifact@v4
+        with:
+          name: skyward-html
+          path: flight/dist/skyward.html

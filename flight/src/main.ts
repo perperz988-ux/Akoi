@@ -11,8 +11,11 @@ import { settings, career, saveCareer } from './game/Save';
 import { origin, NM } from './core/geo';
 import { aircraftById } from './data/aircraft';
 import { audio } from './audio/Audio';
+import { App as CapApp } from '@capacitor/app';
+import { Capacitor } from '@capacitor/core';
 
 const $ = (s: string) => document.querySelector(s) as HTMLElement;
+const isTouchDevice = () => matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
 
 async function boot() {
   const bar = $('#bootbar'), msg = $('#bootmsg');
@@ -77,6 +80,25 @@ async function boot() {
       mv.onAirport = a => { close(); f.teleport(a.lat, a.lon, a.elevFt + 3000); };
     }
   }
+  // phone: Android back button pauses / goes back, fullscreen + landscape lock for the HTML version
+  if (Capacitor.isNativePlatform()) {
+    CapApp.addListener('backButton', () => {
+      const modal = document.querySelector('.modal:not(.pause)') as HTMLElement | null;
+      if (flight) { if (modal?.classList.contains('mapmodal')) modal.querySelector<HTMLElement>('[data-x]')?.click(); else flight.togglePause(); }
+      else if (document.querySelector('[data-back]')) (document.querySelector('[data-back]') as HTMLElement).click();
+      else CapApp.minimizeApp();
+    });
+    CapApp.addListener('pause', () => { if (flight && !document.querySelector('.modal.pause')) flight.togglePause(); });
+  } else if (isTouchDevice()) {
+    const goFull = () => {
+      const el = document.documentElement as any;
+      if (!document.fullscreenElement && el.requestFullscreen) el.requestFullscreen({ navigationUI: 'hide' }).then(() => (screen.orientation as any)?.lock?.('landscape').catch(() => {})).catch(() => {});
+    };
+    addEventListener('pointerup', goFull);
+  }
+  const rot = $('#rotate');
+  const checkRot = () => rot.classList.toggle('show', isTouchDevice() && innerHeight > innerWidth * 1.1);
+  addEventListener('resize', checkRot); checkRot();
   // auto-pause when app backgrounded
   document.addEventListener('visibilitychange', () => { if (document.hidden && flight && !document.querySelector('.modal.pause')) flight.togglePause(); });
   // expose for debugging / automation

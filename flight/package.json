@@ -1,0 +1,7 @@
+{
+  "name": "skyward-flight",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Skyward Flight Simulator (Capacitor app project; dependencies are installed in the repo root)",
+  "dependencies": { "@capacitor/android": "6.2.0", "@capacitor/app": "^6.0.2", "@capacitor/core": "6.2.0" }
+}

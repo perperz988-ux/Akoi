@@ -15,7 +15,8 @@
     "android:open": "npx cap open android",
     "dev:flight": "vite --config flight/vite.config.ts",
     "build:flight": "tsc --noEmit -p flight/tsconfig.json && vite build --config flight/vite.config.ts",
-    "build:flight:html": "npm run build:flight && node flight/tools/singlefile.mjs"
+    "build:flight:html": "npm run build:flight && node flight/tools/singlefile.mjs",
+    "android:flight": "npm run build:flight && cd flight && npx cap sync android"
   },
   "dependencies": {
     "@capacitor/android": "6.2.0",

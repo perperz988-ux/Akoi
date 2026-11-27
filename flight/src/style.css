@@ -186,3 +186,11 @@ label { font-size: 12px; color: var(--dim); display: inline-flex; align-items: c
   .ff, .apdb, .grid2 { grid-template-columns: 1fr; } .summary { grid-column: auto; }
   .hangar { grid-template-columns: 1fr; } .mapside { width: 220px; }
 }
+
+#rotate { position: fixed; inset: 0; z-index: 200; background: #06090d; color: var(--txt); display: none; align-items: center; justify-content: center; flex-direction: column; gap: 14px; font-size: 14px; letter-spacing: .12em; text-align: center; padding: 24px; }
+#rotate.show { display: flex; }
+#rotate b { font-size: 42px; display: block; transform: rotate(90deg); }
+@media (max-height: 520px), (max-width: 700px) {
+  .ff .btn.big[data-start] { position: fixed; right: calc(14px + var(--safe-r)); bottom: calc(12px + var(--safe-b)); width: auto; padding: 12px 22px; z-index: 5; box-shadow: 0 4px 18px rgba(0,0,0,.6); }
+  .scr header { padding: 8px 14px; } .scr header h1 { font-size: 15px; }
+}

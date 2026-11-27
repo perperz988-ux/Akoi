@@ -5,3 +5,11 @@ android/build
 android/.gradle
 *.log
 .DS_Store
+flight/android/app/build
+flight/android/build
+flight/android/.gradle
+flight/android/capacitor-cordova-android-plugins
+flight/android/app/src/main/assets/public
+flight/android/app/src/main/assets/capacitor.config.json
+flight/android/app/src/main/assets/capacitor.plugins.json
+flight/node_modules

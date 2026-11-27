@@ -8,8 +8,14 @@ export interface Settings {
 }
 export interface Career { completed: Record<string, number>; credits: number; hours: number; landings: number; unlockedAircraft: string[] }
 
+function phoneDefault(): Settings['quality'] {
+  const touch = typeof matchMedia !== 'undefined' && matchMedia('(pointer: coarse)').matches;
+  if (!touch) return 'medium';
+  const mem = (navigator as any).deviceMemory ?? 4;
+  return mem >= 8 && Math.min(screen.width, screen.height) * devicePixelRatio >= 1080 ? 'medium' : 'low';
+}
 const DEF_SETTINGS: Settings = {
-  quality: 'medium', assist: 'assisted', invertPitch: false, sensitivity: 1, tilt: false,
+  quality: phoneDefault(), assist: 'assisted', invertPitch: false, sensitivity: 1, tilt: false,
   volume: 0.8, voice: true, units: 'aviation', hud: true, touch: 'auto', trees: true, timeScale: 1,
 };
 const DEF_CAREER: Career = { completed: {}, credits: 0, hours: 0, landings: 0, unlockedAircraft: ['c172'] };
