@@ -3,26 +3,26 @@
     android:id="@+id/root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:animateLayoutChanges="true"
     android:background="@drawable/bg_main"
     android:fitsSystemWindows="true"
     android:orientation="vertical"
     android:paddingStart="16dp"
     android:paddingEnd="16dp">
 
-    <!-- Barra superior -->
+    <!-- Barra superior: saludo + menú -->
     <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp">
+        android:layout_marginTop="6dp">
 
         <TextView
+            android:id="@+id/greeting"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="start|center_vertical"
-            android:letterSpacing="0.3"
-            android:text="AKOI"
-            android:textColor="@color/orange"
-            android:textSize="12sp"
+            android:textColor="@color/text"
+            android:textSize="15sp"
             android:textStyle="bold" />
 
         <ImageButton
@@ -35,59 +35,85 @@
             android:src="@drawable/ic_more" />
     </FrameLayout>
 
-    <!-- Reloj en azul oscuro -->
-    <TextClock
-        android:id="@+id/clock"
-        android:layout_width="wrap_content"
+    <!-- Zona principal: reloj azul oscuro y orbe de la IA -->
+    <LinearLayout
+        android:id="@+id/hero"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_gravity="center_horizontal"
-        android:layout_marginTop="12dp"
-        android:fontFamily="sans-serif-medium"
-        android:format12Hour="h:mm"
-        android:format24Hour="HH:mm"
-        android:includeFontPadding="false"
-        android:shadowColor="@color/blue_glow"
-        android:shadowRadius="24"
-        android:textColor="@color/blue_dark"
-        android:textSize="96sp"
-        android:textStyle="bold" />
+        android:gravity="center_horizontal"
+        android:orientation="vertical">
 
-    <TextClock
-        android:id="@+id/date"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center_horizontal"
-        android:layout_marginTop="4dp"
-        android:format12Hour="EEEE, d MMMM"
-        android:format24Hour="EEEE, d MMMM"
-        android:letterSpacing="0.08"
-        android:textAllCaps="true"
-        android:textColor="@color/orange"
-        android:textSize="14sp"
-        android:textStyle="bold" />
+        <TextClock
+            android:id="@+id/clock"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="sans-serif-medium"
+            android:format12Hour="h:mm"
+            android:format24Hour="HH:mm"
+            android:includeFontPadding="false"
+            android:shadowColor="@color/blue_glow"
+            android:shadowRadius="24"
+            android:textColor="@color/blue_dark"
+            android:textSize="80sp"
+            android:textStyle="bold" />
 
-    <!-- Buscador -->
+        <TextClock
+            android:id="@+id/date"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:format12Hour="EEEE, d MMMM"
+            android:format24Hour="EEEE, d MMMM"
+            android:letterSpacing="0.08"
+            android:textAllCaps="true"
+            android:textColor="@color/orange"
+            android:textSize="13sp"
+            android:textStyle="bold" />
+
+        <com.akoi.launcher.OrbView
+            android:id="@+id/orb"
+            android:layout_width="96dp"
+            android:layout_height="96dp"
+            android:layout_marginTop="6dp"
+            android:clickable="true"
+            android:contentDescription="@string/orb_desc"
+            android:focusable="true" />
+
+        <TextView
+            android:id="@+id/orbHint"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/orb_hint"
+            android:textColor="@color/text_dim"
+            android:textSize="11sp" />
+    </LinearLayout>
+
+    <!-- Barra de la IA / buscador -->
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="52dp"
-        android:layout_marginTop="24dp"
+        android:layout_height="54dp"
+        android:layout_marginTop="14dp"
         android:background="@drawable/bg_search"
         android:gravity="center_vertical"
         android:orientation="horizontal"
         android:paddingStart="18dp"
-        android:paddingEnd="8dp">
+        android:paddingEnd="6dp">
 
-        <ImageView
-            android:layout_width="22dp"
-            android:layout_height="22dp"
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:importantForAccessibility="no"
-            android:src="@drawable/ic_search" />
+            android:shadowColor="@color/orange"
+            android:shadowRadius="10"
+            android:text="✦"
+            android:textColor="@color/orange"
+            android:textSize="20sp" />
 
         <EditText
             android:id="@+id/search"
             android:layout_width="0dp"
             android:layout_height="match_parent"
-            android:layout_marginStart="12dp"
+            android:layout_marginStart="10dp"
             android:layout_weight="1"
             android:background="@null"
             android:hint="@string/search_hint"
@@ -98,7 +124,7 @@
             android:textColor="@color/text"
             android:textColorHint="@color/text_dim"
             android:textCursorDrawable="@null"
-            android:textSize="16sp" />
+            android:textSize="15sp" />
 
         <TextView
             android:id="@+id/clearSearch"
@@ -110,14 +136,61 @@
             android:textColor="@color/orange"
             android:textSize="16sp"
             android:visibility="gone" />
+
+        <ImageButton
+            android:id="@+id/micButton"
+            android:layout_width="42dp"
+            android:layout_height="42dp"
+            android:background="@drawable/bg_app"
+            android:contentDescription="@string/voice"
+            android:src="@drawable/ic_mic" />
+    </LinearLayout>
+
+    <!-- Respuestas del asistente -->
+    <LinearLayout
+        android:id="@+id/assistantBox"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:visibility="gone" />
+
+    <!-- Sugerencias inteligentes -->
+    <LinearLayout
+        android:id="@+id/suggestionsBox"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:background="@drawable/bg_glass"
+        android:orientation="vertical"
+        android:paddingTop="8dp"
+        android:paddingBottom="2dp"
+        android:paddingStart="6dp"
+        android:paddingEnd="6dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:letterSpacing="0.1"
+            android:text="@string/suggested"
+            android:textAllCaps="true"
+            android:textColor="@color/orange"
+            android:textSize="11sp"
+            android:textStyle="bold" />
+
+        <LinearLayout
+            android:id="@+id/suggestionsRow"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal" />
     </LinearLayout>
 
     <!-- Título de la sección + botón -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="20dp"
-        android:layout_marginBottom="10dp"
+        android:layout_marginTop="12dp"
+        android:layout_marginBottom="6dp"
         android:gravity="center_vertical"
         android:orientation="horizontal">
 
@@ -128,13 +201,13 @@
             android:layout_weight="1"
             android:text="@string/letters_title"
             android:textColor="@color/text"
-            android:textSize="18sp"
+            android:textSize="17sp"
             android:textStyle="bold" />
 
         <TextView
             android:id="@+id/actionButton"
             android:layout_width="wrap_content"
-            android:layout_height="34dp"
+            android:layout_height="32dp"
             android:background="@drawable/bg_pill"
             android:gravity="center"
             android:letterSpacing="0.1"
@@ -157,7 +230,7 @@
             android:layout_height="match_parent"
             android:clipToPadding="false"
             android:overScrollMode="never"
-            android:paddingBottom="16dp" />
+            android:paddingBottom="12dp" />
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/appsList"
@@ -174,7 +247,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center_horizontal"
-            android:layout_marginTop="48dp"
+            android:layout_marginTop="32dp"
             android:text="@string/no_results"
             android:textColor="@color/text_dim"
             android:textSize="15sp"

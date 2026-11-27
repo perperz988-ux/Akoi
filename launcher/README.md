@@ -2,6 +2,27 @@
 
 Launcher (pantalla de inicio) moderno para Android, en **negro, azul y anaranjado**.
 
+## Estilo "AI OS"
+
+- **Orbe de IA animado** (azul y anaranjado) que gira y respira. Tócalo y **habla**.
+- **Barra de Akoi AI**: escribe o di órdenes en español y aparecen tarjetas de acción:
+  - "abre WhatsApp", "abre la cámara"
+  - "pon una alarma a las 7:30", "despiértame a las 6 de la mañana"
+  - "temporizador de 10 minutos"
+  - "enciende la linterna" / "apaga la linterna"
+  - "llama al 5551234", "llamar a mamá"
+  - "cómo llegar a la plaza central"
+  - "wifi", "bluetooth", "brillo", "batería", "ajustes"
+  - "cuánto es 25 por 4", "120 / 3 + 7" (toca el resultado para copiarlo)
+  - "qué hora es", "qué día es hoy"
+  - "qué es un agujero negro", "busca recetas de pasta" → búsqueda web
+- **Sugeridas para ti**: aprende qué apps usas y a qué hora del día, y te las propone.
+  Todo se guarda solo en tu teléfono.
+- Saludo según la hora ("Buenos días", "Buenas tardes", "Buenas noches").
+- Al buscar, el reloj y el orbe se recogen con animación para dejar espacio.
+
+El asistente funciona **sin internet** con reglas locales (no usa un modelo de IA en la nube).
+
 ## Qué hace
 
 - **Reloj grande en azul oscuro** con brillo azul, y la fecha en anaranjado.
