@@ -63,6 +63,9 @@ class MainActivity : ComponentActivity() {
         val icon: Drawable,
     )
 
+    /** Algo que se muestra en la cuadrícula: una app propia de iSuit o una app instalada. */
+    class Entry(val label: String, val icon: Drawable, val app: App?, val screen: Class<*>?)
+
     private lateinit var launcherApps: LauncherApps
     private lateinit var phone: LinearLayout
     private lateinit var grid: RecyclerView
@@ -76,7 +79,14 @@ class MainActivity : ComponentActivity() {
     private val executor = Executors.newSingleThreadExecutor()
     private val main = Handler(Looper.getMainLooper())
 
-    private var apps: List<App> = emptyList()
+    private var installed: List<App> = emptyList()
+    private var apps: List<Entry> = emptyList()
+    private lateinit var modeButton: TextView
+
+    /** true = apps de iSuit primero; false = tus apps instaladas. */
+    private var isuitMode: Boolean
+        get() = prefs().getBoolean("isuit_mode", true)
+        set(v) { prefs().edit().putBoolean("isuit_mode", v).apply() }
     private var selected = 0
     private var longPressed = false
 
@@ -142,9 +152,11 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun buildUi(): View {
-        val root = FrameLayout(this).apply { fitsSystemWindows = true }
+        val root = FrameLayout(this)
+        Backdrop.applyTo(root)
 
         phone = LinearLayout(this).apply {
+            fitsSystemWindows = true
             orientation = LinearLayout.VERTICAL
             setPadding(dp(22), dp(14), dp(22), dp(18))
         }
@@ -163,6 +175,14 @@ class MainActivity : ComponentActivity() {
             typeface = android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.NORMAL)
             shadow(this)
             setOnClickListener { safeStart(Intent(AlarmClock.ACTION_SHOW_ALARMS)) }
+            // Mantener presionada la hora: cambia entre el fondo de iSuit y el del teléfono.
+            setOnLongClickListener {
+                val own = !Backdrop.useOwnWallpaper(this@MainActivity)
+                Backdrop.setUseOwnWallpaper(this@MainActivity, own)
+                toast(if (own) "Usando tu fondo de pantalla" else "Usando el fondo de iSuit")
+                recreate()
+                true
+            }
         }, LinearLayout.LayoutParams(0, -2, 1f))
         battery = TextView(this).apply {
             textSize = 22f
@@ -221,6 +241,25 @@ class MainActivity : ComponentActivity() {
         }
         phone.addView(defaultBanner, LinearLayout.LayoutParams(-1, -2).apply { setMargins(0, dp(4), 0, dp(6)) })
 
+        // ---- Botón: apps de iSuit ↔ mis apps
+        modeButton = TextView(this).apply {
+            textSize = 14f
+            setTextColor(Color.WHITE)
+            background = glass(18, 0x99)
+            setPadding(dp(16), dp(8), dp(16), dp(8))
+            setOnClickListener {
+                isuitMode = !isuitMode
+                selected = 0
+                rebuildEntries()
+                grid.scrollToPosition(0)
+                performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
+            }
+        }
+        phone.addView(modeButton, LinearLayout.LayoutParams(-2, -2).apply {
+            gravity = Gravity.END
+            topMargin = dp(8)
+        })
+
         // ---- Cuadrícula de íconos redondos
         grid = RecyclerView(this).apply {
             layoutManager = GridLayoutManager(context, COLUMNS)
@@ -275,7 +314,7 @@ class MainActivity : ComponentActivity() {
 
         val next = getSystemService(AlarmManager::class.java)?.nextAlarmClock?.triggerTime
         val alarm = if (next != null) "⏰ ${DateFormat.getTimeFormat(this).format(Date(next))}" else "Sin alarmas"
-        val fav = apps.firstOrNull { uses(it) > 0 }?.label
+        val fav = installed.firstOrNull { uses(it) > 0 }?.label
         todayLine.text = if (fav != null) "$alarm · Favorita: $fav" else alarm
     }
 
@@ -302,13 +341,34 @@ class MainActivity : ComponentActivity() {
                 if (d != 0) d else collator.compare(a.label, b.label)
             }
             main.post {
-                apps = sorted
-                selected = selected.coerceIn(0, (apps.size - 1).coerceAtLeast(0))
-                adapter.notifyDataSetChanged()
-                updatePill()
+                installed = sorted
+                rebuildEntries()
                 updateInfo()
             }
         }
+    }
+
+    /** Apps propias de iSuit (salen primero en el modo iSuit). */
+    private fun builtins(): List<Entry> = listOf(
+        Entry("Pulso", BuiltinIcon(intArrayOf(0xFFFF5F6D.toInt(), 0xFFFFC371.toInt()), "💪"), null, FitnessActivity::class.java),
+        Entry("Charla", BuiltinIcon(intArrayOf(0xFF22C55E.toInt(), 0xFF0EA5E9.toInt()), "💬"), null, ChatHubActivity::class.java),
+        Entry("AutoID", BuiltinIcon(intArrayOf(0xFF6366F1.toInt(), 0xFFEC4899.toInt()), "🚗"), null, CarIdActivity::class.java),
+    )
+
+    /** Apps básicas del teléfono que acompañan a las de iSuit. */
+    private val ESSENTIALS = listOf("dialer", "phone", "camera", "photos", "gallery", "contacts", "settings", "chrome", "browser", "maps", "music", "clock")
+
+    private fun rebuildEntries() {
+        apps = if (isuitMode) {
+            val extras = ESSENTIALS.mapNotNull { kw -> installed.firstOrNull { it.component.packageName.contains(kw) } }.distinct()
+            builtins() + extras.map { Entry(it.label, it.icon, it, null) }
+        } else {
+            installed.map { Entry(it.label, it.icon, it, null) }
+        }
+        modeButton.text = if (isuitMode) "📱 Mis apps" else "🎮 iSuit"
+        selected = selected.coerceIn(0, (apps.size - 1).coerceAtLeast(0))
+        adapter.notifyDataSetChanged()
+        updatePill()
     }
 
     // ------------------------------------------------------------- Selección
@@ -330,7 +390,16 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun openSelected() {
-        apps.getOrNull(selected)?.let { launch(it, grid.findViewHolderForAdapterPosition(selected)?.itemView ?: grid) }
+        apps.getOrNull(selected)?.let { open(it, grid.findViewHolderForAdapterPosition(selected)?.itemView ?: grid) }
+    }
+
+    private fun open(e: Entry, source: View) {
+        val screen = e.screen
+        if (screen != null) {
+            startActivity(Intent(this, screen))
+        } else {
+            e.app?.let { launch(it, source) }
+        }
     }
 
     private fun launch(app: App, source: View) {
@@ -463,23 +532,23 @@ class MainActivity : ComponentActivity() {
         }
 
         override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
-            val app = apps[position]
+            val entry = apps[position]
             val cell = holder.itemView as FrameLayout
             val ring = cell.getChildAt(0)
             val icon = cell.getChildAt(1) as ImageView
-            icon.setImageDrawable(app.icon)
-            icon.contentDescription = app.label
+            icon.setImageDrawable(entry.icon)
+            icon.contentDescription = entry.label
             val isSel = position == selected
             ring.visibility = if (isSel) View.VISIBLE else View.INVISIBLE
             val scale = if (isSel) 1.08f else 1f
             icon.animate().scaleX(scale).scaleY(scale).setDuration(140).start()
             cell.setOnClickListener {
                 select(position)
-                launch(app, it)
+                open(entry, it)
             }
             cell.setOnLongClickListener {
                 select(position)
-                showAppMenu(app, it)
+                entry.app?.let { a -> showAppMenu(a, it) }
                 true
             }
         }
