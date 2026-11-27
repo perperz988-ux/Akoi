@@ -39,6 +39,7 @@ local function stopDriving()
 		current = nil
 	end
 	player:SetAttribute("CarSpeed", nil)
+	player:SetAttribute("CarReverse", nil)
 end
 
 local function startDriving(seat)
@@ -63,6 +64,8 @@ local function startDriving(seat)
 	params.FilterType = Enum.RaycastFilterType.Exclude
 	params.IgnoreWater = false
 
+	-- velocidad maxima del vehiculo del original (m/s) pasada a studs
+	local maxFwd = math.min(MAX_FWD * 1.4, (seat:GetAttribute("TopSpeed") or 50) * 2 * 0.8)
 	lv.Enabled = true
 	ao.Enabled = true
 
@@ -93,7 +96,7 @@ local function startDriving(seat)
 			local d = DRAG * dt
 			s = if math.abs(s) <= d then 0 else s - math.sign(s) * d
 		end
-		s = math.clamp(s, -MAX_REV, MAX_FWD)
+		s = math.clamp(s, -MAX_REV, maxFwd)
 
 		-- si chocamos con algo, la velocidad real manda
 		local fwd = CFrame.Angles(0, state.yaw, 0).LookVector
@@ -103,7 +106,7 @@ local function startDriving(seat)
 		end
 
 		-- giro
-		local grip = math.clamp(math.abs(s) / 20, 0, 1) * (1 - 0.45 * math.min(math.abs(s) / MAX_FWD, 1))
+		local grip = math.clamp(math.abs(s) / 20, 0, 1) * (1 - 0.45 * math.min(math.abs(s) / maxFwd, 1))
 		state.yaw -= steer * TURN * grip * math.sign(s) * dt
 
 		-- suelo / agua
@@ -127,6 +130,7 @@ local function startDriving(seat)
 		lv.MaxAxesForce = Vector3.new(mass * 500, fy, mass * 500)
 		ao.CFrame = CFrame.Angles(0, state.yaw, 0)
 		player:SetAttribute("CarSpeed", math.abs(s))
+		player:SetAttribute("CarReverse", s < -0.5)
 	end)
 end
 

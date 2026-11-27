@@ -116,5 +116,12 @@ export function captureCity() {
   // Distritos por celda (para el HUD)
   const districts: number[] = [];
   for (let j = 0; j < L.N; j++) for (let i = 0; i < L.N; i++) districts.push(L.cellDistrict(i, j));
-  return { pois, pickups, cars, names: L.DISTRICT_NAMES, districtGrid: districts };
+  // Red de calles (para minimapa, trafico y peatones): tramos entre cruces
+  // [i, j, eje(0 = a lo largo de Z en x=line(i), 1 = a lo largo de X en z=line(j)), mediaAnchura, autopista, puente, tierra]
+  const roads: number[][] = [];
+  for (let i = 0; i <= L.N; i++) for (let j = 0; j <= L.N; j++) {
+    if (L.vSegment(i, j)) roads.push([i, j, 0, L.lineHalfWidth('x', i), L.isHighway('x', i) ? 1 : 0, L.isBridgeV(i, j) ? 1 : 0, L.isDirtRoad(L.lineCoord(i)) ? 1 : 0]);
+    if (L.hSegment(i, j)) roads.push([i, j, 1, L.lineHalfWidth('z', j), L.isHighway('z', j) ? 1 : 0, L.isBridgeH(i, j) ? 1 : 0, L.isDirtRoad(L.lineCoord(i) + 50) ? 1 : 0]);
+  }
+  return { pois, pickups, cars, names: L.DISTRICT_NAMES, districtGrid: districts, roads };
 }

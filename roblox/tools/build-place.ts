@@ -9,6 +9,7 @@ import { join } from 'node:path';
 import * as THREE from 'three';
 import { prims, captureCity } from './capture';
 import { Inst, writeRbxl, S, B, F, V3, CF, E, C3 } from './rbxl';
+import { VEHICLES, TRAFFIC_MIX } from '../../src/vehicles/VehicleDefs';
 
 const ROOT = process.env.ROBLOX_DIR!;
 const SC = 2; // studs por metro
@@ -216,6 +217,7 @@ const data = {
   POIS: city.pois.map((p) => ({ id: p.id, name: p.name, kind: p.kind, x: Math.round(p.x * SC), z: Math.round(p.z * SC) })),
   PICKUPS: city.pickups.map((p) => ({ x: Math.round(p.x * SC), z: Math.round(p.z * SC), hint: p.hint })),
   CARS: city.cars.map((c) => ({ x: Math.round(c.x * SC), z: Math.round(c.z * SC), yaw: c.yaw })),
+  ROADS: city.roads,
 };
 const namesLua = '{' + Object.entries(names).map(([k, v]) => `[${k}]=${JSON.stringify(v)}`).join(',') + '}';
 const layoutData = `-- GENERADO por roblox/tools/build-place.ts desde src/world/CityLayout.ts. No editar a mano.
@@ -237,6 +239,13 @@ function addScripts(sub: string, parent: Inst) {
   }
 }
 insts.push({ cls: 'ModuleScript', props: { Name: S('LayoutData'), Source: S(layoutData) }, parent: rs });
+const vehData = `-- GENERADO desde src/vehicles/VehicleDefs.ts. No editar a mano.
+return {
+  DEFS = ${lua(VEHICLES.map((v) => ({ id: v.id, name: v.name, maker: v.maker, cls: v.cls, price: v.price, len: v.len, wid: v.wid, hei: v.hei, wheelbase: v.wheelbase, track: v.track, wheelR: v.wheelR, cabin: v.cabin, roofY: v.roofY, beltY: v.beltY, noseY: v.noseY, topSpeed: v.topSpeed, seats: v.seats, hp: v.hp, colors: v.colors.map((c) => [(c >> 16) & 255, (c >> 8) & 255, c & 255]) })))},
+  TRAFFIC_MIX = ${lua(TRAFFIC_MIX.map(([id, w]) => [id, w]))},
+}
+`;
+insts.push({ cls: 'ModuleScript', props: { Name: S('VehicleDefs'), Source: S(vehData) }, parent: rs });
 addScripts('ReplicatedStorage', rs);
 addScripts('ReplicatedFirst', rf);
 addScripts('ServerScriptService', sss);
@@ -245,5 +254,6 @@ addScripts('StarterPlayerScripts', sps);
 const buf = writeRbxl(insts);
 writeFileSync(join(ROOT, 'PortSolano.rbxl'), buf);
 writeFileSync(join(ROOT, 'src-generated-LayoutData.luau'), layoutData);
+writeFileSync(join(ROOT, 'src-generated-VehicleDefs.luau'), vehData);
 if (dump) writeFileSync(process.env.DUMP_PARTS!, JSON.stringify(dump));
 console.log(`OK -> PortSolano.rbxl  ${(buf.length / 1048576).toFixed(1)} MB, ${partCount} piezas, ${insts.length} instancias`);

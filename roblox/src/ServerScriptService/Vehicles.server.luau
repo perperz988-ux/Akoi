@@ -6,6 +6,8 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Layout = require(ReplicatedStorage:WaitForChild("Layout"))
+local VehicleModel = require(ReplicatedStorage:WaitForChild("VehicleModel"))
+local SC = Layout.SCALE
 
 local function getRemote(name)
 	local f = ReplicatedStorage:FindFirstChild("Remotes")
@@ -35,85 +37,42 @@ carsFolder.Parent = workspace
 local M = Enum.Material
 local rng = Random.new()
 
-local CAR_COLORS = {
-	Color3.fromRGB(220, 40, 60),
-	Color3.fromRGB(255, 140, 30),
-	Color3.fromRGB(250, 210, 40),
-	Color3.fromRGB(40, 190, 120),
-	Color3.fromRGB(30, 150, 230),
-	Color3.fromRGB(120, 70, 210),
-	Color3.fromRGB(255, 110, 180),
-	Color3.fromRGB(245, 245, 245),
-	Color3.fromRGB(30, 30, 34),
-	Color3.fromRGB(80, 230, 230),
-}
-
-local CAR_NAMES = { "Solano GT", "Vela Cruiser", "Reef Runner", "Palmetto", "Bayshore S", "Coral Sport" }
-
-local function weldPart(model, chassis, size, offset, color, material, props)
-	local p = Instance.new("Part")
-	p.Size = size
-	p.CFrame = chassis.CFrame * offset
-	p.Color = color
-	p.Material = material
-	p.Massless = true
-	p.TopSurface = Enum.SurfaceType.Smooth
-	p.BottomSurface = Enum.SurfaceType.Smooth
-	if props then
-		for k, v in pairs(props) do
-			p[k] = v
-		end
-	end
-	p.Parent = model
-	local w = Instance.new("WeldConstraint")
-	w.Part0 = chassis
-	w.Part1 = p
-	w.Parent = p
-	return p
-end
+-- coche personal: los deportivos y muscle del original
+local PERSONAL_CARS = { "vexa_gt", "kestrel_rs", "marlin_s", "bruiser_70", "stallion_ss", "avanti_lx" }
 
 -- groundCF: CFrame a nivel del suelo; el frente del coche mira a -Z
-local function buildCar(groundCF, color, sporty)
-	local model = Instance.new("Model")
-	model.Name = CAR_NAMES[rng:NextInteger(1, #CAR_NAMES)]
+local function buildCar(groundCF, id, color)
+	local visual, d = VehicleModel.build(id, color, groundCF)
+	local model = visual
 	model.ModelStreamingMode = Enum.ModelStreamingMode.Atomic
 
 	local chassis = Instance.new("Part")
 	chassis.Name = "Chassis"
-	chassis.Size = Vector3.new(6, 1.7, 11) -- al conducir flota 0.25 sobre el suelo
+	chassis.Size = Vector3.new(math.max(1.2, d.wid * SC * 0.95), 1.7, d.len * SC * 0.9) -- al conducir flota 0.35 sobre el suelo
 	chassis.CFrame = groundCF * CFrame.new(0, 1.1, 0)
 	chassis.Transparency = 1
 	chassis.CustomPhysicalProperties = PhysicalProperties.new(3, 0.6, 0.1)
 	chassis.RootPriority = 10
 	chassis.Parent = model
 	model.PrimaryPart = chassis
-
-	local bodyH = if sporty then 1.6 else 2
-	local cabinH = if sporty then 1.4 else 1.9
-	-- carroceria (coordenadas relativas al centro del chasis, que esta a 1.1 del suelo)
-	weldPart(model, chassis, Vector3.new(6.2, bodyH, 11.4), CFrame.new(0, 0.1 + bodyH / 2, 0), color, M.SmoothPlastic, { Reflectance = 0.08 })
-	weldPart(model, chassis, Vector3.new(5.4, cabinH, if sporty then 5 else 6), CFrame.new(0, 0.1 + bodyH + cabinH / 2, 0.8), Color3.fromRGB(40, 50, 60), M.Glass, { Transparency = 0.35 })
-	weldPart(model, chassis, Vector3.new(5.6, 0.3, if sporty then 5.2 else 6.2), CFrame.new(0, 0.1 + bodyH + cabinH + 0.15, 0.8), color, M.SmoothPlastic)
-	-- parachoques
-	weldPart(model, chassis, Vector3.new(6.4, 0.8, 0.6), CFrame.new(0, 0.5, -5.8), Color3.fromRGB(40, 40, 44), M.SmoothPlastic)
-	weldPart(model, chassis, Vector3.new(6.4, 0.8, 0.6), CFrame.new(0, 0.5, 5.8), Color3.fromRGB(40, 40, 44), M.SmoothPlastic)
-	-- faros y pilotos
-	for _, x in ipairs({ -2.2, 2.2 }) do
-		weldPart(model, chassis, Vector3.new(1.2, 0.5, 0.2), CFrame.new(x, 0.1 + bodyH - 0.5, -5.75), Color3.fromRGB(255, 250, 220), M.Neon)
-		weldPart(model, chassis, Vector3.new(1.2, 0.5, 0.2), CFrame.new(x, 0.1 + bodyH - 0.5, 5.75), Color3.fromRGB(255, 30, 30), M.Neon)
-	end
-	-- ruedas (cilindros, eje X), solo decorativas
-	for _, x in ipairs({ -2.9, 2.9 }) do
-		for _, z in ipairs({ -3.6, 3.6 }) do
-			weldPart(model, chassis, Vector3.new(1, 2.5, 2.5), CFrame.new(x, 0.15, z), Color3.fromRGB(25, 25, 25), M.SmoothPlastic, { Shape = Enum.PartType.Cylinder, CanCollide = false })
-			weldPart(model, chassis, Vector3.new(1.05, 1.4, 1.4), CFrame.new(x, 0.15, z), Color3.fromRGB(190, 190, 195), M.Metal, { Shape = Enum.PartType.Cylinder, CanCollide = false })
+	for _, p in ipairs(model:GetChildren()) do
+		if p:IsA("BasePart") and p ~= chassis then
+			p.Anchored = false
+			p.Massless = true
+			local w = Instance.new("WeldConstraint")
+			w.Part0 = chassis
+			w.Part1 = p
+			w.Parent = p
 		end
 	end
+	model:SetAttribute("HP", d.hp)
 
+	-- asiento del conductor, como seatZ en VehicleMesh.ts (frente = -Z)
+	local seatZ = -(d.cabin[1] * 0.55 + d.cabin[2] * 0.45) * d.len / 2
 	local seat = Instance.new("VehicleSeat")
 	seat.Name = "DriveSeat"
-	seat.Size = Vector3.new(2, 0.5, 2)
-	seat.CFrame = chassis.CFrame * CFrame.new(-1.3, 0.9, 0.6)
+	seat.Size = Vector3.new(1.4, 0.4, 1.4)
+	seat.CFrame = groundCF * CFrame.new(if d.cls == "bike" then 0 else -d.wid * 0.22 * SC, math.max(0.5, d.beltY * d.hei * 0.55) * SC, seatZ * SC)
 	seat.Transparency = 1
 	seat.CanCollide = false
 	seat.Massless = true
@@ -121,6 +80,7 @@ local function buildCar(groundCF, color, sporty)
 	seat.Torque = 0
 	seat.HeadsUpDisplay = false
 	seat:SetAttribute("PSCar", true)
+	seat:SetAttribute("TopSpeed", d.topSpeed)
 	seat.Parent = model
 	local sw = Instance.new("WeldConstraint")
 	sw.Part0 = chassis
@@ -194,7 +154,7 @@ local parked = {}
 local function spawnParked(i)
 	local spot = Layout.CAR_SPOTS[i]
 	local cf = CFrame.new(spot.pos) * CFrame.Angles(0, math.rad(spot.yaw), 0)
-	local car = buildCar(cf, CAR_COLORS[rng:NextInteger(1, #CAR_COLORS)], rng:NextNumber() < 0.3)
+	local car = buildCar(cf, VehicleModel.randomTrafficId(rng))
 	car:SetAttribute("SpotIndex", i)
 	parked[i] = car
 end
@@ -237,8 +197,8 @@ SpawnCarRemote.OnServerEvent:Connect(function(plr)
 	local groundY = if hit then hit.Position.Y else root.Position.Y - 3
 	local cf = CFrame.lookAt(Vector3.new(spot.X, groundY + 0.2, spot.Z), Vector3.new(spot.X, groundY + 0.2, spot.Z) + look)
 
-	local car, seat = buildCar(cf, CAR_COLORS[rng:NextInteger(1, #CAR_COLORS)], rng:NextNumber() < 0.5)
-	car.Name = "Coche de " .. plr.DisplayName
+	local car, seat = buildCar(cf, PERSONAL_CARS[rng:NextInteger(1, #PERSONAL_CARS)])
+	car.Name = car.Name .. " (" .. plr.DisplayName .. ")"
 	car:SetAttribute("Owner", plr.UserId)
 	personal[plr] = car
 	task.wait(0.3)

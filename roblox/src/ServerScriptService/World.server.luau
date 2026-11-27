@@ -124,6 +124,7 @@ spawn.CanCollide = false
 spawn.Duration = 3
 spawn.Parent = workspace
 
+workspace:SetAttribute("Day", 1)
 workspace:SetAttribute("MapReady", true)
 Players.CharacterAutoLoads = true
 for _, plr in ipairs(Players:GetPlayers()) do
@@ -147,7 +148,11 @@ end)
 local DAY_SECONDS = 16 * 60
 while true do
 	local dt = task.wait(0.5)
+	local before = Lighting.ClockTime
 	Lighting.ClockTime = (Lighting.ClockTime + dt * 24 / DAY_SECONDS) % 24
+	if Lighting.ClockTime < before then
+		workspace:SetAttribute("Day", (workspace:GetAttribute("Day") or 1) + 1)
+	end
 	local t = Lighting.ClockTime
 	local night = t < 6.3 or t > 18.2
 	Lighting.OutdoorAmbient = if night then Color3.fromRGB(90, 90, 120) else Color3.fromRGB(140, 130, 130)

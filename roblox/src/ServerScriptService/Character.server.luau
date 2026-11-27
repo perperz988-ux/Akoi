@@ -43,6 +43,13 @@ local function dress(char)
 			part.Material = Enum.Material.SmoothPlastic
 		end
 	end
+	-- misma escala que la ciudad: 1,8 m de alto (1 m = 2 studs)
+	if not char:GetAttribute("Scaled") then
+		char:SetAttribute("Scaled", true)
+		pcall(function()
+			char:ScaleTo(0.75)
+		end)
+	end
 	-- sin cara, como el modelo original
 	local face = head:FindFirstChildOfClass("Decal")
 	if face then

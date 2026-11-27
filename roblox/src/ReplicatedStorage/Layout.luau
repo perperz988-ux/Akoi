@@ -41,6 +41,17 @@ local function district(id: number): District
 	return d
 end
 
+-- Indice del distrito (District del original) en una posicion (studs)
+function Layout.districtIdAt(x: number, z: number): number
+	local ci = math.floor((x / SC + D.HALF) / D.CELL)
+	local cj = math.floor((z / SC + D.HALF) / D.CELL)
+	if ci < 0 or cj < 0 or ci >= D.N or cj >= D.N then
+		return 13
+	end
+	local idx = cj * D.N + ci + 1
+	return tonumber(string.sub(D.GRID, idx, idx), 36) or 13
+end
+
 -- Distrito en una posicion (studs)
 function Layout.districtAt(x: number, z: number): District
 	local mx, mz = x / SC, z / SC
@@ -99,6 +110,67 @@ end
 Layout.CAR_SPOTS = {}
 for _, c in ipairs(D.CARS) do
 	table.insert(Layout.CAR_SPOTS, { pos = Vector3.new(c.x, 0.2, c.z), yaw = c.yaw })
+end
+
+-- Red de calles del original: tramos entre cruces (en metros) y grafo para el trafico
+Layout.CELL_M = D.CELL
+function Layout.lineCoord(i: number): number
+	return -D.HALF + i * D.CELL
+end
+-- nodo (i, j) -> clave
+local function key(i, j)
+	return i * 64 + j
+end
+Layout.nodeKey = key
+Layout.ROADS = {}
+Layout.GRAPH = {} -- [clave] = { {to = clave, hw = mediaAnchura(m), hwy = bool}, ... }
+local function link(a, b, hw, hwy)
+	Layout.GRAPH[a] = Layout.GRAPH[a] or {}
+	table.insert(Layout.GRAPH[a], { to = b, hw = hw, hwy = hwy })
+end
+for _, r in ipairs(D.ROADS) do
+	local i, j, axis, hw, hwy, bridge, dirt = r[1], r[2], r[3], r[4], r[5] == 1, r[6] == 1, r[7] == 1
+	local a = key(i, j)
+	local b = if axis == 0 then key(i, j + 1) else key(i + 1, j)
+	table.insert(Layout.ROADS, { a = a, b = b, i = i, j = j, axis = axis, hw = hw, hwy = hwy, bridge = bridge, dirt = dirt })
+	link(a, b, hw, hwy)
+	link(b, a, hw, hwy)
+end
+-- posicion de un nodo en studs
+function Layout.nodePos(k: number): Vector3
+	local i, j = k // 64, k % 64
+	return Vector3.new(Layout.lineCoord(i) * SC, 0, Layout.lineCoord(j) * SC)
+end
+-- media anchura (m) de la calle mas ancha que pasa por un nodo
+function Layout.nodeHalfWidth(k: number): number
+	local m = 7
+	for _, e in ipairs(Layout.GRAPH[k] or {}) do
+		m = math.max(m, e.hw)
+	end
+	return m
+end
+
+-- Nombres de calles del HUD (streetName del original)
+local AVENUES = { "Cypress", "Old Mill", "Juniper", "Farm Line", "Pelican", "Harvest", "Sawgrass", "Magnolia", "Orchid", "Larkspur",
+	"Hibiscus", "Banyan", "Route 9", "Marigold", "Sable", "Coquina", "Verde", "Alhambra", "Sol", "Calle Ocho", "Mercer", "Delmar",
+	"Biscayne Row", "Tidewater", "Corsair", "Seaview", "Aquila", "Ocean Drive", "Shoreline", "Coral Key", "Lagoon", "Reef", "Outer" }
+local function ordinal(n)
+	local v = n % 100
+	local suf = if v >= 11 and v <= 13 then "th" elseif n % 10 == 1 then "st" elseif n % 10 == 2 then "nd" elseif n % 10 == 3 then "rd" else "th"
+	return tostring(n) .. suf
+end
+function Layout.streetName(xs: number, zs: number): string
+	local x, z = xs / SC, zs / SC
+	local i = math.floor((x + D.HALF) / D.CELL + 0.5)
+	local j = math.floor((z + D.HALF) / D.CELL + 0.5)
+	local dx, dz = math.abs(x - Layout.lineCoord(i)), math.abs(z - Layout.lineCoord(j))
+	local name = AVENUES[i + 1] or "Outer"
+	local av = if i == 12 then name else name .. " Ave"
+	local st = if j == 5 then "Bayshore Expwy" else ordinal(math.abs(j - 16) + 1) .. " St"
+	if dx < dz then
+		return if dz < 14 then av .. " & " .. st else av
+	end
+	return if dx < 14 then st .. " & " .. av else st
 end
 
 return Layout

@@ -103,7 +103,7 @@ local function addMoney(plr, amount, reason)
 	d.money += amount
 	updateStats(plr)
 	if reason then
-		NotifyRemote:FireClient(plr, ("+$%d  %s"):format(amount, reason))
+		NotifyRemote:FireClient(plr, reason)
 	end
 end
 
@@ -175,7 +175,7 @@ SlotsRemote.OnServerEvent:Connect(function(plr, action, slot, mode)
 	end
 	ShellRemote:FireClient(plr, "state", list)
 	SlotsRemote:FireClient(plr, "started", slot, d.free)
-	NotifyRemote:FireClient(plr, "Bienvenido a Port Solano")
+	NotifyRemote:FireClient(plr, "Welcome to <b><font color=\"#ffd166\">Port Solano</font></b>")
 end)
 
 Players.PlayerRemoving:Connect(function(plr)
@@ -237,12 +237,96 @@ for i, pos in ipairs(Layout.SHELLS) do
 			return
 		end
 		d.shells[i] = true
-		addMoney(plr, SHELL_REWARD, "Paquete oculto: " .. (Layout.SHELL_HINTS[i] or ""))
+		addMoney(plr, SHELL_REWARD, ("<b><font color=\"#ffd166\">HIDDEN PACKAGE</font></b> · %d/%d"):format(plr.leaderstats.Paquetes.Value + 1, #Layout.SHELLS))
 		ShellRemote:FireClient(plr, "got", i)
 		if plr.leaderstats.Paquetes.Value == #Layout.SHELLS then
-			addMoney(plr, 10000, "\u{A1}Encontraste TODOS los paquetes!")
+			addMoney(plr, 10000, "All hidden packages found!")
 		end
 	end)
+end
+
+----------------------------------------------------------------------
+-- Policia: BUSTED (fianza y comisaria) y WASTED (hospital), como Police.arrest()
+----------------------------------------------------------------------
+local PoliceRemote = getRemote("Police")
+local function poi(id)
+	for _, p in ipairs(require(ReplicatedStorage:WaitForChild("LayoutData")).POIS) do
+		if p.id == id then
+			return Vector3.new(p.x, 3, p.z)
+		end
+	end
+	return Layout.SPAWN
+end
+local lastHurt = {}
+PoliceRemote.OnServerEvent:Connect(function(plr, action, value)
+	local d = data[plr]
+	local char = plr.Character
+	local hum = char and char:FindFirstChildOfClass("Humanoid")
+	if not (d and d.slot and hum and hum.Health > 0) then
+		return
+	end
+	if action == "busted" then
+		local lvl = math.clamp(tonumber(value) or 1, 1, 5)
+		local fee = math.clamp(math.floor(d.money * 0.1 * lvl), 200, 8000)
+		fee = math.min(d.money, fee)
+		d.money -= fee
+		updateStats(plr)
+		if hum.SeatPart then
+			hum.Sit = false
+			task.wait(0.1)
+		end
+		char:PivotTo(CFrame.new(poi("police")) * CFrame.Angles(0, math.pi, 0))
+		hum.Health = hum.MaxHealth
+		PoliceRemote:FireClient(plr, "busted", fee)
+	elseif action == "hurt" then
+		-- disparos de la policia a partir de 3 estrellas (danio limitado por segundo)
+		local now = os.clock()
+		if lastHurt[plr] and now - lastHurt[plr] < 0.4 then
+			return
+		end
+		lastHurt[plr] = now
+		hum:TakeDamage(math.clamp(tonumber(value) or 0, 0, 12))
+	end
+end)
+
+-- WASTED: reaparecer en el hospital pagando la factura
+local function hookDeath(plr, char)
+	local hum = char:WaitForChild("Humanoid", 10)
+	if not hum then
+		return
+	end
+	hum.Died:Connect(function()
+		local d = data[plr]
+		if d and d.slot then
+			local fee = math.min(d.money, math.clamp(math.floor(d.money * 0.1), 100, 5000))
+			d.money -= fee
+			updateStats(plr)
+			plr:SetAttribute("Wasted", true)
+			PoliceRemote:FireClient(plr, "wasted", fee)
+		end
+	end)
+	if plr:GetAttribute("Wasted") then
+		plr:SetAttribute("Wasted", nil)
+		task.defer(function()
+			local root = char:WaitForChild("HumanoidRootPart", 5)
+			if root then
+				char:PivotTo(CFrame.new(poi("hospital")) * CFrame.Angles(0, math.pi, 0))
+			end
+		end)
+	end
+end
+Players.PlayerAdded:Connect(function(plr)
+	plr.CharacterAdded:Connect(function(char)
+		hookDeath(plr, char)
+	end)
+end)
+for _, plr in ipairs(Players:GetPlayers()) do
+	plr.CharacterAdded:Connect(function(char)
+		hookDeath(plr, char)
+	end)
+	if plr.Character then
+		task.spawn(hookDeath, plr, plr.Character)
+	end
 end
 
 ----------------------------------------------------------------------
@@ -268,7 +352,7 @@ JobRemote.OnServerEvent:Connect(function(plr, action)
 		return
 	end
 	if d.free then
-		NotifyRemote:FireClient(plr, "Free Roam: no hay trabajos en este modo")
+		NotifyRemote:FireClient(plr, "Free Roam: no jobs in this mode")
 		return
 	end
 	local options = {}
@@ -305,7 +389,7 @@ while true do
 			jobs[plr] = nil
 			local onTime = os.clock() <= job.deadline
 			local pay = if onTime then job.reward else math.floor(job.reward / 2)
-			addMoney(plr, pay, if onTime then "Entrega a tiempo" else "Entrega tarde (mitad de pago)")
+			addMoney(plr, pay, if onTime then "<b><font color=\"#4ade80\">DELIVERED</font></b> · on time" else "<b>DELIVERED</b> · late, half pay")
 			JobRemote:FireClient(plr, "done", pay, onTime)
 		end
 	end
